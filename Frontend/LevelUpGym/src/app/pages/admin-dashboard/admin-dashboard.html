@@ -1,0 +1,156 @@
+<div class="admin-dashboard">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <span class="brand-level">LEVEL</span><span class="brand-up">UP</span><span class="brand-gym">GYM</span>
+      <p class="role-badge">ADMIN PANEL</p>
+    </div>
+    <nav class="sidebar-nav">
+      <button (click)="setTab('resumen')" [class.active]="activeTab === 'resumen'"><span class="menu-icon">📊</span> Resumen</button>
+      <button (click)="setTab('clientes')" [class.active]="activeTab === 'clientes'"><span class="menu-icon">👥</span> Clientes</button>
+      <button (click)="setTab('ventas')" [class.active]="activeTab === 'ventas'"><span class="menu-icon">💳</span> Ventas</button>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="btn-logout" (click)="logout()"><span class="menu-icon">🚪</span> Salir</button>
+    </div>
+  </aside>
+
+  <main class="dashboard-content" [ngSwitch]="activeTab">
+    <header class="content-header">
+      <h1>Bienvenido, <span class="accent">Admin</span></h1>
+      <div class="user-info">
+        <span>admin@levelup.com</span>
+        <div class="avatar">A</div>
+      </div>
+    </header>
+
+    <!-- RESUMEN TAB -->
+    <div *ngSwitchCase="'resumen'" class="tab-content fade-in">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-info">
+            <span class="label">Ingresos Totales</span>
+            <h2 class="value">${{ totalRevenue() | number }}</h2>
+            <span class="trend positive">Actualizado en vivo ⚡</span>
+          </div>
+          <div class="stat-icon">💰</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-info">
+            <span class="label">Clientes Registrados</span>
+            <h2 class="value">{{ newMembersCount() }}</h2>
+            <span class="trend positive">Activos en plataforma 👥</span>
+          </div>
+          <div class="stat-icon">👥</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-info">
+            <span class="label">Catálogo de Productos</span>
+            <h2 class="value">{{ productsCount() }}</h2>
+            <span class="trend positive">Disponibles en tienda 🛍️</span>
+          </div>
+          <div class="stat-icon">🛍️</div>
+        </div>
+      </div>
+
+      <section class="recent-activity">
+        <div class="card-header">
+          <h2>Ventas Recientes</h2>
+          <button class="btn-text" (click)="setTab('ventas')">Ver todas</button>
+        </div>
+        <div class="activity-table-wrapper">
+          <table class="activity-table">
+            <thead>
+              <tr>
+                <th>Factura ID</th>
+                <th>Cliente</th>
+                <th>Fecha / Hora</th>
+                <th>Monto Total</th>
+                <th>Método de Pago</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let sale of sales().slice(0, 5)">
+                <td>#{{ sale.idVenta }}</td>
+                <td>{{ sale.clienteNombre }}</td>
+                <td>{{ sale.fecha | date:'medium' }}</td>
+                <td>${{ sale.total | number }}</td>
+                <td><span class="status-badge success">Tarjeta de Crédito</span></td>
+              </tr>
+              <tr *ngIf="sales().length === 0">
+                <td colspan="5" style="text-align: center; color: #666; padding: 2rem;">No se registran ventas recientes.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- CLIENTES TAB -->
+    <div *ngSwitchCase="'clientes'" class="tab-content fade-in">
+      <section class="recent-activity">
+        <div class="card-header">
+          <h2>Clientes Registrados</h2>
+        </div>
+        <div class="activity-table-wrapper">
+          <table class="activity-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nombre Completo</th>
+                <th>Documento</th>
+                <th>Teléfono</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let client of clients()">
+                <td>#{{ client.idCliente }}</td>
+                <td>{{ client.profile?.nombre }} {{ client.profile?.apellidos }}</td>
+                <td>{{ client.profile?.tipoDocumento }} {{ client.profile?.numDocumento }}</td>
+                <td>{{ client.profile?.telefono || 'N/A' }}</td>
+                <td><span class="status-badge success">ACTIVO</span></td>
+              </tr>
+              <tr *ngIf="clients().length === 0">
+                <td colspan="5" style="text-align: center; color: #666; padding: 2rem;">No hay clientes registrados en el sistema.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- VENTAS TAB -->
+    <div *ngSwitchCase="'ventas'" class="tab-content fade-in">
+      <section class="recent-activity">
+        <div class="card-header">
+          <h2>Historial Completo de Ventas</h2>
+        </div>
+        <div class="activity-table-wrapper">
+          <table class="activity-table">
+            <thead>
+              <tr>
+                <th>Factura ID</th>
+                <th>Cliente</th>
+                <th>Fecha / Hora</th>
+                <th>Monto Total</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let sale of sales()">
+                <td>#{{ sale.idVenta }}</td>
+                <td>{{ sale.clienteNombre }}</td>
+                <td>{{ sale.fecha | date:'medium' }}</td>
+                <td>${{ sale.total | number }} COP</td>
+                <td><span class="status-badge success">Completado</span></td>
+              </tr>
+              <tr *ngIf="sales().length === 0">
+                <td colspan="5" style="text-align: center; color: #666; padding: 2rem;">No hay ventas registradas en el sistema.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>

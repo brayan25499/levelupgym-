@@ -1,0 +1,134 @@
+<section class="auth-section">
+  <div class="auth-bg">
+    <div class="auth-pattern"></div>
+  </div>
+  <div class="auth-container">
+    <div class="auth-brand">
+      <span class="brand-level">LEVEL</span><span class="brand-up">UP</span><span class="brand-gym">GYM</span>
+    </div>
+    <div class="auth-card">
+      <div class="auth-header">
+        <h2>ÚNETE A LA <span class="accent">FAMILIA</span></h2>
+        <p>Primera semana completamente gratis</p>
+      </div>
+      <form class="auth-form" [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+        <div class="error-banner" *ngIf="errorMessage">
+          {{errorMessage}}
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>NOMBRE</label>
+            <input type="text" class="form-input" placeholder="Tu nombre" formControlName="nombre" [class.invalid]="registerForm.get('nombre')?.invalid && registerForm.get('nombre')?.touched">
+            <div class="error-msg" *ngIf="registerForm.get('nombre')?.invalid && registerForm.get('nombre')?.touched">
+              Obligatorio, sin caracteres especiales
+            </div>
+          </div>
+          <div class="form-group">
+            <label>APELLIDO</label>
+            <input type="text" class="form-input" placeholder="Tu apellido" formControlName="apellidos" [class.invalid]="registerForm.get('apellidos')?.invalid && registerForm.get('apellidos')?.touched">
+            <div class="error-msg" *ngIf="registerForm.get('apellidos')?.invalid && registerForm.get('apellidos')?.touched">
+              Obligatorio, sin caracteres especiales
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>EMAIL</label>
+          <input type="email" class="form-input" placeholder="tu@email.com" formControlName="email" [class.invalid]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">
+          <div class="error-msg" *ngIf="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">
+            Email válido obligatorio (debe terminar en .com)
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>CONTRASEÑA</label>
+            <input type="password" class="form-input" placeholder="Min. 8 caracteres" formControlName="password" [class.invalid]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched">
+            <div class="error-msg" *ngIf="registerForm.get('password')?.invalid && registerForm.get('password')?.touched">
+              Mínimo 8 caracteres, 1 Mayus, 1 Minus, 1 Num
+            </div>
+          </div>
+          <div class="form-group">
+            <label>CONFIRMAR CONTRASEÑA</label>
+            <input type="password" class="form-input" placeholder="Repite contraseña" formControlName="confirmPassword" [class.invalid]="(registerForm.get('confirmPassword')?.invalid || registerForm.hasError('passwordMismatch')) && registerForm.get('confirmPassword')?.touched">
+            <div class="error-msg" *ngIf="registerForm.hasError('passwordMismatch') && registerForm.get('confirmPassword')?.touched">
+              Las contraseñas no coinciden
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>TIPO DOC</label>
+                <select class="form-input" formControlName="tipoDocumento">
+                    <option value="CC">CC</option>
+                    <option value="TI">TI</option>
+                    <option value="PP">PP</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>NÚMERO DOC</label>
+                <input type="text" class="form-input" formControlName="numDocumento" placeholder="Máx 10 dígitos" maxlength="10" [class.invalid]="registerForm.get('numDocumento')?.invalid && registerForm.get('numDocumento')?.touched">
+                <div class="error-msg" *ngIf="registerForm.get('numDocumento')?.invalid && registerForm.get('numDocumento')?.touched">
+                  Obligatorio, solo números, máx 10
+                </div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>SEXO</label>
+                <select class="form-input" formControlName="sexo" [class.invalid]="registerForm.get('sexo')?.invalid && registerForm.get('sexo')?.touched">
+                    <option value="">Selecciona</option>
+                    <option value="Masculino">Masculino</option>
+                    <option value="Femenino">Femenino</option>
+                </select>
+                <div class="error-msg" *ngIf="registerForm.get('sexo')?.invalid && registerForm.get('sexo')?.touched">
+                  Campo obligatorio
+                </div>
+            </div>
+            <div class="form-group">
+                <label>TELÉFONO</label>
+                <input type="text" class="form-input" formControlName="telefono" placeholder="3001234567" maxlength="10" [class.invalid]="registerForm.get('telefono')?.invalid && registerForm.get('telefono')?.touched">
+                <div class="error-msg" *ngIf="registerForm.get('telefono')?.invalid && registerForm.get('telefono')?.touched">
+                  Campo obligatorio, solo números de máx 10 dígitos
+                </div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>PESO (KG)</label>
+                <input type="text" class="form-input" formControlName="peso" placeholder="75" maxlength="3" [class.invalid]="registerForm.get('peso')?.invalid && registerForm.get('peso')?.touched">
+                <div class="error-msg" *ngIf="registerForm.get('peso')?.invalid && registerForm.get('peso')?.touched">
+                  Obligatorio, máx 3 dígitos
+                </div>
+            </div>
+            <div class="form-group">
+                <label>ESTATURA (CM)</label>
+                <input type="text" class="form-input" formControlName="estatura" placeholder="175" maxlength="3" [class.invalid]="registerForm.get('estatura')?.invalid && registerForm.get('estatura')?.touched">
+                <div class="error-msg" *ngIf="registerForm.get('estatura')?.invalid && registerForm.get('estatura')?.touched">
+                  Obligatorio, máx 3 dígitos
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+          <label class="checkbox-label" [class.invalid-text]="registerForm.get('terminos')?.invalid && registerForm.get('terminos')?.touched">
+            <input type="checkbox" formControlName="terminos"> Acepto los <a href="#" class="accent">términos y condiciones</a>
+          </label>
+          <div class="error-msg" *ngIf="registerForm.get('terminos')?.invalid && registerForm.get('terminos')?.touched">
+            Debes aceptar términos y condiciones
+          </div>
+        </div>
+
+        <button type="submit" class="btn-primary" style="width:100%; padding: 1rem;" [disabled]="isLoading">
+          <span *ngIf="!isLoading">CREAR MI CUENTA</span>
+          <span *ngIf="isLoading">PROCESANDO...</span>
+        </button>
+      </form>
+      <p class="auth-switch">¿Ya tienes cuenta? <a routerLink="/login">Inicia sesión</a></p>
+    </div>
+  </div>
+</section>

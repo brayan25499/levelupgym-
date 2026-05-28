@@ -1,0 +1,215 @@
+.admin-dashboard {
+  display: flex;
+  min-height: 100vh;
+  background: var(--black);
+}
+
+/* Sidebar */
+.sidebar {
+  width: 280px;
+  background: var(--dark);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 2rem;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.sidebar-header {
+  margin-bottom: 3rem;
+  text-align: center;
+}
+
+.brand-level { font-family: var(--font-display); font-size: 1.5rem; color: var(--white); }
+.brand-up { font-family: var(--font-display); font-size: 1.5rem; color: var(--red); }
+.brand-gym { font-family: var(--font-display); font-size: 1rem; color: var(--gray); }
+
+.role-badge {
+  font-family: var(--font-heading);
+  font-size: 0.65rem;
+  letter-spacing: 3px;
+  color: var(--red);
+  margin-top: 0.5rem;
+  font-weight: 700;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.sidebar-nav button {
+  padding: 1rem;
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+  color: var(--gray);
+  font-family: var(--font-heading);
+  font-weight: 600;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: var(--transition);
+  cursor: pointer;
+  outline: none;
+}
+
+.sidebar-nav button.active, .sidebar-nav button:hover {
+  color: var(--white);
+  background: rgba(220, 20, 60, 0.1);
+  border-left: 3px solid var(--red);
+}
+
+.btn-logout {
+  width: 100%;
+  padding: 1rem;
+  background: transparent;
+  color: var(--gray);
+  border: 1px solid var(--border);
+  font-family: var(--font-heading);
+  font-weight: 700;
+  transition: var(--transition);
+}
+
+.btn-logout:hover {
+  color: var(--red);
+  border-color: var(--red);
+}
+
+/* Main Content */
+.dashboard-content {
+  flex: 1;
+  padding: 3rem;
+  overflow-y: auto;
+}
+
+.content-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 3rem;
+}
+
+.content-header h1 {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  letter-spacing: 2px;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  color: var(--gray);
+}
+
+.avatar {
+  width: 40px; height: 40px;
+  background: var(--red);
+  color: var(--white);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+/* Stats Cards */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+
+.stat-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  padding: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: var(--transition);
+}
+
+.stat-card:hover { border-color: var(--red); transform: translateY(-5px); }
+
+.stat-info .label {
+  font-family: var(--font-heading);
+  font-size: 0.75rem;
+  color: var(--gray);
+  letter-spacing: 1px;
+}
+
+.stat-info .value {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  margin: 0.5rem 0;
+}
+
+.trend { font-size: 0.75rem; }
+.trend.positive { color: #00c864; }
+.trend.negative { color: var(--red); }
+
+.stat-icon { font-size: 2rem; }
+
+/* Recent Activity */
+.recent-activity {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  padding: 2rem;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.card-header h2 { font-family: var(--font-display); font-size: 1.5rem; }
+
+.btn-text { background: none; color: var(--red); font-weight: 600; }
+
+.activity-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.activity-table th {
+  text-align: left;
+  padding: 1rem;
+  color: var(--gray);
+  font-family: var(--font-heading);
+  font-size: 0.8rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.activity-table td {
+  padding: 1.25rem 1rem;
+  font-size: 0.9rem;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.status-badge.success { background: rgba(0, 200, 100, 0.1); color: #00c864; }
+.status-badge.pending { background: rgba(255, 215, 0, 0.1); color: var(--gold); }
+
+@media (max-width: 1024px) {
+  .stats-grid { grid-template-columns: 1fr; }
+  .sidebar { width: 80px; padding: 1rem; }
+  .sidebar-nav button span, .role-badge, .sidebar-header { display: none; }
+  .sidebar-nav button { justify-content: center; }
+}

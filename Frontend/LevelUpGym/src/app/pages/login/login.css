@@ -1,0 +1,99 @@
+.auth-section {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(var(--nav-h) + 2rem) 2rem 3rem;
+  position: relative;
+}
+
+.auth-bg {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 30% 50%, rgba(220,20,60,0.08) 0%, transparent 60%),
+    radial-gradient(ellipse at 70% 50%, rgba(139,0,0,0.06) 0%, transparent 60%);
+}
+
+.auth-pattern {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(rgba(220,20,60,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(220,20,60,0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.auth-container {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 480px;
+}
+
+.auth-brand {
+  font-family: var(--font-display);
+  font-size: 2.2rem;
+  letter-spacing: 4px;
+  text-align: center;
+  margin-bottom: 2rem;
+  animation: logoPulse 2.5s infinite alternate ease-in-out;
+  text-shadow: 0 0 10px rgba(220, 20, 60, 0.5);
+}
+
+@keyframes logoPulse {
+  0% {
+    transform: scale(0.98);
+    text-shadow: 0 0 5px rgba(220, 20, 60, 0.4), 0 0 10px rgba(220, 20, 60, 0.2);
+  }
+  100% {
+    transform: scale(1.03);
+    text-shadow: 0 0 15px rgba(255, 23, 68, 0.8), 0 0 30px rgba(255, 23, 68, 0.4);
+  }
+}
+
+.auth-card {
+  background: var(--dark);
+  border: 1px solid var(--border);
+  padding: 3rem;
+}
+
+.auth-header { text-align: center; margin-bottom: 2rem; }
+.auth-header h2 { font-family: var(--font-display); font-size: 2rem; letter-spacing: 2px; margin-bottom: 0.4rem; }
+
+.form-group { margin-bottom: 1.25rem; }
+.form-group label {
+  display: block;
+  font-family: var(--font-heading);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--gray);
+  margin-bottom: 0.5rem;
+}
+
+.form-input {
+  width: 100%;
+  background: var(--dark-3);
+  border: 1px solid var(--border);
+  color: var(--white);
+  padding: 0.9rem 1.2rem;
+  font-family: var(--font-body);
+}
+
+.auth-divider {
+  text-align: center;
+  position: relative;
+  margin: 1.5rem 0;
+  color: var(--gray);
+  font-family: var(--font-heading);
+}
+
+.social-auth { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+.social-btn {
+  background: var(--dark-3);
+  border: 1px solid var(--border);
+  color: var(--gray-light);
+  padding: 0.8rem;
+}
+
+.auth-switch { text-align: center; font-size: 0.85rem; color: var(--gray); }
+.auth-switch a { color: var(--red); font-weight: 600; }

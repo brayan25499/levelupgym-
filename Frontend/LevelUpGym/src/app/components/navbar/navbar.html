@@ -1,0 +1,27 @@
+<nav class="navbar" id="navbar" [class.scrolled]="isScrolled">
+  <div class="nav-brand">
+    <span class="brand-level">LEVEL</span><span class="brand-up">UP</span><span class="brand-gym">GYM</span>
+  </div>
+  <div class="nav-links" id="navLinks">
+    <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-link">INICIO</a>
+    <a routerLink="/about" routerLinkActive="active" class="nav-link">NOSOTROS</a>
+    <a routerLink="/plans" routerLinkActive="active" class="nav-link">PLANES</a>
+    <a routerLink="/store" routerLinkActive="active" class="nav-link">TIENDA</a>
+    
+    <ng-container *ngIf="!authService.currentUser()">
+      <a routerLink="/login" routerLinkActive="active" class="nav-link">LOGIN</a>
+      <a routerLink="/register" class="nav-btn">ÚNETE</a>
+    </ng-container>
+
+    <ng-container *ngIf="authService.currentUser()">
+      <a [routerLink]="['/dashboard']" [queryParams]="{section: 'carrito'}" class="nav-link cart-link">
+        🛒 <span class="badge" *ngIf="cartService.getTotalItems() > 0">{{ cartService.getTotalItems() }}</span>
+      </a>
+      <a routerLink="/dashboard" routerLinkActive="active" class="nav-link">PANEL</a>
+      <a (click)="logout()" class="nav-btn">SALIR</a>
+    </ng-container>
+  </div>
+  <button class="hamburger" id="hamburger">
+    <span></span><span></span><span></span>
+  </button>
+</nav>

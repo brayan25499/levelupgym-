@@ -1,0 +1,51 @@
+<div id="page-plans" class="page">
+  <section class="page-hero">
+    <div class="page-hero-bg"></div>
+    <div class="page-hero-content">
+      <div class="section-tag">MEMBRESIAS</div>
+      <h1 class="page-title">ELIGE TU <span class="accent">PLAN</span></h1>
+    </div>
+  </section>
+
+  <section class="plans-section">
+    <div class="container">
+      <div class="toggle-billing">
+        <span class="toggle-opt active" id="toggle-monthly">MENSUAL</span>
+        <div class="toggle-switch"><div class="toggle-thumb" id="toggle-thumb"></div></div>
+        <span class="toggle-opt" id="toggle-annual">ANUAL <span class="save-badge">AHORRA 20%</span></span>
+      </div>
+
+      <div class="plans-grid">
+        <div class="plan-card" *ngFor="let plan of plans()" [class.featured-plan]="plan.nombre.includes('Warrior') || plan.nombre.includes('Elite')">
+          <div class="popular-badge" *ngIf="plan.nombre.includes('Warrior') || plan.nombre.includes('Elite')">MÁS POPULAR</div>
+          <div class="plan-header">
+            <div class="plan-icon">
+              {{ plan.nombre.includes('Basic') ? '⚡' : (plan.nombre.includes('Elite') ? '🔥' : '👑') }}
+            </div>
+            <h3 class="plan-name">{{ plan.nombre }}</h3>
+            <p class="plan-desc">{{ plan.descripcion }}</p>
+          </div>
+          <div class="plan-price">
+            <span class="currency">$</span>
+            <span class="amount">{{ plan.precio | number }}</span>
+            <span class="period">/mes</span>
+          </div>
+          <ul class="plan-features">
+            <li class="included">✓ Acceso a sala de pesas</li>
+            <li class="included">✓ Clases grupales</li>
+            <li class="included">✓ Vestidores y duchas</li>
+            <li class="included">✓ App LevelUp básica</li>
+          </ul>
+          <button class="plan-btn" [class.btn-primary]="plan.nombre.includes('Warrior')" (click)="buyPlan(plan.idMembresia)">
+            ELEGIR PLAN
+          </button>
+        </div>
+      </div>
+
+      <div class="plans-guarantee">
+        <span class="guarantee-icon">🛡️</span>
+        <p><strong>Garantía de 30 días</strong> — Si no estás satisfecho, te devolvemos tu dinero. Sin preguntas.</p>
+      </div>
+    </div>
+  </section>
+</div>

@@ -1,0 +1,32 @@
+<app-navbar *ngIf="showLayout()" />
+
+<main>
+  <router-outlet />
+</main>
+
+<app-footer *ngIf="showLayout()" />
+
+<!-- GLOBAL ALERT OVERLAY -->
+<div class="alert-overlay" *ngIf="alertService.currentAlert()">
+  <div class="alert-box" [ngClass]="alertService.currentAlert()?.type || 'info'">
+    <div class="alert-icon-wrapper">
+      <span *ngIf="alertService.currentAlert()?.type === 'success'">✓</span>
+      <span *ngIf="alertService.currentAlert()?.type === 'error'">✕</span>
+      <span *ngIf="alertService.currentAlert()?.type === 'info'">ℹ</span>
+      <span *ngIf="alertService.currentAlert()?.type === 'confirm'">?</span>
+    </div>
+    <h2 class="alert-title">{{ alertService.currentAlert()?.title }}</h2>
+    <p class="alert-msg">{{ alertService.currentAlert()?.message }}</p>
+    
+    <div class="alert-buttons">
+      <ng-container *ngIf="alertService.currentAlert()?.type !== 'confirm'">
+        <button class="alert-btn btn-ok" (click)="handleOk()">ENTENDIDO</button>
+      </ng-container>
+      <ng-container *ngIf="alertService.currentAlert()?.type === 'confirm'">
+        <button class="alert-btn btn-no" (click)="handleNo()">CANCELAR</button>
+        <button class="alert-btn btn-yes" (click)="handleYes()">CONFIRMAR</button>
+      </ng-container>
+    </div>
+  </div>
+</div>
+

@@ -1,0 +1,79 @@
+.page-hero {
+  padding-top: calc(var(--nav-h) + 4rem);
+  padding-bottom: 4rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.page-hero-bg {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(220,20,60,0.1) 0%, transparent 70%);
+}
+.page-hero-content { position: relative; z-index: 2; }
+.page-title { font-family: var(--font-display); font-size: clamp(3rem, 8vw, 7rem); }
+
+.about-story { padding: 5rem 0; background: var(--dark); }
+.about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; }
+.about-text p { color: var(--gray-light); line-height: 1.8; margin-bottom: 1.5rem; }
+
+.value-item { display: flex; align-items: flex-start; gap: 1rem; margin-bottom: 1rem; }
+.value-icon { font-size: 1.5rem; flex-shrink: 0; }
+
+.about-card-stack { display: flex; flex-direction: column; gap: 1rem; }
+.about-stat-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  padding: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  transition: var(--transition);
+}
+.about-stat-card:hover { border-color: var(--red); transform: translateX(8px); }
+.about-stat-card.red { background: linear-gradient(135deg, rgba(220,20,60,0.2), rgba(139,0,0,0.1)); border-color: var(--red); }
+.big-num { font-family: var(--font-display); font-size: 3rem; color: var(--red); }
+
+.team-section { padding: 5rem 0; background: var(--black); }
+.team-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; }
+.team-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  padding: 2rem;
+  text-align: center;
+  transition: var(--transition);
+}
+.team-avatar {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-heading);
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin: 0 auto 1.25rem;
+  box-shadow: 0 0 30px rgba(220,20,60,0.3);
+}
+
+.contact-section { padding: 5rem 0; background: var(--dark); }
+.contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; }
+.contact-info { display: flex; flex-direction: column; gap: 2rem; }
+.contact-item { display: flex; align-items: flex-start; gap: 1.25rem; }
+
+.form-input {
+  width: 100%;
+  background: var(--dark-3);
+  border: 1px solid var(--border);
+  color: var(--white);
+  padding: 0.9rem 1.2rem;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 1024px) {
+  .team-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .about-grid, .contact-grid { grid-template-columns: 1fr; }
+}
