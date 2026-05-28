@@ -9,15 +9,19 @@
 
   <section class="plans-section">
     <div class="container">
-      <div class="toggle-billing">
-        <span class="toggle-opt active" id="toggle-monthly">MENSUAL</span>
-        <div class="toggle-switch"><div class="toggle-thumb" id="toggle-thumb"></div></div>
-        <span class="toggle-opt" id="toggle-annual">ANUAL <span class="save-badge">AHORRA 20%</span></span>
+      <div class="toggle-billing" (click)="toggleBilling()">
+        <span class="toggle-opt" [class.active]="!isAnnual()" id="toggle-monthly">MENSUAL</span>
+        <div class="toggle-switch">
+          <div class="toggle-thumb" [class.annual]="isAnnual()" id="toggle-thumb"></div>
+        </div>
+        <span class="toggle-opt" [class.active]="isAnnual()" id="toggle-annual">ANUAL <span class="save-badge">AHORRA 20%</span></span>
       </div>
 
       <div class="plans-grid">
-        <div class="plan-card" *ngFor="let plan of plans()" [class.featured-plan]="plan.nombre.includes('Warrior') || plan.nombre.includes('Elite')">
-          <div class="popular-badge" *ngIf="plan.nombre.includes('Warrior') || plan.nombre.includes('Elite')">MÁS POPULAR</div>
+        <div class="plan-card" *ngFor="let plan of plans()"
+          [class.featured-plan]="plan.nombre.includes('Warrior') || plan.nombre.includes('Elite')">
+          <div class="popular-badge" *ngIf="plan.nombre.includes('Warrior') || plan.nombre.includes('Elite')">MÁS
+            POPULAR</div>
           <div class="plan-header">
             <div class="plan-icon">
               {{ plan.nombre.includes('Basic') ? '⚡' : (plan.nombre.includes('Elite') ? '🔥' : '👑') }}
@@ -27,8 +31,8 @@
           </div>
           <div class="plan-price">
             <span class="currency">$</span>
-            <span class="amount">{{ plan.precio | number }}</span>
-            <span class="period">/mes</span>
+            <span class="amount">{{ (isAnnual() ? plan.precio * 0.8 : plan.precio) | number:'1.0-0' }}</span>
+            <span class="period">{{ isAnnual() ? '/mes (facturado anual)' : '/mes' }}</span>
           </div>
           <ul class="plan-features">
             <li class="included">✓ Acceso a sala de pesas</li>
@@ -36,16 +40,13 @@
             <li class="included">✓ Vestidores y duchas</li>
             <li class="included">✓ App LevelUp básica</li>
           </ul>
-          <button class="plan-btn" [class.btn-primary]="plan.nombre.includes('Warrior')" (click)="buyPlan(plan.idMembresia)">
+          <button class="plan-btn" [class.btn-primary]="plan.nombre.includes('Warrior')"
+            (click)="buyPlan(plan.idMembresia)">
             ELEGIR PLAN
           </button>
         </div>
       </div>
 
-      <div class="plans-guarantee">
-        <span class="guarantee-icon">🛡️</span>
-        <p><strong>Garantía de 30 días</strong> — Si no estás satisfecho, te devolvemos tu dinero. Sin preguntas.</p>
-      </div>
     </div>
   </section>
 </div>

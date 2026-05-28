@@ -1,5 +1,5 @@
 import { Component, HostListener, inject } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth';
 import { CartService } from '../../services/cart';
@@ -13,6 +13,7 @@ import { CartService } from '../../services/cart';
 export class NavbarComponent {
   authService = inject(AuthService);
   cartService = inject(CartService);
+  private router = inject(Router);
   isScrolled = false;
 
   @HostListener('window:scroll', [])
@@ -22,5 +23,6 @@ export class NavbarComponent {
 
   logout() {
     this.authService.logout();
+    this.router.navigate(['/login']);
   }
 }

@@ -16,6 +16,11 @@ export class PlansComponent implements OnInit {
   private router = inject(Router);
 
   plans = signal<Membership[]>([]);
+  isAnnual = signal<boolean>(false);
+
+  toggleBilling() {
+    this.isAnnual.set(!this.isAnnual());
+  }
 
   ngOnInit() {
     this.membershipService.getMemberships().subscribe({

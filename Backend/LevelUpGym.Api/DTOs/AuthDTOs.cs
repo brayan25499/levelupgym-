@@ -25,3 +25,10 @@ public class AuthResponse
     public string Email { get; set; } = null!;
     public string Token { get; set; } = null!;
 }
+
+public class ForgotPasswordRequest
+{
+    public string Email { get; set; } = null!;
+    public string NumDocumento { get; set; } = null!;
+    public string NewPassword { get; set; } = null!;
+}

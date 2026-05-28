@@ -17,7 +17,7 @@
           <input type="email" class="form-input" placeholder="tu@email.com" formControlName="email" required [class.invalid]="loginForm.get('email')?.invalid && loginForm.get('email')?.touched">
           <div class="error-msg" *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched">
             <span *ngIf="loginForm.get('email')?.errors?.['required']">El email es obligatorio</span>
-            <span *ngIf="loginForm.get('email')?.errors?.['email']">Formato de email inválido</span>
+            <span *ngIf="loginForm.get('email')?.errors?.['email'] || loginForm.get('email')?.errors?.['pattern']">El correo debe contener '@' y terminar en '.com'</span>
           </div>
         </div>
         <div class="form-group">
@@ -33,7 +33,7 @@
           <label class="checkbox-label">
             <input type="checkbox"> Recordarme
           </label>
-          <a href="#" class="forgot-link">¿Olvidaste tu contraseña?</a>
+          <a (click)="toggleForgotModal(true)" class="forgot-link" style="cursor: pointer;">¿Olvidaste tu contraseña?</a>
         </div>
         <button type="submit" class="btn-primary" style="width:100%; padding: 1rem;" [disabled]="loginForm.invalid">INICIAR SESIÓN</button>
       </form>
@@ -43,6 +43,35 @@
         <button class="social-btn"><span>f</span> Facebook</button>
       </div>
       <p class="auth-switch">¿No tienes cuenta? <a routerLink="/register">Regístrate gratis</a></p>
+    </div>
+  </div>
+
+  <!-- MODAL DE RECUPERAR CONTRASEÑA -->
+  <div class="modal-overlay" *ngIf="showForgotModal">
+    <div class="modal-card">
+      <button class="modal-close" (click)="toggleForgotModal(false)">&times;</button>
+      <div class="modal-header">
+        <h3>RECUPERAR</h3>
+        <p>Restablece tu contraseña verificando tu identidad con tu correo y número de documento registrado.</p>
+      </div>
+      <form class="auth-form" (ngSubmit)="onResetPassword()">
+        <div class="form-group">
+          <label>CORREO ELECTRÓNICO</label>
+          <input type="email" class="form-input" placeholder="tu@email.com" name="forgotEmail" [(ngModel)]="forgotEmail" required autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label>NÚMERO DE DOCUMENTO</label>
+          <input type="text" class="form-input" placeholder="Documento de identidad" name="forgotDoc" [(ngModel)]="forgotDoc" required autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label>NUEVA CONTRASEÑA</label>
+          <input type="password" class="form-input" placeholder="Mínimo 8 caracteres" name="forgotNewPassword" [(ngModel)]="forgotNewPassword" required autocomplete="new-password">
+        </div>
+        <button type="submit" class="btn-primary" style="width:100%; padding: 1rem; margin-top: 1rem;" [disabled]="isResetting">
+          <span *ngIf="!isResetting">ESTABLECER CONTRASEÑA</span>
+          <span *ngIf="isResetting">PROCESANDO...</span>
+        </button>
+      </form>
     </div>
   </div>
 </section>

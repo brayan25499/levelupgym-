@@ -117,4 +117,32 @@ public class AuthController : ControllerBase
             Token = _jwtService.CreateToken(auth)
         };
     }
+
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword(ForgotPasswordRequest request)
+    {
+        var email = request.Email.Trim().ToLower();
+        var numDoc = request.NumDocumento.Trim();
+        var newPassword = request.NewPassword.Trim();
+
+        var auth = await _context.Auths.FirstOrDefaultAsync(u => u.Email == email);
+        if (auth == null)
+        {
+            return BadRequest("El correo electrónico no está registrado.");
+        }
+
+        var profile = await _context.Profiles.FirstOrDefaultAsync(p => p.IdProfile == auth.IdProfile);
+        if (profile == null || profile.NumDocumento != numDoc)
+        {
+            return BadRequest("El número de documento no coincide con el registrado para esta cuenta.");
+        }
+
+        using var hmac = new HMACSHA512();
+        auth.Password = hmac.ComputeHash(Encoding.UTF8.GetBytes(newPassword));
+        auth.PasswordSalt = hmac.Key;
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = "Contraseña restablecida exitosamente." });
+    }
 }

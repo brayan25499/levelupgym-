@@ -6,6 +6,7 @@
   justify-content: center;
   gap: 1.5rem;
   margin-bottom: 3rem;
+  cursor: pointer;
 }
 
 .toggle-opt {
@@ -17,6 +18,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  user-select: none;
 }
 
 .toggle-opt.active { color: var(--white); }
@@ -44,6 +46,10 @@
   background: var(--red);
   border-radius: 50%;
   transition: var(--transition);
+}
+
+.toggle-thumb.annual {
+  left: 27px;
 }
 
 .plans-grid {

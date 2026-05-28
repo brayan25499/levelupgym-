@@ -21,6 +21,34 @@ export class StoreComponent implements OnInit {
 
   products = signal<Product[]>([]);
   loading = signal(true);
+  selectedCategory = signal<string>('TODOS');
+
+  getProductCategory(product: Product): string {
+    if (product.idCategoria === 1) return 'PROTEÍNAS';
+    if (product.idCategoria === 2) return 'SUPLEMENTOS';
+    if (product.idCategoria === 3) return 'ACCESORIOS';
+
+    const name = product.nombre.toLowerCase();
+    if (name.includes('whey') || name.includes('proteina') || name.includes('proteína')) {
+      return 'PROTEÍNAS';
+    }
+    if (name.includes('creatina') || name.includes('pre-entreno') || name.includes('aminoacidos') || name.includes('aminoácidos') || name.includes('bcaa') || name.includes('multivitaminico') || name.includes('multivitamínico') || name.includes('caps')) {
+      return 'SUPLEMENTOS';
+    }
+    if (name.includes('shaker') || name.includes('mezclador') || name.includes('cinturon') || name.includes('cinturón') || name.includes('strap') || name.includes('agarre') || name.includes('bolso') || name.includes('mochila')) {
+      return 'ACCESORIOS';
+    }
+    return 'SUPLEMENTOS'; // Default
+  }
+
+  filteredProducts() {
+    const cat = this.selectedCategory();
+    const allProds = this.products();
+    if (cat === 'TODOS') {
+      return allProds;
+    }
+    return allProds.filter(p => this.getProductCategory(p) === cat);
+  }
 
   ngOnInit() {
     this.productService.getProducts().subscribe({

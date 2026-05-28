@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth';
@@ -10,7 +10,7 @@ import { CommonModule } from '@angular/common';
   templateUrl: './register.html',
   styleUrl: './register.css',
 })
-export class RegisterComponent {
+export class RegisterComponent implements OnInit {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
   private router = inject(Router);
@@ -34,6 +34,23 @@ export class RegisterComponent {
   }, {
     validators: this.passwordMatchValidator
   });
+
+  ngOnInit() {
+    this.registerForm.reset({
+      nombre: '',
+      apellidos: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+      tipoDocumento: 'CC',
+      numDocumento: '',
+      sexo: '',
+      telefono: '',
+      peso: null,
+      estatura: null,
+      terminos: false
+    });
+  }
 
   passwordMatchValidator(group: any) {
     const pass = group.get('password')?.value;

@@ -44,6 +44,10 @@ export class AuthService {
     this.currentUser.set(null);
   }
 
+  forgotPassword(data: any): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/forgot-password`, data);
+  }
+
   getToken(): string | null {
     return this.currentUser()?.token || null;
   }

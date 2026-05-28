@@ -11,7 +11,7 @@
         <h2>ÚNETE A LA <span class="accent">FAMILIA</span></h2>
         <p>Primera semana completamente gratis</p>
       </div>
-      <form class="auth-form" [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+      <form class="auth-form" [formGroup]="registerForm" (ngSubmit)="onSubmit()" autocomplete="off">
         <div class="error-banner" *ngIf="errorMessage">
           {{errorMessage}}
         </div>
@@ -19,14 +19,14 @@
         <div class="form-row">
           <div class="form-group">
             <label>NOMBRE</label>
-            <input type="text" class="form-input" placeholder="Tu nombre" formControlName="nombre" [class.invalid]="registerForm.get('nombre')?.invalid && registerForm.get('nombre')?.touched">
+            <input type="text" class="form-input" placeholder="Tu nombre" formControlName="nombre" autocomplete="off" [class.invalid]="registerForm.get('nombre')?.invalid && registerForm.get('nombre')?.touched">
             <div class="error-msg" *ngIf="registerForm.get('nombre')?.invalid && registerForm.get('nombre')?.touched">
               Obligatorio, sin caracteres especiales
             </div>
           </div>
           <div class="form-group">
             <label>APELLIDO</label>
-            <input type="text" class="form-input" placeholder="Tu apellido" formControlName="apellidos" [class.invalid]="registerForm.get('apellidos')?.invalid && registerForm.get('apellidos')?.touched">
+            <input type="text" class="form-input" placeholder="Tu apellido" formControlName="apellidos" autocomplete="off" [class.invalid]="registerForm.get('apellidos')?.invalid && registerForm.get('apellidos')?.touched">
             <div class="error-msg" *ngIf="registerForm.get('apellidos')?.invalid && registerForm.get('apellidos')?.touched">
               Obligatorio, sin caracteres especiales
             </div>
@@ -35,7 +35,7 @@
 
         <div class="form-group">
           <label>EMAIL</label>
-          <input type="email" class="form-input" placeholder="tu@email.com" formControlName="email" [class.invalid]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">
+          <input type="email" class="form-input" placeholder="tu@email.com" formControlName="email" autocomplete="off" [class.invalid]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">
           <div class="error-msg" *ngIf="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">
             Email válido obligatorio (debe terminar en .com)
           </div>
@@ -44,14 +44,14 @@
         <div class="form-row">
           <div class="form-group">
             <label>CONTRASEÑA</label>
-            <input type="password" class="form-input" placeholder="Min. 8 caracteres" formControlName="password" [class.invalid]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched">
+            <input type="password" class="form-input" placeholder="Min. 8 caracteres" formControlName="password" autocomplete="new-password" [class.invalid]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched">
             <div class="error-msg" *ngIf="registerForm.get('password')?.invalid && registerForm.get('password')?.touched">
               Mínimo 8 caracteres, 1 Mayus, 1 Minus, 1 Num
             </div>
           </div>
           <div class="form-group">
             <label>CONFIRMAR CONTRASEÑA</label>
-            <input type="password" class="form-input" placeholder="Repite contraseña" formControlName="confirmPassword" [class.invalid]="(registerForm.get('confirmPassword')?.invalid || registerForm.hasError('passwordMismatch')) && registerForm.get('confirmPassword')?.touched">
+            <input type="password" class="form-input" placeholder="Repite contraseña" formControlName="confirmPassword" autocomplete="new-password" [class.invalid]="(registerForm.get('confirmPassword')?.invalid || registerForm.hasError('passwordMismatch')) && registerForm.get('confirmPassword')?.touched">
             <div class="error-msg" *ngIf="registerForm.hasError('passwordMismatch') && registerForm.get('confirmPassword')?.touched">
               Las contraseñas no coinciden
             </div>

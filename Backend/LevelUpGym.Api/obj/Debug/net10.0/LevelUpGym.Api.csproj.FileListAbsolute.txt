@@ -315,3 +315,4 @@ C:\Users\ADSO\Desktop\ensayolevelupgym\Backend\LevelUpGym.Api\obj\Debug\net10.0\
 C:\Users\ADSO\Desktop\ensayolevelupgym\Backend\LevelUpGym.Api\obj\Debug\net10.0\LevelUpGym.Api.genruntimeconfig.cache
 C:\Users\ADSO\Desktop\ensayolevelupgym\Backend\LevelUpGym.Api\obj\Debug\net10.0\ref\LevelUpGym.Api.dll
 C:\Users\ADSO\Desktop\ensayolevelupgym\Backend\LevelUpGym.Api\bin\Debug\net10.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
+C:\Users\ADSO\Desktop\ensayolevelupgym\Backend\LevelUpGym.Api\obj\Debug\net10.0\LevelUpGym.Api.sourcelink.json
