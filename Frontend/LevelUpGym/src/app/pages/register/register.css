@@ -133,3 +133,30 @@
   border-color: var(--red);
   box-shadow: 0 0 0 2px rgba(220, 20, 60, 0.2);
 }
+
+/* Phone Input Group Styles */
+.phone-input-group {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.phone-code-select {
+  width: 100px;
+  flex-shrink: 0;
+  font-size: 0.95rem;
+}
+
+.phone-number-input {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Error messages for specific fields */
+.error-msg span {
+  display: block;
+}
+
+.error-msg span:not(:last-child)::after {
+  content: "";
+}
+

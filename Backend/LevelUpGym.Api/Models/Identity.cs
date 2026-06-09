@@ -33,7 +33,7 @@ public class Profile : BaseEntity
     [StringLength(9)]
     public string? Sexo { get; set; }
     
-    [StringLength(20)]
+    [StringLength(30)]
     public string? Telefono { get; set; }
 
     public decimal? Peso { get; set; } // in kg

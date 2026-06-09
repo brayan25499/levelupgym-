@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("LevelUpGym.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f56789a96609e5ade67a933437b14bcfbe609a56")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+49545bc820f0db51e7d43792c99e6fb5bfe781d1")]
 [assembly: System.Reflection.AssemblyProductAttribute("LevelUpGym.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("LevelUpGym.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -16,8 +16,8 @@ public class RegisterRequest
     public string NumDocumento { get; set; } = null!;
     public string? Sexo { get; set; }
     public string? Telefono { get; set; }
-    public decimal Peso { get; set; }
-    public decimal Estatura { get; set; }
+    public decimal? Peso { get; set; }
+    public decimal? Estatura { get; set; }
 }
 
 public class AuthResponse
