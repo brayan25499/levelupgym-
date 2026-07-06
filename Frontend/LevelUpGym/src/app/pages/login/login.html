@@ -14,62 +14,90 @@
       <form class="auth-form" [formGroup]="loginForm" (ngSubmit)="onSubmit()">
         <div class="form-group">
           <label>EMAIL</label>
-          <input type="email" class="form-input" placeholder="tu@email.com" formControlName="email" required [class.invalid]="loginForm.get('email')?.invalid && loginForm.get('email')?.touched">
+          <input type="email" class="form-input" placeholder="tu@email.com" formControlName="email" required [class.invalid]="loginForm.get('email')?.invalid && loginForm.get('email')?.touched" (keydown.space)="$event.preventDefault()">
           <div class="error-msg" *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched">
             <span *ngIf="loginForm.get('email')?.errors?.['required']">El email es obligatorio</span>
-            <span *ngIf="loginForm.get('email')?.errors?.['email'] || loginForm.get('email')?.errors?.['pattern']">El correo debe contener '@' y terminar en '.com'</span>
+            <span *ngIf="loginForm.get('email')?.errors?.['email'] || loginForm.get('email')?.errors?.['pattern']">El correo debe contener '@' y terminar en '.com' sin espacios</span>
           </div>
         </div>
         <div class="form-group">
           <label>CONTRASEÑA</label>
-          <div class="input-with-icon">
-            <input type="password" class="form-input" placeholder="••••••••" formControlName="password" required [class.invalid]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">
+          <div class="input-with-icon" style="position: relative; display: flex; align-items: center;">
+            <input [type]="showPassword ? 'text' : 'password'" class="form-input" placeholder="••••••••" formControlName="password" required [class.invalid]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched" style="width: 100%; padding-right: 2.5rem;" (keydown.space)="$event.preventDefault()">
+            <button type="button" (click)="togglePasswordVisibility()" class="toggle-password-btn" style="position: absolute; right: 10px; background: transparent; border: none; color: #a0aec0; cursor: pointer; outline: none; font-size: 1.1rem; padding: 0;">
+              {{ showPassword ? '👁️' : '🔒' }}
+            </button>
           </div>
           <div class="error-msg" *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">
             <span *ngIf="loginForm.get('password')?.errors?.['required']">La contraseña es obligatoria</span>
+            <span *ngIf="loginForm.get('password')?.errors?.['minlength']">Mínimo 8 caracteres</span>
+            <span *ngIf="loginForm.get('password')?.errors?.['maxlength']">Máximo 64 caracteres</span>
           </div>
         </div>
         <div class="form-options">
           <label class="checkbox-label">
-            <input type="checkbox"> Recordarme
+            <input type="checkbox" formControlName="rememberMe"> Recordarme
           </label>
           <a (click)="toggleForgotModal(true)" class="forgot-link" style="cursor: pointer;">¿Olvidaste tu contraseña?</a>
         </div>
-        <button type="submit" class="btn-primary" style="width:100%; padding: 1rem;" [disabled]="loginForm.invalid">INICIAR SESIÓN</button>
+        <button type="submit" class="btn-primary" style="width:100%; padding: 1rem; position: relative;" [disabled]="loginForm.invalid || isLoading">
+          <span *ngIf="!isLoading">INICIAR SESIÓN</span>
+          <span *ngIf="isLoading" class="spinner-inline">PROCESANDO...</span>
+        </button>
       </form>
-      <div class="auth-divider"><span>O CONTINÚA CON</span></div>
-      <div class="social-auth">
-        <button class="social-btn"><span>G</span> Google</button>
-        <button class="social-btn"><span>f</span> Facebook</button>
+      
+      <div class="auth-divider"><span>O ENTRA CON GOOGLE</span></div>
+      
+      <!-- Google Identity Services Sign-in Button Container -->
+      <div class="google-btn-wrapper" style="margin-top: 1rem; min-height: 40px; display: flex; justify-content: center;">
+        <div id="google-btn-container" style="width: 100%;"></div>
       </div>
-      <p class="auth-switch">¿No tienes cuenta? <a routerLink="/register">Regístrate gratis</a></p>
+      
+      <p class="auth-switch" style="margin-top: 1.5rem;">¿No tienes cuenta? <a routerLink="/register">Regístrate gratis</a></p>
     </div>
   </div>
 
-  <!-- MODAL DE RECUPERAR CONTRASEÑA -->
+  <!-- MODAL DE SOLICITAR ENLACE DE RECUPERACIÓN (Paso 1) -->
   <div class="modal-overlay" *ngIf="showForgotModal">
     <div class="modal-card">
       <button class="modal-close" (click)="toggleForgotModal(false)">&times;</button>
       <div class="modal-header">
         <h3>RECUPERAR</h3>
-        <p>Restablece tu contraseña verificando tu identidad con tu correo y número de documento registrado.</p>
+        <p>Ingresa tu correo electrónico registrado y te enviaremos un enlace seguro para restablecer tu contraseña.</p>
       </div>
-      <form class="auth-form" (ngSubmit)="onResetPassword()">
+      <form class="auth-form" (ngSubmit)="onRequestResetLink()">
         <div class="form-group">
           <label>CORREO ELECTRÓNICO</label>
           <input type="email" class="form-input" placeholder="tu@email.com" name="forgotEmail" [(ngModel)]="forgotEmail" required autocomplete="off">
         </div>
-        <div class="form-group">
-          <label>NÚMERO DE DOCUMENTO</label>
-          <input type="text" class="form-input" placeholder="Documento de identidad" name="forgotDoc" [(ngModel)]="forgotDoc" required autocomplete="off">
-        </div>
+        <button type="submit" class="btn-primary" style="width:100%; padding: 1rem; margin-top: 1rem;" [disabled]="isSendingEmail">
+          <span *ngIf="!isSendingEmail">ENVIAR ENLACE DE RECUPERACIÓN 📧</span>
+          <span *ngIf="isSendingEmail">ENVIANDO CORREO...</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL DE RESTABLECER CONTRASEÑA CON TOKEN (Paso 2) -->
+  <div class="modal-overlay" *ngIf="showResetModal">
+    <div class="modal-card">
+      <button class="modal-close" (click)="showResetModal = false; recoveryToken = ''">&times;</button>
+      <div class="modal-header">
+        <h3>NUEVA CONTRASEÑA</h3>
+        <p>Introduce tu nueva contraseña segura para recuperar el acceso a tu cuenta.</p>
+      </div>
+      <form class="auth-form" (ngSubmit)="onResetPasswordWithToken()">
         <div class="form-group">
           <label>NUEVA CONTRASEÑA</label>
-          <input type="password" class="form-input" placeholder="Mínimo 8 caracteres" name="forgotNewPassword" [(ngModel)]="forgotNewPassword" required autocomplete="new-password">
+          <input type="password" class="form-input" placeholder="Mínimo 8 caracteres" name="resetNewPassword" [(ngModel)]="resetNewPassword" required autocomplete="new-password">
+        </div>
+        <div class="form-group">
+          <label>CONFIRMAR CONTRASEÑA</label>
+          <input type="password" class="form-input" placeholder="Repite la contraseña" name="resetConfirmPassword" [(ngModel)]="resetConfirmPassword" required autocomplete="new-password">
         </div>
         <button type="submit" class="btn-primary" style="width:100%; padding: 1rem; margin-top: 1rem;" [disabled]="isResetting">
-          <span *ngIf="!isResetting">ESTABLECER CONTRASEÑA</span>
-          <span *ngIf="isResetting">PROCESANDO...</span>
+          <span *ngIf="!isResetting">RESTABLECER CONTRASEÑA 🔒</span>
+          <span *ngIf="isResetting">ACTUALIZANDO...</span>
         </button>
       </form>
     </div>

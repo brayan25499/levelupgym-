@@ -66,6 +66,18 @@ public class Auth : BaseEntity
     [StringLength(20)]
     public string? Estado { get; set; }
 
+    [StringLength(200)]
+    public string? ResetToken { get; set; }
+    
+    public DateTime? ResetTokenExpires { get; set; }
+
+    public int FailedLoginAttempts { get; set; }
+    public DateTime? LockoutEnd { get; set; }
+
+    [StringLength(500)]
+    public string? RefreshToken { get; set; }
+    public DateTime? RefreshTokenExpires { get; set; }
+
     // Navigation
     public virtual Profile Profile { get; set; } = null!;
     public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();

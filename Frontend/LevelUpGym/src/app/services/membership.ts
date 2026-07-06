@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
+import { tap } from 'rxjs/operators';
 
 export interface Membership {
   idMembresia: number;
@@ -16,9 +17,15 @@ export interface Membership {
 export class MembershipService {
   private http = inject(HttpClient);
   private apiUrl = 'http://localhost:5143/api/memberships';
+  private cachedMemberships: Membership[] | null = null;
 
   getMemberships(): Observable<Membership[]> {
-    return this.http.get<Membership[]>(this.apiUrl);
+    if (this.cachedMemberships) {
+      return of(this.cachedMemberships);
+    }
+    return this.http.get<Membership[]>(this.apiUrl).pipe(
+      tap(data => this.cachedMemberships = data)
+    );
   }
 
   buyMembership(id: number): Observable<any> {

@@ -15,7 +15,11 @@ export class PlansComponent implements OnInit {
   private authService = inject(AuthService);
   private router = inject(Router);
 
-  plans = signal<Membership[]>([]);
+  plans = signal<Membership[]>([
+    { idMembresia: 1, nombre: 'Bronce', precio: 89900, descripcion: 'Acceso básico a sala de pesas', estado: 'ACTIVO' },
+    { idMembresia: 2, nombre: 'Plata', precio: 159900, descripcion: 'Acceso total + Clases grupales', estado: 'ACTIVO' },
+    { idMembresia: 3, nombre: 'Oro', precio: 279900, descripcion: 'VIP: Todo incluido + Nutricionista', estado: 'ACTIVO' }
+  ]);
   isAnnual = signal<boolean>(false);
 
   toggleBilling() {

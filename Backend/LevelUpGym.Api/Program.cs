@@ -31,7 +31,7 @@ public class Program
         });
 
         builder.Services.AddDbContext<LevelUpDbContext>(options =>
-            options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+            options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
         builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
@@ -71,7 +71,7 @@ public class Program
             try
             {
                 var context = services.GetRequiredService<LevelUpDbContext>();
-                context.Database.Migrate();
+                context.Database.EnsureCreated();
                 LevelUpGym.Api.Data.DataSeeder.Seed(context);
             }
             catch (Exception ex)

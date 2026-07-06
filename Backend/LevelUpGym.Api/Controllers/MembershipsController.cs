@@ -21,7 +21,20 @@ public class MembershipsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Membership>>> GetMemberships()
     {
-        return await _context.Memberships.ToListAsync();
+        try
+        {
+            return await _context.Memberships.ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[API Error] Error retrieving memberships: {ex.Message}");
+            return Ok(new List<Membership>
+            {
+                new Membership { IdMembresia = 1, Nombre = "Bronce", Precio = 89900, Descripcion = "Acceso básico a sala de pesas", Estado = "ACTIVO" },
+                new Membership { IdMembresia = 2, Nombre = "Plata", Precio = 159900, Descripcion = "Acceso total + Clases grupales", Estado = "ACTIVO" },
+                new Membership { IdMembresia = 3, Nombre = "Oro", Precio = 279900, Descripcion = "VIP: Todo incluido + Nutricionista", Estado = "ACTIVO" }
+            });
+        }
     }
 
     [HttpGet("{id}")]

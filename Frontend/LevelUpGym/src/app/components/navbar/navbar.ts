@@ -2,7 +2,6 @@ import { Component, HostListener, inject } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth';
-import { CartService } from '../../services/cart';
 
 @Component({
   selector: 'app-navbar',
@@ -12,7 +11,6 @@ import { CartService } from '../../services/cart';
 })
 export class NavbarComponent {
   authService = inject(AuthService);
-  cartService = inject(CartService);
   private router = inject(Router);
   isScrolled = false;
 

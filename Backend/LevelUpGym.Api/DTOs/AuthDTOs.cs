@@ -24,11 +24,33 @@ public class AuthResponse
 {
     public string Email { get; set; } = null!;
     public string Token { get; set; } = null!;
+    public string? RefreshToken { get; set; }
+}
+
+public class RefreshRequest
+{
+    public string RefreshToken { get; set; } = null!;
 }
 
 public class ForgotPasswordRequest
 {
     public string Email { get; set; } = null!;
     public string NumDocumento { get; set; } = null!;
+    public string NewPassword { get; set; } = null!;
+}
+
+public class GoogleLoginRequest
+{
+    public string IdToken { get; set; } = null!;
+}
+
+public class RequestResetPasswordRequest
+{
+    public string Email { get; set; } = null!;
+}
+
+public class ResetPasswordRequest
+{
+    public string Token { get; set; } = null!;
     public string NewPassword { get; set; } = null!;
 }

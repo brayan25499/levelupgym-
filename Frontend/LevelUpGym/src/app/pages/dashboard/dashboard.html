@@ -21,15 +21,11 @@
       <button (click)="setSection('inicio')" [class.active]="activeSection === 'inicio'">
         <span class="menu-icon">📊</span> PANEL PRINCIPAL
       </button>
+      <button (click)="setSection('entrenamiento')" [class.active]="activeSection === 'entrenamiento'">
+        <span class="menu-icon">🧍</span> EJERCICIOS 3D
+      </button>
       <button (click)="setSection('membresia')" [class.active]="activeSection === 'membresia'">
         <span class="menu-icon">🎟️</span> MI MEMBRESÍA
-      </button>
-      <button routerLink="/store">
-        <span class="menu-icon">🛍️</span> TIENDA VIRTUAL
-      </button>
-      <button (click)="setSection('carrito')" [class.active]="activeSection === 'carrito'">
-        <span class="menu-icon">🛒</span> MI CARRITO 
-        <span class="cart-badge" *ngIf="cartService.getTotalItems() > 0">{{ cartService.getTotalItems() }}</span>
       </button>
       <button (click)="setSection('config')" [class.active]="activeSection === 'config'">
         <span class="menu-icon">⚙️</span> CONFIGURACIÓN
@@ -70,21 +66,23 @@
           <div class="grid-card stat-card">
             <div class="card-icon">💪</div>
             <div class="card-data">
-              <span class="label">Entrenamientos</span>
-              <span class="value">14 Sesiones</span>
+              <span class="label">Sesiones Totales</span>
+              <span class="value">
+                {{ profileData()?.activeMembership ? (profileData().activeMembership.sesionesTotales === 9999 ? 'ILIMITADAS' : profileData().activeMembership.sesionesTotales) : '0' }}
+              </span>
             </div>
           </div>
           <div class="grid-card stat-card">
             <div class="card-icon">🔥</div>
             <div class="card-data">
-              <span class="label">Calorías Quemadas</span>
-              <span class="value">8.4k Kcal</span>
+              <span class="label">Sesiones Usadas</span>
+              <span class="value">{{ profileData()?.activeMembership ? profileData().activeMembership.sesionesUsadas : '0' }}</span>
             </div>
           </div>
         </div>
 
         <div class="content-row">
-          <section class="main-activity">
+          <section class="main-activity" style="flex: 2;">
             <div class="section-header">
               <h2>Actividad Reciente</h2>
               <button class="view-all">VER TODO</button>
@@ -98,86 +96,74 @@
                 </div>
                 <div class="activity-points">+50 pts</div>
               </div>
-              <div class="activity-item">
-                <div class="activity-marker shop"></div>
+              <div class="activity-item" *ngIf="profileData()?.activeMembership">
+                <div class="activity-marker gym"></div>
                 <div class="activity-details">
-                  <strong>Compra de Proteína Whey</strong>
-                  <span>Tienda Online • Ayer</span>
+                  <strong>Asistencia Registrada (Ingreso)</strong>
+                  <span>Sede Central • Hace un momento</span>
                 </div>
-                <div class="activity-points">+120 pts</div>
+                <div class="activity-points">-1 sesión</div>
               </div>
             </div>
           </section>
 
-          <section class="side-promo">
+          <section class="side-promo" style="flex: 1;">
             <div class="promo-card gold">
-              <h3>MEJORA TU RENDIMIENTO</h3>
-              <p>Obtén 20% de descuento en suplementos este mes.</p>
-              <button class="btn-promo" routerLink="/store">IR A LA TIENDA</button>
+              <h3>¿LISTO PARA ENTRENAR?</h3>
+              <p>Explora los ejercicios haciendo clic en el maniquí 3D interactivo.</p>
+              <button class="btn-promo" (click)="setSection('entrenamiento')">IR AL MODELO 3D 🧍</button>
             </div>
           </section>
         </div>
       </div>
 
-      <!-- CARRITO SECTION -->
-      <div *ngSwitchCase="'carrito'" class="content-section fade-in">
-        <div class="cart-view">
-          <div class="section-header">
-            <h2>Mi Carrito de Compras</h2>
-            <p>Tienes {{ cartService.getTotalItems() }} productos listos para checkout</p>
+      <!-- ENTRENAMIENTO (3D MANNEQUIN) SECTION -->
+      <div *ngSwitchCase="'entrenamiento'" class="content-section fade-in">
+        <div class="section-header">
+          <h2>Maniquí 3D Interactivo de Anatomía</h2>
+          <p>Usa el mouse para rotar, hacer zoom y seleccionar un grupo muscular para ver los ejercicios.</p>
+        </div>
+
+        <div class="mannequin-grid-layout" style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; min-height: 500px;">
+          <!-- Left side: 3D Mannequin -->
+          <div class="mannequin-viewer-card" style="background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 8px; position: relative; height: 550px; overflow: hidden;">
+            <app-mannequin-3d (muscleSelect)="onMuscleSelected($event)" (muscleDeselect)="onMuscleDeselected()"></app-mannequin-3d>
           </div>
 
-          <div class="cart-layout">
-            <div class="cart-items-list">
-              <div class="empty-state" *ngIf="cartService.cart()?.items?.length === 0">
-                <span class="empty-icon">🛒</span>
-                <h3>Tu carrito está vacío</h3>
-                <p>Explora nuestra tienda para agregar los mejores productos.</p>
-                <button class="btn-primary" routerLink="/store">EXPLORAR TIENDA</button>
-              </div>
-
-              <div class="cart-card" *ngFor="let item of cartService.cart()?.items">
-                <div class="item-img">📦</div>
-                <div class="item-details">
-                  <h4>{{ item.product?.nombre }}</h4>
-                  <p>{{ item.product?.descripcion }}</p>
-                </div>
-                <div class="item-quantity">
-                  <button (click)="cartService.updateQuantity(item.idCartItem, item.cantidad - 1)" [disabled]="item.cantidad <= 1">-</button>
-                  <span>{{ item.cantidad }}</span>
-                  <button (click)="cartService.updateQuantity(item.idCartItem, item.cantidad + 1)">+</button>
-                </div>
-                <div class="item-price">
-                  ${{ (item.product?.precioVenta * item.cantidad) | number }}
-                </div>
-                <button class="remove-item" (click)="cartService.removeFromCart(item.idCartItem)">✕</button>
-              </div>
+          <!-- Right side: Exercises list -->
+          <div class="exercises-details-panel" style="display: flex; flex-direction: column; gap: 1.5rem;">
+            <div class="muscle-info-header" style="background: rgba(220, 20, 60, 0.08); border-left: 4px solid #DC143C; padding: 1.5rem; border-radius: 4px;">
+              <h3 style="color: #fff; font-size: 1.5rem; margin: 0 0 0.5rem 0; font-family: var(--font-display);">
+                MÚSCULO: {{ selectedMuscle || 'SELECCIONA UNO' | uppercase }}
+              </h3>
+              <p style="color: #a0aec0; margin: 0; line-height: 1.5;">{{ muscleDescription }}</p>
             </div>
 
-            <div class="cart-summary-side" *ngIf="cartService.cart()?.items?.length! > 0">
-              <h3>Resumen de Compra</h3>
-              <div class="summary-line">
-                <span>Subtotal</span>
-                <span>${{ cartService.getTotalPrice() | number }}</span>
-              </div>
-              <div class="summary-line">
-                <span>Envío</span>
-                <span class="free">GRATIS</span>
-              </div>
-              <div class="summary-line total">
-                <span>Total</span>
-                <span>${{ cartService.getTotalPrice() | number }}</span>
-              </div>
-              
-              <div class="payment-methods">
-                <p>Paga con:</p>
-                <div class="methods-icons">💳 🏦 📱</div>
+            <div class="exercises-cards-list" style="display: flex; flex-direction: column; gap: 1rem; overflow-y: auto; max-height: 380px;">
+              <div class="empty-exercises-state" *ngIf="muscleExercises.length === 0" style="text-align: center; padding: 3rem; color: #718096;">
+                <span>🧍</span>
+                <p>Haz clic en cualquier músculo del maniquí 3D para ver las recomendaciones.</p>
               </div>
 
-              <button class="btn-checkout" (click)="checkout()">
-                PROCEDER AL PAGO 🔒
-              </button>
-              <button class="btn-clear" (click)="cartService.clearCart()">VACIAR CARRITO</button>
+              <div class="exercise-card-custom" *ngFor="let exe of muscleExercises" style="background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; display: flex; gap: 1rem; padding: 1rem; transition: transform 0.2s;">
+                <div class="exe-image" style="width: 100px; height: 100px; border-radius: 4px; overflow: hidden; flex-shrink: 0; background: #2d3748; display: flex; align-items: center; justify-content: center;">
+                  <img [src]="exe.media" alt="Exercise Thumbnail" style="width: 100%; height: 100%; object-fit: cover;">
+                </div>
+                <div class="exe-content" style="flex: 1; display: flex; flex-direction: column; justify-content: space-between;">
+                  <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                      <h4 style="color: #fff; margin: 0; font-size: 1.1rem;">{{ exe.name }}</h4>
+                      <span [ngClass]="exe.level.toLowerCase()" style="font-size: 0.75rem; padding: 2px 8px; border-radius: 12px; font-weight: bold; text-transform: uppercase;">
+                        {{ exe.level }}
+                      </span>
+                    </div>
+                    <p style="color: #a0aec0; font-size: 0.875rem; margin: 0; line-height: 1.4;">{{ exe.desc }}</p>
+                    <div style="color: #ffd700; font-size: 0.8rem; font-weight: bold; margin-top: 0.25rem;" *ngIf="exe.series && exe.reps">
+                      {{ exe.series }} series x {{ exe.reps }} reps
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -195,18 +181,50 @@
             <div class="card-content">
               <h3>LEVEL UP <span class="gold-text">{{ profileData().activeMembership.nombre | uppercase }}</span></h3>
               <p>{{ profileData().activeMembership.descripcion }}</p>
-              <div class="expiration-info">
-                <span>Vence el:</span>
-                <strong>{{ profileData().activeMembership.fechaFin | date:'longDate' | uppercase }}</strong>
+              
+              <div class="expiration-info" style="margin-top: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.875rem; color: #a0aec0;">
+                  <span>Fecha de Compra:</span>
+                  <span style="color: #fff; font-weight: 600;">{{ today | date:'mediumDate' }}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; font-size: 0.875rem; color: #a0aec0;">
+                  <span>Fecha de Vencimiento:</span>
+                  <span style="color: #fff; font-weight: 600;">{{ profileData().activeMembership.fechaFin | date:'mediumDate' | uppercase }}</span>
+                </div>
+
+                <!-- Session Progress Bar -->
+                <div class="session-progress-container" style="border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 1rem;">
+                  <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.875rem;">
+                    <span>Sesiones Restantes:</span>
+                    <strong style="color: #ffd700;">
+                      {{ profileData().activeMembership.sesionesRestantes === 'Ilimitadas' ? 'SESIONES ILIMITADAS' : profileData().activeMembership.sesionesRestantes + ' restantes' }}
+                    </strong>
+                  </div>
+                  <div class="progress-bar-bg" style="background: rgba(255, 255, 255, 0.1); height: 8px; border-radius: 4px; overflow: hidden;" *ngIf="profileData().activeMembership.sesionesTotales !== 9999">
+                    <div class="progress-bar-fill" [style.width.%]="(profileData().activeMembership.sesionesRestantes / profileData().activeMembership.sesionesTotales) * 100" style="background: #DC143C; height: 100%; border-radius: 4px; transition: width 0.3s;"></div>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; margin-top: 0.5rem; font-size: 0.75rem; color: #718096;" *ngIf="profileData().activeMembership.sesionesTotales !== 9999">
+                    <span>{{ profileData().activeMembership.sesionesUsadas }} usadas</span>
+                    <span>de {{ profileData().activeMembership.sesionesTotales }} totales</span>
+                  </div>
+                </div>
               </div>
             </div>
             <div class="card-qr">
               <div class="qr-placeholder">QR</div>
             </div>
           </div>
+
+          <div style="margin-top: 2rem;">
+            <h3 style="color: #fff; font-family: var(--font-display); margin-bottom: 1rem;">Beneficios de tu Plan</h3>
+            <ul style="list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+              <li *ngFor="let benefit of profileData().activeMembership.beneficios" style="color: #a0aec0; display: flex; align-items: center; gap: 8px; font-size: 0.9rem;">
+                <span style="color: #DC143C;">✔</span> {{ benefit }}
+              </li>
+            </ul>
+          </div>
           
-          <div class="membership-options">
-            <button class="btn-outline">VER BENEFICIOS</button>
+          <div class="membership-options" style="margin-top: 2rem;">
             <button class="btn-outline" (click)="showReceiptModal.set(true)" *ngIf="lastReceipt()">VER ÚLTIMO RECIBO 🧾</button>
           </div>
         </div>
@@ -302,52 +320,95 @@
     </div>
   </main>
 
-  <!-- PAYMENT MODAL OVERLAY -->
+  <!-- MODERN CHECKOUT / PAYMENT MODAL OVERLAY -->
   <div class="payment-overlay fade-in" *ngIf="showPaymentModal">
-    <div class="payment-modal">
+    <div class="payment-modal" style="max-width: 600px;">
       <button class="close-modal" (click)="showPaymentModal = false">✕</button>
       <div class="modal-header">
         <h2>PASARELA DE <span class="accent">PAGOS</span></h2>
-        <p>Seguridad LevelUp Encriptada 🔒</p>
+        <p>Estás adquiriendo: <strong style="color: #ffd700;">LEVEL UP {{ selectedPlanToBuy?.nombre | uppercase }}</strong></p>
       </div>
 
-      <div class="payment-methods-grid">
-        <div class="method-card active">TARJETA DE CRÉDITO</div>
-        <div class="method-card">PSE / DÉBITO</div>
+      <div class="payment-methods-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-bottom: 1.5rem;">
+        <div class="method-card" [class.active]="paymentMethod === 'tarjeta'" (click)="paymentMethod = 'tarjeta'">💳 Tarjeta</div>
+        <div class="method-card" [class.active]="paymentMethod === 'pse'" (click)="paymentMethod = 'pse'">🏦 PSE (Débito)</div>
+        <div class="method-card" [class.active]="paymentMethod === 'nequi'" (click)="paymentMethod = 'nequi'">📱 Nequi</div>
+      </div>
+      
+      <div class="payment-methods-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-bottom: 1.5rem;">
+        <div class="method-card" [class.active]="paymentMethod === 'stripe'" (click)="paymentMethod = 'stripe'">Stripe</div>
+        <div class="method-card" [class.active]="paymentMethod === 'mercado'" (click)="paymentMethod = 'mercado'">Mercado Pago</div>
+        <div class="method-card" [class.active]="paymentMethod === 'paypal'" (click)="paymentMethod = 'paypal'">PayPal</div>
       </div>
 
       <form class="payment-form" (ngSubmit)="processPayment()">
-        <div class="form-group">
-          <label>TITULAR DE LA TARJETA</label>
-          <input type="text" placeholder="NOMBRE COMO APARECE" class="form-input" required>
-        </div>
-        <div class="form-group">
-          <label>NÚMERO DE TARJETA</label>
-          <input type="text" placeholder="0000 0000 0000 0000" class="form-input" required>
-        </div>
-        <div class="form-row">
+        <!-- Credit Card Fields -->
+        <div *ngIf="paymentMethod === 'tarjeta' || paymentMethod === 'stripe'">
           <div class="form-group">
-            <label>FECHA EXP.</label>
-            <input type="text" placeholder="MM/YY" class="form-input" required>
+            <label>TITULAR DE LA TARJETA</label>
+            <input type="text" [(ngModel)]="cardName" name="cardName" placeholder="TITULAR DE LA TARJETA" class="form-input" required>
           </div>
           <div class="form-group">
-            <label>CVV</label>
-            <input type="password" placeholder="***" class="form-input" required>
+            <label>NÚMERO DE TARJETA</label>
+            <input type="text" [(ngModel)]="cardNumber" name="cardNumber" placeholder="0000 0000 0000 0000" class="form-input" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>FECHA EXP.</label>
+              <input type="text" [(ngModel)]="cardExpiry" name="cardExpiry" placeholder="MM/YY" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label>CVV</label>
+              <input type="password" [(ngModel)]="cardCvv" name="cardCvv" placeholder="***" class="form-input" required>
+            </div>
           </div>
         </div>
 
-        <div class="payment-summary">
+        <!-- PSE Fields -->
+        <div *ngIf="paymentMethod === 'pse'">
+          <div class="form-group">
+            <label>SELECCIONA TU BANCO</label>
+            <select [(ngModel)]="pseBank" name="pseBank" class="form-input" required>
+              <option value="">-- SELECCIONAR --</option>
+              <option value="Bancolombia">Bancolombia</option>
+              <option value="Banco de Bogotá">Banco de Bogotá</option>
+              <option value="Davivienda">Davivienda</option>
+              <option value="BBVA">BBVA</option>
+              <option value="Nequi PSE">Nequi PSE</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>CORREO REGISTRADO EN PSE</label>
+            <input type="email" placeholder="correo@pse.com.co" class="form-input" required>
+          </div>
+        </div>
+
+        <!-- Nequi Fields -->
+        <div *ngIf="paymentMethod === 'nequi'">
+          <div class="form-group">
+            <label>NÚMERO DE TELÉFONO NEQUI</label>
+            <input type="text" [(ngModel)]="nequiPhone" name="nequiPhone" placeholder="300 000 0000" class="form-input" required>
+          </div>
+          <p style="font-size: 0.75rem; color: #a0aec0; margin-top: 0.5rem;">Recibirás una notificación push en tu celular para confirmar el pago.</p>
+        </div>
+
+        <!-- PayPal & Mercado Pago -->
+        <div *ngIf="paymentMethod === 'paypal' || paymentMethod === 'mercado'" style="text-align: center; padding: 1.5rem; background: rgba(255,255,255,0.03); border-radius: 4px;">
+          <p>Serás redirigido a la pasarela externa de {{ paymentMethod | uppercase }} de manera segura para concretar la transacción.</p>
+        </div>
+
+        <div class="payment-summary" style="margin-top: 1.5rem;">
           <span>Total a pagar:</span>
-          <strong>${{ cartService.getTotalPrice() | number }}</strong>
+          <strong style="color: #ffd700;">${{ selectedPlanToBuy?.precio | number }} COP</strong>
         </div>
 
         <button type="submit" class="btn-pay" [disabled]="isProcessingPayment">
-          {{ isProcessingPayment ? 'PROCESANDO...' : 'CONFIRMAR PAGO' }}
+          {{ isProcessingPayment ? 'PROCESANDO PAGO SEGURO...' : 'CONFIRMAR Y ADQUIRIR PLAN 🔒' }}
         </button>
       </form>
       
       <div class="modal-footer">
-        <p>Tus datos están protegidos bajo estándares PCI-DSS</p>
+        <p>Tus datos están protegidos bajo estándares de seguridad SSL & PCI-DSS</p>
       </div>
     </div>
   </div>

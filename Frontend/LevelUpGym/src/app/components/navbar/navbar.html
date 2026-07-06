@@ -6,7 +6,6 @@
     <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-link">INICIO</a>
     <a routerLink="/about" routerLinkActive="active" class="nav-link">NOSOTROS</a>
     <a routerLink="/plans" routerLinkActive="active" class="nav-link">PLANES</a>
-    <a routerLink="/store" routerLinkActive="active" class="nav-link">TIENDA</a>
     
     <ng-container *ngIf="!authService.currentUser()">
       <a routerLink="/login" routerLinkActive="active" class="nav-link">LOGIN</a>
@@ -14,9 +13,6 @@
     </ng-container>
 
     <ng-container *ngIf="authService.currentUser()">
-      <a [routerLink]="['/dashboard']" [queryParams]="{section: 'carrito'}" class="nav-link cart-link">
-        🛒 <span class="badge" *ngIf="cartService.getTotalItems() > 0">{{ cartService.getTotalItems() }}</span>
-      </a>
       <a routerLink="/dashboard" routerLinkActive="active" class="nav-link">PANEL</a>
       <a (click)="logout()" class="nav-btn">SALIR</a>
     </ng-container>

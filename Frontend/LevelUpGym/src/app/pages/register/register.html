@@ -35,7 +35,7 @@
 
         <div class="form-group">
           <label>EMAIL</label>
-          <input type="email" class="form-input" placeholder="tu@email.com" formControlName="email" autocomplete="off" [class.invalid]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">
+          <input type="email" class="form-input" placeholder="tu@email.com" formControlName="email" autocomplete="off" [class.invalid]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched" (keydown.space)="$event.preventDefault()">
           <div class="error-msg" *ngIf="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">
             Email válido obligatorio (debe terminar en .com)
           </div>
@@ -44,14 +44,14 @@
         <div class="form-row">
           <div class="form-group">
             <label>CONTRASEÑA</label>
-            <input type="password" class="form-input" placeholder="Min. 8 caracteres" formControlName="password" autocomplete="new-password" [class.invalid]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched">
+            <input type="password" class="form-input" placeholder="Min. 8 caracteres" formControlName="password" autocomplete="new-password" [class.invalid]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched" (keydown.space)="$event.preventDefault()">
             <div class="error-msg" *ngIf="registerForm.get('password')?.invalid && registerForm.get('password')?.touched">
               Mínimo 8 caracteres, 1 Mayus, 1 Minus, 1 Num
             </div>
           </div>
           <div class="form-group">
             <label>CONFIRMAR CONTRASEÑA</label>
-            <input type="password" class="form-input" placeholder="Repite contraseña" formControlName="confirmPassword" autocomplete="new-password" [class.invalid]="(registerForm.get('confirmPassword')?.invalid || registerForm.hasError('passwordMismatch')) && registerForm.get('confirmPassword')?.touched">
+            <input type="password" class="form-input" placeholder="Repite contraseña" formControlName="confirmPassword" autocomplete="new-password" [class.invalid]="(registerForm.get('confirmPassword')?.invalid || registerForm.hasError('passwordMismatch')) && registerForm.get('confirmPassword')?.touched" (keydown.space)="$event.preventDefault()">
             <div class="error-msg" *ngIf="registerForm.hasError('passwordMismatch') && registerForm.get('confirmPassword')?.touched">
               Las contraseñas no coinciden
             </div>
@@ -123,12 +123,19 @@
           </div>
         </div>
 
-        <button type="submit" class="btn-primary" style="width:100%; padding: 1rem;" [disabled]="isLoading">
+        <button type="submit" class="btn-primary" style="width:100%; padding: 1rem;" [disabled]="registerForm.invalid || isLoading">
           <span *ngIf="!isLoading">CREAR MI CUENTA</span>
           <span *ngIf="isLoading">PROCESANDO...</span>
         </button>
       </form>
-      <p class="auth-switch">¿Ya tienes cuenta? <a routerLink="/login">Inicia sesión</a></p>
+      
+      <div class="auth-divider" style="margin: 1.5rem 0 1rem 0; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.08); line-height: 0.1em;"><span style="background: #141414; padding: 0 10px; color: #666; font-size: 0.8rem; font-weight: 700;">O REGÍSTRATE CON GOOGLE</span></div>
+      
+      <div class="google-btn-wrapper" style="margin-top: 1rem; min-height: 40px; display: flex; justify-content: center;">
+        <div id="google-btn-register-container" style="width: 100%;"></div>
+      </div>
+      
+      <p class="auth-switch" style="margin-top: 1.5rem;">¿Ya tienes cuenta? <a routerLink="/login">Inicia sesión</a></p>
     </div>
   </div>
 </section>

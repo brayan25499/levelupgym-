@@ -4,6 +4,7 @@ import { NavbarComponent } from './components/navbar/navbar';
 import { FooterComponent } from './components/footer/footer';
 import { CommonModule } from '@angular/common';
 import { AlertService } from './services/alert.service';
+import { SessionService } from './services/session.service';
 
 @Component({
   selector: 'app-root',
@@ -15,6 +16,7 @@ export class App {
   protected readonly title = signal('LevelUpGym');
   private router = inject(Router);
   public alertService = inject(AlertService);
+  public sessionService = inject(SessionService);
 
   showLayout() {
     return !this.router.url.startsWith('/admin');

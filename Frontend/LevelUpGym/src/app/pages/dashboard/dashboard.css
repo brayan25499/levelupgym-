@@ -717,3 +717,53 @@
   font-size: 0.9rem;
 }
 
+/* Custom Exercise and Level styles */
+.exercise-card-custom:hover {
+  transform: translateY(-2px);
+  border-color: #DC143C !important;
+  background: rgba(220, 20, 60, 0.05) !important;
+}
+
+.principiante {
+  background: rgba(72, 187, 120, 0.2);
+  color: #48bb78;
+  border: 1px solid rgba(72, 187, 120, 0.3);
+}
+
+.intermedio {
+  background: rgba(236, 201, 75, 0.2);
+  color: #ecc94b;
+  border: 1px solid rgba(236, 201, 75, 0.3);
+}
+
+.avanzado {
+  background: rgba(245, 101, 101, 0.2);
+  color: #f56565;
+  border: 1px solid rgba(245, 101, 101, 0.3);
+}
+
+.method-card {
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.method-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.method-card.active {
+  background: rgba(220, 20, 60, 0.1);
+  border-color: #DC143C;
+  color: #fff;
+  box-shadow: 0 0 10px rgba(220, 20, 60, 0.15);
+}
+
+

@@ -1,0 +1,38 @@
+<div class="mannequin-container" #container>
+  <!-- Navigation Controls Overlay (as seen in image) -->
+  <div class="navigation-controls">
+    <button class="control-btn" (click)="setView('frontal')">
+      <span class="icon">🧍</span> Frontal
+    </button>
+    <button class="control-btn" (click)="setView('posterior')">
+      <span class="icon">👤</span> Posterior
+    </button>
+    <button class="control-btn" (click)="setView('izquierda')">
+      <span class="icon">👈</span> Izquierda
+    </button>
+    <button class="control-btn" (click)="setView('derecha')">
+      <span class="icon">👉</span> Derecha
+    </button>
+    <button class="control-btn rotate-btn" [class.active]="isAutoRotating" (click)="toggleAutoRotate()">
+      <span class="icon">🔄</span> Auto-Rotar
+    </button>
+    <button class="control-btn reset-btn" (click)="setView('reset')">
+      <span class="icon">🏠</span> Reset
+    </button>
+  </div>
+
+  <!-- Three.js Canvas -->
+  <canvas #canvas></canvas>
+
+  <!-- Interactive Muscle Tooltip -->
+  <div 
+    class="muscle-tooltip" 
+    #tooltip 
+    [class.visible]="tooltipVisible"
+    [style.left.px]="tooltipX"
+    [style.top.px]="tooltipY"
+  >
+    <span class="tooltip-indicator"></span>
+    <span class="tooltip-text">{{ hoveredMuscleName }}</span>
+  </div>
+</div>

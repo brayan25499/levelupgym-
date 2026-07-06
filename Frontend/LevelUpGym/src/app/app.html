@@ -30,3 +30,19 @@
   </div>
 </div>
 
+<!-- SESSION EXPIRATION WARNING MODAL -->
+<div class="alert-overlay" *ngIf="sessionService.showWarningModal()">
+  <div class="alert-box info" style="border-top: 5px solid #ffcc00; max-width: 450px;">
+    <div class="alert-icon-wrapper" style="background: rgba(255, 204, 0, 0.1); color: #ffcc00;">
+      <span>⚠️</span>
+    </div>
+    <h2 class="alert-title" style="color: #ffcc00;">SESIÓN POR EXPIRAR</h2>
+    <p class="alert-msg">Tu sesión está a punto de expirar por inactividad.</p>
+    
+    <div class="alert-buttons" style="display: flex; gap: 1rem; width: 100%; justify-content: center; margin-top: 1.5rem;">
+      <button class="alert-btn btn-no" style="flex: 1; margin: 0;" (click)="sessionService.closeSessionManual()">CERRAR SESIÓN</button>
+      <button class="alert-btn btn-yes" style="flex: 1; background: #ffcc00; color: #000; margin: 0;" (click)="sessionService.renewSession()">CONTINUAR SESIÓN</button>
+    </div>
+  </div>
+</div>
+
