@@ -40,10 +40,10 @@
 
         <div class="form-group">
           <label>EMAIL</label>
-          <input type="email" class="form-input" placeholder="tu@email.com" formControlName="email" autocomplete="off" [class.invalid]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">
+          <input type="text" class="form-input" placeholder="tu@email.com" formControlName="email" autocomplete="off" [class.invalid]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">
           <div class="error-msg" *ngIf="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">
             <span *ngIf="registerForm.get('email')?.hasError('required')">Campo obligatorio</span>
-            <span *ngIf="registerForm.get('email')?.hasError('spacesAtEnds')">No se permiten espacios al inicio o final</span>
+            <span *ngIf="registerForm.get('email')?.hasError('noSpaces')">No se permiten espacios en el correo electrónico</span>
             <span *ngIf="registerForm.get('email')?.hasError('missingAt')">El email debe contener @</span>
             <span *ngIf="registerForm.get('email')?.hasError('invalidEmail')">Formato de email inválido (ej: usuario@dominio.com)</span>
           </div>
@@ -89,8 +89,9 @@
                 <input type="text" class="form-input" formControlName="numDocumento" placeholder="Máx 10 dígitos" maxlength="10" [class.invalid]="registerForm.get('numDocumento')?.invalid && registerForm.get('numDocumento')?.touched">
                 <div class="error-msg" *ngIf="registerForm.get('numDocumento')?.invalid && registerForm.get('numDocumento')?.touched">
                   <span *ngIf="registerForm.get('numDocumento')?.hasError('required')">Campo obligatorio</span>
+                  <span *ngIf="registerForm.get('numDocumento')?.hasError('noSpaces')">No se permiten espacios en el número de documento</span>
                   <span *ngIf="registerForm.get('numDocumento')?.hasError('pattern')">Solo números permitidos</span>
-                  <span *ngIf="registerForm.get('numDocumento')?.hasError('maxLength')">Máximo 10 dígitos</span>
+                  <span *ngIf="registerForm.get('numDocumento')?.hasError('maxlength')">Máximo 10 dígitos</span>
                 </div>
             </div>
         </div>

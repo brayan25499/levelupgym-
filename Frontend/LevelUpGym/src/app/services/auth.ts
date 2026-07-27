@@ -48,6 +48,22 @@ export class AuthService {
     return this.http.post<any>(`${this.apiUrl}/forgot-password`, data);
   }
 
+  checkEmail(email: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/check-email`, { email });
+  }
+
+  requestOtp(email: string, medium: string = 'email'): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/request-otp`, { email, medium });
+  }
+
+  verifyOtp(email: string, code: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/verify-otp`, { email, code });
+  }
+
+  resetPassword(email: string, code: string, newPassword: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/reset-password`, { email, code, newPassword });
+  }
+
   getToken(): string | null {
     return this.currentUser()?.token || null;
   }

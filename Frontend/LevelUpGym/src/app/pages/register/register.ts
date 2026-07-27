@@ -9,7 +9,8 @@ import {
   passwordValidator,
   phoneValidator,
   numericWithDecimalValidator,
-  passwordMatchValidator
+  passwordMatchValidator,
+  noSpacesValidator
 } from '../../validators/custom-validators';
 import { TermsModalComponent } from '../../components/terms-modal/terms-modal.component';
 
@@ -58,7 +59,7 @@ export class RegisterComponent implements OnInit {
     password: ['', [Validators.required, passwordValidator()]],
     confirmPassword: ['', [Validators.required]],
     tipoDocumento: ['CC', Validators.required],
-    numDocumento: ['', [Validators.required, Validators.maxLength(10), Validators.pattern(/^[0-9]+$/)]],
+    numDocumento: ['', [Validators.required, Validators.maxLength(10), Validators.pattern(/^[0-9]+$/), noSpacesValidator()]],
     sexo: ['', Validators.required],
     countryCode: ['+57', Validators.required],
     telefono: ['', [Validators.required, phoneValidator()]],
@@ -138,12 +139,15 @@ export class RegisterComponent implements OnInit {
         error: (err) => {
           this.isLoading = false;
           window.scrollTo({ top: 0, behavior: 'smooth' });
-          if (err.error === 'Email already exists.' || err.error.includes('Email')) {
+          const errorMsg = typeof err.error === 'string' ? err.error : (err.error?.message || '');
+          if (errorMsg === 'Email already exists.' || errorMsg.includes('Email') || errorMsg.includes('correo')) {
             this.errorMessage = 'Correo ya registrado';
-          } else if (err.error.includes('documento')) {
+          } else if (errorMsg.includes('documento')) {
             this.errorMessage = 'Número de documento ya registrado';
+          } else if (errorMsg.includes('celular') || errorMsg.includes('teléfono') || errorMsg.includes('Telefono')) {
+            this.errorMessage = 'Número de celular ya asociado a otra cuenta';
           } else {
-            this.errorMessage = err.error || 'Error en el registro. Por favor verifica los datos.';
+            this.errorMessage = errorMsg || 'Error en el registro. Por favor verifica los datos.';
           }
         }
       });

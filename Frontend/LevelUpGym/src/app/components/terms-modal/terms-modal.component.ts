@@ -90,50 +90,55 @@ import { CommonModule } from '@angular/common';
     </div>
   `,
   styles: [`
+    /* ===== Overlay — matches alert-overlay & login modal ===== */
     .modal-overlay {
       position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: rgba(0, 0, 0, 0.5);
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(8px);
       display: flex;
       align-items: center;
       justify-content: center;
       z-index: 1000;
+      padding: 2rem;
+      animation: termsFadeIn 0.3s ease-out;
     }
 
+    /* ===== Card ===== */
     .modal-content {
-      background: white;
-      border-radius: 12px;
-      max-width: 600px;
-      width: 90%;
-      max-height: 80vh;
+      background: var(--dark-2);
+      border: 1px solid var(--border);
+      max-width: 620px;
+      width: 100%;
+      max-height: 85vh;
       display: flex;
       flex-direction: column;
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+      animation: termsZoomIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
 
+    /* ===== Header ===== */
     .modal-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 20px;
-      border-bottom: 1px solid #e0e0e0;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      border-radius: 12px 12px 0 0;
+      padding: 1.5rem 2rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--dark-3);
     }
 
     .modal-header h2 {
       margin: 0;
-      font-size: 1.5rem;
+      font-family: var(--font-display);
+      font-size: 1.6rem;
+      letter-spacing: 2px;
+      color: var(--white);
     }
 
     .close-btn {
       background: none;
       border: none;
-      color: white;
+      color: var(--gray);
       font-size: 2rem;
       cursor: pointer;
       padding: 0;
@@ -142,90 +147,167 @@ import { CommonModule } from '@angular/common';
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: opacity 0.3s;
+      transition: color 0.3s ease;
+      line-height: 1;
     }
 
     .close-btn:hover {
-      opacity: 0.7;
+      color: var(--white);
     }
 
+    /* ===== Body / Content ===== */
     .modal-body {
       overflow-y: auto;
-      padding: 20px;
+      padding: 1.5rem 2rem;
       flex: 1;
     }
 
+    /* Scrollbar inside body — matches global scrollbar */
+    .modal-body::-webkit-scrollbar { width: 5px; }
+    .modal-body::-webkit-scrollbar-track { background: var(--dark-2); }
+    .modal-body::-webkit-scrollbar-thumb { background: var(--red); border-radius: 3px; }
+
     .terms-content {
-      font-size: 0.95rem;
-      line-height: 1.6;
-      color: #333;
+      font-family: var(--font-body);
+      font-size: 0.92rem;
+      line-height: 1.7;
+      color: var(--gray-light);
     }
 
     .terms-content h3 {
-      margin-top: 20px;
-      margin-bottom: 10px;
-      color: #667eea;
-      font-weight: 600;
+      font-family: var(--font-heading);
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: var(--red);
+      margin-top: 1.5rem;
+      margin-bottom: 0.6rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid rgba(220, 20, 60, 0.15);
+    }
+
+    .terms-content h3:first-child {
+      margin-top: 0;
     }
 
     .terms-content p {
-      margin: 10px 0;
+      margin: 0.5rem 0 1rem;
       text-align: justify;
+      color: var(--gray);
     }
 
+    /* ===== Footer ===== */
     .modal-footer {
       display: flex;
       justify-content: flex-end;
-      gap: 12px;
-      padding: 20px;
-      border-top: 1px solid #e0e0e0;
-      background-color: #f5f5f5;
-      border-radius: 0 0 12px 12px;
+      gap: 1rem;
+      padding: 1.5rem 2rem;
+      border-top: 1px solid var(--border);
+      background: var(--dark-3);
     }
 
+    /* ===== Buttons — match global btn-primary / btn-ghost ===== */
     .btn-secondary,
     .btn-primary {
-      padding: 10px 24px;
+      font-family: var(--font-heading);
+      font-weight: 700;
+      font-size: 0.85rem;
+      letter-spacing: 2px;
+      padding: 0.8rem 2rem;
       border: none;
-      border-radius: 6px;
-      font-size: 1rem;
       cursor: pointer;
-      transition: all 0.3s;
-      font-weight: 600;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      display: inline-block;
+      clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
     }
 
     .btn-secondary {
-      background-color: #e0e0e0;
-      color: #333;
+      background: var(--dark-3);
+      color: var(--gray-light);
+      border: 1px solid rgba(255, 255, 255, 0.15);
     }
 
     .btn-secondary:hover {
-      background-color: #c0c0c0;
+      border-color: var(--red);
+      color: var(--red);
+      transform: translateY(-2px);
     }
 
     .btn-primary {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
+      background: var(--red);
+      color: var(--white);
+    }
+
+    .btn-primary::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+      transform: translateX(-100%);
+      transition: transform 0.5s;
+    }
+
+    .btn-primary:hover::before {
+      transform: translateX(100%);
     }
 
     .btn-primary:hover {
-      opacity: 0.9;
+      background: var(--red-bright);
       transform: translateY(-2px);
-      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+      box-shadow: 0 8px 25px var(--red-glow);
     }
 
+    /* ===== Animations ===== */
+    @keyframes termsFadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    @keyframes termsZoomIn {
+      from { transform: scale(0.8); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+
+    /* ===== Responsive ===== */
     @media (max-width: 768px) {
+      .modal-overlay {
+        padding: 1rem;
+      }
+
       .modal-content {
-        width: 95%;
-        max-height: 90vh;
+        max-height: 92vh;
+      }
+
+      .modal-header {
+        padding: 1.2rem 1.5rem;
       }
 
       .modal-header h2 {
-        font-size: 1.2rem;
+        font-size: 1.3rem;
+        letter-spacing: 1px;
+      }
+
+      .modal-body {
+        padding: 1.2rem 1.5rem;
+      }
+
+      .modal-footer {
+        padding: 1.2rem 1.5rem;
+        flex-direction: column;
+      }
+
+      .btn-secondary,
+      .btn-primary {
+        width: 100%;
+        text-align: center;
+        padding: 0.9rem 1.5rem;
       }
 
       .terms-content h3 {
-        margin-top: 15px;
+        margin-top: 1.2rem;
+        font-size: 0.95rem;
       }
     }
   `]

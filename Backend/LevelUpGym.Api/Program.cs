@@ -24,6 +24,8 @@ public class Program
         builder.Services.AddSwaggerGen();
 
         builder.Services.AddScoped<IJwtService, JwtService>();
+        builder.Services.AddSingleton<IOtpService, OtpService>();
+        builder.Services.AddScoped<IEmailService, ConsoleEmailService>();
 
         builder.Services.AddCors(options =>
         {

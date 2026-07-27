@@ -32,3 +32,30 @@ public class ForgotPasswordRequest
     public string NumDocumento { get; set; } = null!;
     public string NewPassword { get; set; } = null!;
 }
+
+// ===== OTP Flow DTOs =====
+
+public class CheckEmailDto
+{
+    public string Email { get; set; } = null!;
+}
+
+public class RequestOtpDto
+{
+    public string Email { get; set; } = null!;
+    public string Medium { get; set; } = "email"; // "email" or "phone"
+}
+
+public class VerifyOtpDto
+{
+    public string Email { get; set; } = null!;
+    public string Code { get; set; } = null!;
+}
+
+public class ResetPasswordDto
+{
+    public string Email { get; set; } = null!;
+    public string Code { get; set; } = null!;
+    public string NewPassword { get; set; } = null!;
+}
+

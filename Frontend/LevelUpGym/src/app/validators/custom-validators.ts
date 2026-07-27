@@ -36,22 +36,24 @@ export function emailValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     if (!control.value) return null;
     
-    const value = control.value.trim();
+    const value = control.value;
     
-    // Verificar espacios al inicio o final
-    if (control.value !== value) {
-      return { 'spacesAtEnds': true };
+    // No permitir espacios en ninguna parte del correo
+    if (value.includes(' ')) {
+      return { 'noSpaces': true };
     }
     
+    const trimmed = value.trim();
+    
     // Validar que contenga @
-    if (!value.includes('@')) {
+    if (!trimmed.includes('@')) {
       return { 'missingAt': true };
     }
     
     // Patrón mejorado para email (más flexible que el anterior)
     const emailPattern = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
     
-    if (!emailPattern.test(value)) {
+    if (!emailPattern.test(trimmed)) {
       return { 'invalidEmail': true };
     }
     
@@ -176,6 +178,73 @@ export function passwordMatchValidator(passwordFieldName: string, confirmFieldNa
     
     if (password && confirmPassword && password !== confirmPassword) {
       return { 'passwordMismatch': true };
+    }
+    
+    return null;
+  };
+}
+
+/**
+ * Validador que no permite espacios en ningún lugar del campo
+ */
+export function noSpacesValidator(): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    if (!control.value) return null;
+    
+    if (control.value.toString().includes(' ')) {
+      return { 'noSpaces': true };
+    }
+    
+    return null;
+  };
+}
+
+/**
+ * Validador de email para Login
+ * - No permite espacios en ninguna posición
+ * - Requiere @
+ * - Requiere que termine en .com
+ */
+export function loginEmailValidator(): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    if (!control.value) return null;
+    
+    const value = control.value;
+    
+    // Verificar espacios en cualquier posición (inicio, medio o final)
+    if (value.includes(' ')) {
+      return { 'noSpaces': true };
+    }
+    
+    // Validar que contenga @
+    if (!value.includes('@')) {
+      return { 'missingAt': true };
+    }
+    
+    // Validar formato completo de email que termine en .com
+    const emailPattern = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.com$/;
+    
+    if (!emailPattern.test(value)) {
+      return { 'invalidEmail': true };
+    }
+    
+    return null;
+  };
+}
+
+/**
+ * Validador de contraseña para Login
+ * - No permite espacios en ninguna posición
+ */
+export function loginPasswordValidator(): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    if (!control.value) return null;
+    
+    const value = control.value;
+    
+    // Verificar espacios en cualquier posición (inicio, medio o final)
+    if (value.includes(' ')) {
+      return { 'spacesNotAllowed': true };
     }
     
     return null;
