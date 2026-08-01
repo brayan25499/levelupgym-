@@ -25,6 +25,7 @@ public class LevelUpDbContext : DbContext
     public DbSet<Permission> Permissions { get; set; }
     public DbSet<RolePermission> RolePermissions { get; set; }
     public DbSet<UserRole> UserRoles { get; set; }
+    public DbSet<MensajeContacto> MensajesContacto { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -133,6 +134,15 @@ public class LevelUpDbContext : DbContext
         {
             entity.ToTable("usuarios_roles");
             entity.HasIndex(e => new { e.IdAuth, e.IdRol }).IsUnique();
+        });
+
+        // MensajesContacto Table
+        modelBuilder.Entity<MensajeContacto>(entity =>
+        {
+            entity.ToTable("mensajes_contacto");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Estado).HasDefaultValue("Pendiente");
+            entity.Property(e => e.FechaEnvio).HasDefaultValueSql("GETUTCDATE()");
         });
 
     }
