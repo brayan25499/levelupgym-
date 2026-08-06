@@ -28,7 +28,7 @@ export class AdminDashboardComponent implements OnInit {
   activeTab = 'resumen';
 
   ngOnInit() {
-    if (!this.authService.isLoggedIn()) {
+    if (!this.authService.currentUser()) {
       this.router.navigate(['/login']);
       return;
     }
