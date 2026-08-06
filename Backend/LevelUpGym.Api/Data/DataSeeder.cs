@@ -74,12 +74,13 @@ public static class DataSeeder
         }
 
         // 4. Seed Categories
-        if (!context.Categories.Any())
+        if (!context.Categories.Any(c => c.Nombre == "Máquinas"))
         {
             context.Categories.AddRange(
                 new Category { Nombre = "Proteínas" },
                 new Category { Nombre = "Suplementos" },
-                new Category { Nombre = "Accesorios" }
+                new Category { Nombre = "Accesorios" },
+                new Category { Nombre = "Máquinas" }
             );
             context.SaveChanges();
         }
@@ -101,8 +102,8 @@ public static class DataSeeder
             context.SaveChanges();
         }
 
-        // 6. Seed Products (requires Items and Categories first)
-        if (context.Products.Count() < 8)
+        // 6. Seed Products and Machines (requires Items and Categories first)
+        if (context.Products.Count() < 12)
         {
             var existingProducts = context.Products.ToList();
             if (existingProducts.Any())
@@ -114,9 +115,10 @@ public static class DataSeeder
             var catProtein = context.Categories.First(c => c.Nombre == "Proteínas").IdCategoria;
             var catSupp = context.Categories.First(c => c.Nombre == "Suplementos").IdCategoria;
             var catAcc = context.Categories.First(c => c.Nombre == "Accesorios").IdCategoria;
+            var catMac = context.Categories.First(c => c.Nombre == "Máquinas").IdCategoria;
 
             var items = new List<Item>();
-            for (int i = 0; i < 8; i++)
+            for (int i = 0; i < 12; i++)
             {
                 items.Add(new Item { CreatedAt = DateTime.UtcNow });
             }
@@ -131,7 +133,13 @@ public static class DataSeeder
                 new Product { Nombre = "Cinturón Gym de Cuero", PrecioVenta = 95000, IdCategoria = catAcc, IdItem = items[4].IdItem, Descripcion = "Soporte lumbar premium para levantamientos pesados.", Estado = "ACTIVO" },
                 new Product { Nombre = "Straps de Agarre Pro", PrecioVenta = 29900, IdCategoria = catAcc, IdItem = items[5].IdItem, Descripcion = "Correas de algodón reforzado para mejorar tu agarre.", Estado = "ACTIVO" },
                 new Product { Nombre = "Aminoácidos BCAA 300g", PrecioVenta = 79900, IdCategoria = catSupp, IdItem = items[6].IdItem, Descripcion = "Previene el catabolismo y mejora la síntesis proteica.", Estado = "ACTIVO" },
-                new Product { Nombre = "Multivitamínico Sports 90 caps", PrecioVenta = 49900, IdCategoria = catSupp, IdItem = items[7].IdItem, Descripcion = "Vitaminas y minerales esenciales para deportistas.", Estado = "ACTIVO" }
+                new Product { Nombre = "Multivitamínico Sports 90 caps", PrecioVenta = 49900, IdCategoria = catSupp, IdItem = items[7].IdItem, Descripcion = "Vitaminas y minerales esenciales para deportistas.", Estado = "ACTIVO" },
+                
+                // Máquinas de Gimnasio
+                new Product { Nombre = "Caminadora Profesional T800", PrecioVenta = 4500000, IdCategoria = catMac, IdItem = items[8].IdItem, Descripcion = "Caminadora de uso rudo con pantalla interactiva e inclinación automática.", Estado = "ACTIVO" },
+                new Product { Nombre = "Prensa de Piernas 45 Grados", PrecioVenta = 3800000, IdCategoria = catMac, IdItem = items[9].IdItem, Descripcion = "Prensa hidráulica para trabajo pesado de cuádriceps y glúteos.", Estado = "ACTIVO" },
+                new Product { Nombre = "Rack de Sentadillas Smith Pro", PrecioVenta = 5200000, IdCategoria = catMac, IdItem = items[10].IdItem, Descripcion = "Jaula multifuncional guiada con ganchos de seguridad.", Estado = "ACTIVO" },
+                new Product { Nombre = "Bicicleta Estática Spin Max", PrecioVenta = 2100000, IdCategoria = catMac, IdItem = items[11].IdItem, Descripcion = "Bicicleta de spinning profesional con resistencia magnética silenciosa.", Estado = "ACTIVO" }
             );
             context.SaveChanges();
         }
