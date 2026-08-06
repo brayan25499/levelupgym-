@@ -1,0 +1,13 @@
+{
+  "buildCommand": "cd Frontend/LevelUpGym && npm install && npm run build",
+  "outputDirectory": "Frontend/LevelUpGym/dist/LevelUpGym/browser",
+  "routes": [
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/.*",
+      "dest": "/index.html"
+    }
+  ]
+}
