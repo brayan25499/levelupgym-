@@ -29,16 +29,20 @@ public class JwtService : IJwtService
             new Claim("IdAuth", auth.IdAuth.ToString())
         };
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"] ?? "super_secret_key_levelupgym_2026_pro_extra_long_for_sha512_security_standard"));
+        var secretKey = _config["Jwt:Key"] 
+            ?? _config["JWT_SECRET"] 
+            ?? "LevelUpGym_SuperSecret_SecurityKey_2026_MustBeAtLeast512BitsLong_ForHMACSHA512_Algorithm_Validation!";
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
 
         var tokenDescriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(claims),
-            Expires = DateTime.UtcNow.AddMinutes(30),
+            Expires = DateTime.UtcNow.AddHours(8),
             SigningCredentials = creds,
-            Issuer = _config["Jwt:Issuer"],
-            Audience = _config["Jwt:Audience"]
+            Issuer = _config["Jwt:Issuer"] ?? "LevelUpGymApi",
+            Audience = _config["Jwt:Audience"] ?? "LevelUpGymClient"
         };
 
         var tokenHandler = new JwtSecurityTokenHandler();

@@ -43,23 +43,25 @@ public class Program
                 builder.Configuration.GetConnectionString("DefaultConnection")
             ));
 
-        // JWT
+        // JWT Authentication Configuration
+        var jwtSecretKey = builder.Configuration["Jwt:Key"] 
+            ?? builder.Configuration["JWT_SECRET"] 
+            ?? "LevelUpGym_SuperSecret_SecurityKey_2026_MustBeAtLeast512BitsLong_ForHMACSHA512_Algorithm_Validation!";
+
+        var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "LevelUpGymApi";
+        var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "LevelUpGymClient";
+
         builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
             {
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuerSigningKey = true,
-
-                    IssuerSigningKey = new SymmetricSecurityKey(
-                        Encoding.UTF8.GetBytes(
-                            builder.Configuration["Jwt:Key"] ??
-                            "super_secret_key_levelupgym_2026_pro_extra_long_for_sha512_security_standard"
-                        )
-                    ),
-
-                    ValidateIssuer = false,
-                    ValidateAudience = false,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey)),
+                    ValidateIssuer = true,
+                    ValidIssuer = jwtIssuer,
+                    ValidateAudience = true,
+                    ValidAudience = jwtAudience,
                     RequireExpirationTime = true,
                     ValidateLifetime = true,
                     ClockSkew = TimeSpan.Zero
