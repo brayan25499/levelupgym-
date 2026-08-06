@@ -23,18 +23,22 @@ public class Program
 
         builder.Services.AddScoped<IJwtService, JwtService>();
 
+        // CORS para Angular
         builder.Services.AddCors(options =>
         {
             options.AddPolicy("AllowAngular", policy =>
-                policy.WithOrigins("http://localhost:4200")
-                      .AllowAnyMethod()
-                      .AllowAnyHeader());
+                policy.WithOrigins(
+                    "http://localhost:4200"
+                )
+                .AllowAnyMethod()
+                .AllowAnyHeader());
         });
 
-        // Base de datos PostgreSQL (Supabase)
+        // Base de datos PostgreSQL
         builder.Services.AddDbContext<LevelUpDbContext>(options =>
             options.UseNpgsql(
-                builder.Configuration.GetConnectionString("DefaultConnection")));
+                builder.Configuration.GetConnectionString("DefaultConnection")
+            ));
 
         // JWT
         builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -43,12 +47,14 @@ public class Program
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuerSigningKey = true,
+
                     IssuerSigningKey = new SymmetricSecurityKey(
                         Encoding.UTF8.GetBytes(
                             builder.Configuration["Jwt:Key"] ??
                             "super_secret_key_levelupgym_2026_pro_extra_long_for_sha512_security_standard"
                         )
                     ),
+
                     ValidateIssuer = false,
                     ValidateAudience = false,
                     RequireExpirationTime = true,
@@ -58,12 +64,9 @@ public class Program
             });
 
         builder.Services.AddAuthorization();
-        builder.Services.AddOpenApi();
 
         var app = builder.Build();
 
-        // OpenAPI también en Producción
-        app.MapOpenApi();
 
         app.UseCors("AllowAngular");
 
@@ -71,6 +74,7 @@ public class Program
         app.UseAuthorization();
 
         app.MapControllers();
+
 
         // Ruta de prueba
         app.MapGet("/", () =>
@@ -81,6 +85,7 @@ public class Program
                 estado = "OK"
             });
         });
+
 
         // Aplicar migraciones y cargar datos iniciales
         using (var scope = app.Services.CreateScope())
@@ -98,9 +103,10 @@ public class Program
             catch (Exception ex)
             {
                 var logger = services.GetRequiredService<ILogger<Program>>();
-                logger.LogError(ex, "An error occurred while seeding the database.");
+                logger.LogError(ex, "Error al aplicar migraciones o cargar datos iniciales.");
             }
         }
+
 
         app.Run();
     }
