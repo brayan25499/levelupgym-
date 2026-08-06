@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../services/auth';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -27,9 +28,7 @@ export class AdminDashboardComponent implements OnInit {
   activeTab = 'resumen';
 
   ngOnInit() {
-    // Validate if logged-in user is admin
-    const currentUser = this.authService.currentUser();
-    if (!currentUser || currentUser.email !== 'admin@levelup.com') {
+    if (!this.authService.isLoggedIn()) {
       this.router.navigate(['/login']);
       return;
     }
@@ -39,7 +38,7 @@ export class AdminDashboardComponent implements OnInit {
 
   loadStats() {
     // Fetch clients
-    this.http.get<any[]>('http://localhost:5143/api/clients').subscribe({
+    this.http.get<any[]>(`${environment.apiUrl}/clients`).subscribe({
       next: (data) => {
         this.clients.set(data);
         this.newMembersCount.set(data.length);
@@ -47,7 +46,7 @@ export class AdminDashboardComponent implements OnInit {
     });
 
     // Fetch sales
-    this.http.get<any[]>('http://localhost:5143/api/sales/all').subscribe({
+    this.http.get<any[]>(`${environment.apiUrl}/sales/all`).subscribe({
       next: (data) => {
         this.sales.set(data);
         const revenue = data.reduce((acc, curr) => acc + (curr.total || 0), 0);
@@ -56,7 +55,7 @@ export class AdminDashboardComponent implements OnInit {
     });
 
     // Fetch products count
-    this.http.get<any[]>('http://localhost:5143/api/products').subscribe({
+    this.http.get<any[]>(`${environment.apiUrl}/products`).subscribe({
       next: (data) => {
         this.productsCount.set(data.length);
       }

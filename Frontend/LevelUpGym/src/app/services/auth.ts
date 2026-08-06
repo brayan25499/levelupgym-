@@ -1,6 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface AuthResponse {
   email: string;
@@ -13,7 +14,7 @@ export interface AuthResponse {
 })
 export class AuthService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:5143/api/auth';
+  private apiUrl = `${environment.apiUrl}/auth`;
   
   currentUser = signal<AuthResponse | null>(this.getUserFromStorage());
 
@@ -96,14 +97,14 @@ export class AuthService {
   }
 
   getProfile(): Observable<any> {
-    return this.http.get<any>('http://localhost:5143/api/clients/profile');
+    return this.http.get<any>(`${environment.apiUrl}/clients/profile`);
   }
 
   updateProfile(data: any): Observable<any> {
-    return this.http.put<any>('http://localhost:5143/api/clients/profile', data);
+    return this.http.put<any>(`${environment.apiUrl}/clients/profile`, data);
   }
 
   deleteAccount(): Observable<any> {
-    return this.http.delete<any>('http://localhost:5143/api/clients/profile');
+    return this.http.delete<any>(`${environment.apiUrl}/clients/profile`);
   }
 }

@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { tap } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
 
 export interface Membership {
   idMembresia: number;
@@ -16,7 +17,7 @@ export interface Membership {
 })
 export class MembershipService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:5143/api/memberships';
+  private apiUrl = `${environment.apiUrl}/memberships`;
   private cachedMemberships: Membership[] | null = null;
 
   getMemberships(): Observable<Membership[]> {
