@@ -23,15 +23,14 @@ public class Program
 
         builder.Services.AddScoped<IJwtService, JwtService>();
 
-        // CORS para Angular
+        // CORS para Angular y producción
         builder.Services.AddCors(options =>
         {
             options.AddPolicy("AllowAngular", policy =>
-                policy.WithOrigins(
-                    "http://localhost:4200"
-                )
-                .AllowAnyMethod()
-                .AllowAnyHeader());
+                policy.SetIsOriginAllowed(_ => true)
+                      .AllowAnyMethod()
+                      .AllowAnyHeader()
+                      .AllowCredentials());
         });
 
         // Base de datos PostgreSQL
