@@ -13,7 +13,7 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
-        // Add services to the container.
+        // Servicios
         builder.Services.AddControllers()
             .AddJsonOptions(options =>
             {
@@ -31,11 +31,12 @@ public class Program
                       .AllowAnyHeader());
         });
 
-        // PostgreSQL (Supabase)
+        // Base de datos PostgreSQL (Supabase)
         builder.Services.AddDbContext<LevelUpDbContext>(options =>
             options.UseNpgsql(
                 builder.Configuration.GetConnectionString("DefaultConnection")));
 
+        // JWT
         builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
             {
@@ -61,19 +62,27 @@ public class Program
 
         var app = builder.Build();
 
-        // Configure the HTTP request pipeline.
-        if (app.Environment.IsDevelopment())
-        {
-            app.MapOpenApi();
-        }
+        // OpenAPI también en Producción
+        app.MapOpenApi();
 
         app.UseCors("AllowAngular");
+
         app.UseAuthentication();
         app.UseAuthorization();
 
         app.MapControllers();
 
-        // Crear o actualizar la base de datos con migraciones
+        // Ruta de prueba
+        app.MapGet("/", () =>
+        {
+            return Results.Ok(new
+            {
+                mensaje = "LevelUpGym API funcionando correctamente",
+                estado = "OK"
+            });
+        });
+
+        // Aplicar migraciones y cargar datos iniciales
         using (var scope = app.Services.CreateScope())
         {
             var services = scope.ServiceProvider;
@@ -82,10 +91,8 @@ public class Program
             {
                 var context = services.GetRequiredService<LevelUpDbContext>();
 
-                // Ejecuta las migraciones automáticamente
                 context.Database.Migrate();
 
-                // Inserta datos iniciales
                 DataSeeder.Seed(context);
             }
             catch (Exception ex)
