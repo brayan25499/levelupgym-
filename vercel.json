@@ -1,13 +1,11 @@
 {
-  "buildCommand": "cd Frontend/LevelUpGym && npm install && npm run build",
+  "framework": "angular",
+  "buildCommand": "npm --prefix Frontend/LevelUpGym run build",
   "outputDirectory": "Frontend/LevelUpGym/dist/LevelUpGym/browser",
-  "routes": [
+  "rewrites": [
     {
-      "handle": "filesystem"
-    },
-    {
-      "src": "/.*",
-      "dest": "/index.html"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
