@@ -161,15 +161,24 @@ public class AuthController : ControllerBase
         }
 
         // Password hash check
+        if (auth.Password == null || auth.PasswordSalt == null)
+        {
+            return Unauthorized(new { message = genericError });
+        }
+
         using var hmac = new HMACSHA512(auth.PasswordSalt);
         var computedHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(password));
-        bool passwordMatches = true;
+        bool passwordMatches = computedHash.Length == auth.Password.Length;
 
-        for (int i = 0; i < computedHash.Length; i++)
+        if (passwordMatches)
         {
-            if (computedHash[i] != auth.Password[i]) 
+            for (int i = 0; i < computedHash.Length; i++)
             {
-                passwordMatches = false;
+                if (computedHash[i] != auth.Password[i]) 
+                {
+                    passwordMatches = false;
+                    break;
+                }
             }
         }
 
