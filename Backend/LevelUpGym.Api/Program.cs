@@ -23,20 +23,18 @@ public class Program
 
         builder.Services.AddScoped<IJwtService, JwtService>();
 
-        // CORS para Angular y producción (Permitir todo tipo de origen y headers)
+        // CORS para Angular y producción en Vercel
         builder.Services.AddCors(options =>
         {
             options.AddPolicy("AllowAngular", policy =>
-                policy.SetIsOriginAllowed(_ => true)
+                policy.AllowAnyOrigin()
                       .AllowAnyMethod()
-                      .AllowAnyHeader()
-                      .AllowCredentials());
+                      .AllowAnyHeader());
 
             options.AddDefaultPolicy(policy =>
-                policy.SetIsOriginAllowed(_ => true)
+                policy.AllowAnyOrigin()
                       .AllowAnyMethod()
-                      .AllowAnyHeader()
-                      .AllowCredentials());
+                      .AllowAnyHeader());
         });
 
         // Base de datos PostgreSQL
