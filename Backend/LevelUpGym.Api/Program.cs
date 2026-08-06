@@ -23,10 +23,16 @@ public class Program
 
         builder.Services.AddScoped<IJwtService, JwtService>();
 
-        // CORS para Angular y producción
+        // CORS para Angular y producción (Permitir todo tipo de origen y headers)
         builder.Services.AddCors(options =>
         {
             options.AddPolicy("AllowAngular", policy =>
+                policy.SetIsOriginAllowed(_ => true)
+                      .AllowAnyMethod()
+                      .AllowAnyHeader()
+                      .AllowCredentials());
+
+            options.AddDefaultPolicy(policy =>
                 policy.SetIsOriginAllowed(_ => true)
                       .AllowAnyMethod()
                       .AllowAnyHeader()
@@ -66,7 +72,7 @@ public class Program
 
         var app = builder.Build();
 
-
+        app.UseCors();
         app.UseCors("AllowAngular");
 
         app.UseAuthentication();
