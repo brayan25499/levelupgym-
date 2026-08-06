@@ -43,7 +43,7 @@ public static class DataSeeder
                 Email = "admin@levelup.com",
                 Password = hmac.ComputeHash(Encoding.UTF8.GetBytes("admin123")),
                 PasswordSalt = hmac.Key,
-                Estado = "Active"
+                Estado = "ACTIVO"
             };
             context.Auths.Add(adminAuth);
             context.SaveChanges();
@@ -58,7 +58,7 @@ public static class DataSeeder
             using var hmac = new System.Security.Cryptography.HMACSHA512();
             adminAuth.Password = hmac.ComputeHash(Encoding.UTF8.GetBytes("admin123"));
             adminAuth.PasswordSalt = hmac.Key;
-            adminAuth.Estado = "Active";
+            adminAuth.Estado = "ACTIVO";
             context.SaveChanges();
         }
 
