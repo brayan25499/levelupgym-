@@ -88,16 +88,22 @@ export class RegisterComponent implements OnInit {
 
   private initializeGoogleSignIn() {
     setTimeout(() => {
-      if (typeof google !== 'undefined') {
-        google.accounts.id.initialize({
-          client_id: '984365749210-placeholder.apps.googleusercontent.com', // Standard client ID placeholder
-          callback: this.handleGoogleCredentialResponse.bind(this)
-        });
-        
-        google.accounts.id.renderButton(
-          document.getElementById('google-btn-register-container'),
-          { theme: 'filled_black', size: 'large', width: '100%', text: 'signup_with' }
-        );
+      try {
+        if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+          const container = document.getElementById('google-btn-register-container');
+          if (container) {
+            google.accounts.id.initialize({
+              client_id: '984365749210-placeholder.apps.googleusercontent.com',
+              callback: this.handleGoogleCredentialResponse.bind(this)
+            });
+            google.accounts.id.renderButton(
+              container,
+              { theme: 'filled_black', size: 'large', width: '100%', text: 'signup_with' }
+            );
+          }
+        }
+      } catch (e) {
+        console.warn('Google Sign-In initialization skipped (requires valid Google Client ID).');
       }
     }, 1000);
   }
