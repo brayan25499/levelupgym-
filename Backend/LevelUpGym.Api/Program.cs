@@ -17,7 +17,8 @@ public class Program
         builder.Services.AddControllers()
             .AddJsonOptions(options =>
             {
-                options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+                options.JsonSerializerOptions.ReferenceHandler =
+                    System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
             });
 
         builder.Services.AddScoped<IJwtService, JwtService>();
@@ -25,13 +26,15 @@ public class Program
         builder.Services.AddCors(options =>
         {
             options.AddPolicy("AllowAngular", policy =>
-                policy.WithOrigins("http://localhost:4200") // Angular default port
+                policy.WithOrigins("http://localhost:4200")
                       .AllowAnyMethod()
                       .AllowAnyHeader());
         });
 
+        // PostgreSQL (Supabase)
         builder.Services.AddDbContext<LevelUpDbContext>(options =>
-            options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+            options.UseNpgsql(
+                builder.Configuration.GetConnectionString("DefaultConnection")));
 
         builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
@@ -39,7 +42,12 @@ public class Program
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? "super_secret_key_levelupgym_2026_pro_extra_long_for_sha512_security_standard")),
+                    IssuerSigningKey = new SymmetricSecurityKey(
+                        Encoding.UTF8.GetBytes(
+                            builder.Configuration["Jwt:Key"] ??
+                            "super_secret_key_levelupgym_2026_pro_extra_long_for_sha512_security_standard"
+                        )
+                    ),
                     ValidateIssuer = false,
                     ValidateAudience = false,
                     RequireExpirationTime = true,
@@ -62,17 +70,23 @@ public class Program
         app.UseCors("AllowAngular");
         app.UseAuthentication();
         app.UseAuthorization();
+
         app.MapControllers();
 
-        // Seed Database
+        // Crear o actualizar la base de datos con migraciones
         using (var scope = app.Services.CreateScope())
         {
             var services = scope.ServiceProvider;
+
             try
             {
                 var context = services.GetRequiredService<LevelUpDbContext>();
-                context.Database.EnsureCreated();
-                LevelUpGym.Api.Data.DataSeeder.Seed(context);
+
+                // Ejecuta las migraciones automáticamente
+                context.Database.Migrate();
+
+                // Inserta datos iniciales
+                DataSeeder.Seed(context);
             }
             catch (Exception ex)
             {
