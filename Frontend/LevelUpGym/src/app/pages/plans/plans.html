@@ -24,7 +24,7 @@
           </div>
           <div class="plan-header">
             <div class="plan-icon">
-              <img [src]="plan.icon" [alt]="plan.nombre + ' Crown'" class="crown-img">
+              <img [src]="plan.icon" [alt]="plan.nombre + ' Crown'" class="crown-img" (error)="onImgError($event)">
             </div>
             <h3 class="plan-name">{{ plan.nombre }}</h3>
             <p class="plan-desc">{{ plan.descripcion }}</p>

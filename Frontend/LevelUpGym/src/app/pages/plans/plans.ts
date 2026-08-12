@@ -135,5 +135,15 @@ export class PlansComponent implements OnInit {
       error: (err) => alert('Error al procesar compra: ' + (err.error?.message || err.message))
     });
   }
+
+  onImgError(event: Event) {
+    const target = event.target as HTMLImageElement;
+    if (target) {
+      target.style.display = 'none';
+      if (target.parentElement) {
+        target.parentElement.innerHTML = '<span style="font-size: 2.5rem; line-height: 1;">👑</span>';
+      }
+    }
+  }
 }
 
