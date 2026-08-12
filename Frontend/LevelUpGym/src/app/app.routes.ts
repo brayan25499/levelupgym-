@@ -6,6 +6,9 @@ import { LoginComponent } from './pages/login/login';
 import { RegisterComponent } from './pages/register/register';
 import { AdminDashboardComponent } from './pages/admin-dashboard/admin-dashboard';
 import { DashboardComponent } from './pages/dashboard/dashboard';
+import { PrivacyComponent } from './pages/privacy/privacy';
+import { TermsComponent } from './pages/terms/terms';
+import { CookiesComponent } from './pages/cookies/cookies';
 import { authGuard } from './services/auth.guard';
 
 export const routes: Routes = [
@@ -17,5 +20,8 @@ export const routes: Routes = [
   { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] },
   { path: 'profile', component: DashboardComponent, canActivate: [authGuard] }, // For now, profile is part of dashboard
   { path: 'admin', component: AdminDashboardComponent },
+  { path: 'privacidad', component: PrivacyComponent },
+  { path: 'terminos', component: TermsComponent },
+  { path: 'cookies', component: CookiesComponent },
   { path: '**', redirectTo: '' }
 ];

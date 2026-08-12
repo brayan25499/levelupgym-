@@ -25,16 +25,22 @@
 .footer-social { display: flex; gap: 0.5rem; }
 
 .social-icon {
-  font-family: var(--font-heading);
-  font-size: 0.7rem;
-  font-weight: 700;
-  width: 36px; height: 36px;
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  background: var(--black);
   border: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--gray);
+  color: var(--red);
   transition: var(--transition);
+}
+
+.social-icon:hover {
+  background: var(--red);
+  border-color: var(--red);
+  color: var(--white);
+  transform: translateY(-2px);
 }
 
 .footer-col h4 {

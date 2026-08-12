@@ -1,14 +1,190 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8">
   <title>LevelUpGym</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@300;400;600;700;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@300;400;600;700;900&family=Barlow:wght@300;400;500&display=swap"
+    rel="stylesheet">
+
+
+  <style>
+    #app-preloader {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: #050505;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+      transition: opacity 0.5s ease;
+    }
+
+    #app-preloader.fade-out {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .preloader-stage {
+      position: relative;
+      width: 320px;
+      height: 320px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .preloader-ring {
+      position: absolute;
+      inset: 0;
+      margin: auto;
+      border-radius: 50%;
+      border: 1px dashed;
+      animation: preloader-spin linear infinite;
+    }
+
+    .preloader-ring::before {
+      content: '';
+      position: absolute;
+      top: -4px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #dc143c;
+      box-shadow: 0 0 10px 3px rgba(220, 20, 60, 0.7);
+    }
+
+    .ring-1 {
+      width: 170px;
+      height: 170px;
+      border-color: rgba(220, 20, 60, 0.45);
+      animation-duration: 7s;
+    }
+
+    .ring-2 {
+      width: 240px;
+      height: 240px;
+      border-color: rgba(220, 20, 60, 0.25);
+      animation-duration: 12s;
+      animation-direction: reverse;
+    }
+
+    .ring-3 {
+      width: 310px;
+      height: 310px;
+      border-color: rgba(220, 20, 60, 0.12);
+      animation-duration: 18s;
+    }
+
+    @keyframes preloader-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .preloader-mark {
+      position: relative;
+      z-index: 2;
+    }
+
+    .preloader-progress {
+      transform: rotate(-90deg);
+      transform-origin: 65px 65px;
+      animation: preloader-ring 5s ease-in-out infinite;
+    }
+
+    .preloader-pct {
+      color: #fff;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 2px;
+    }
+
+    .preloader-label {
+      color: rgba(255, 255, 255, 0.35);
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 10px;
+      letter-spacing: 4px;
+      margin-top: -1rem;
+    }
+
+    @keyframes preloader-ring {
+      0% {
+        stroke-dashoffset: 330;
+      }
+
+      50% {
+        stroke-dashoffset: 50;
+      }
+
+      100% {
+        stroke-dashoffset: 330;
+      }
+    }
+  </style>
+
 </head>
+
 <body>
+  <div id="app-preloader">
+    <div class="preloader-stage">
+      <div class="preloader-ring ring-1"></div>
+      <div class="preloader-ring ring-2"></div>
+      <div class="preloader-ring ring-3"></div>
+      <svg class="preloader-mark" width="130" height="130" viewBox="0 0 130 130">
+        <circle cx="65" cy="65" r="56" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="2" />
+        <circle class="preloader-progress" cx="65" cy="65" r="56" fill="none" stroke="#dc143c" stroke-width="2"
+          stroke-linecap="round" stroke-dasharray="352" stroke-dashoffset="90" />
+        <text x="65" y="78" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="800"
+          font-size="36" letter-spacing="-1" fill="#fff">L<tspan fill="#dc143c">U</tspan></text>
+      </svg>
+    </div>
+    <div class="preloader-pct" id="preloader-pct">0%</div>
+    <div class="preloader-label">CARGANDO</div>
+  </div>
+
   <app-root></app-root>
+
+  <script>
+    (function () {
+      var pctEl = document.getElementById('preloader-pct');
+      var pct = 0;
+      var pctInterval = setInterval(function () {
+        pct = pct >= 96 ? 96 : pct + Math.floor(Math.random() * 6) + 1;
+        pctEl.textContent = pct + '%';
+      }, 180);
+
+      function hidePreloader() {
+        clearInterval(pctInterval);
+        pctEl.textContent = '100%';
+        var el = document.getElementById('app-preloader');
+        setTimeout(function () {
+          el.classList.add('fade-out');
+          setTimeout(function () { el.remove(); }, 500);
+        }, 200);
+      }
+
+      var appRoot = document.querySelector('app-root');
+      var observer = new MutationObserver(function () {
+        if (appRoot.children.length > 0) {
+          observer.disconnect();
+          hidePreloader();
+        }
+      });
+      observer.observe(appRoot, { childList: true });
+
+      setTimeout(hidePreloader, 6000);
+    })();
+  </script>
 </body>
+
 </html>
