@@ -18,13 +18,13 @@
       </div>
 
       <div class="plans-grid">
-        <div class="plan-card" *ngFor="let plan of plans()"
-          [class.featured-plan]="plan.nombre.includes('Warrior') || plan.nombre.includes('Elite')">
-          <div class="popular-badge" *ngIf="plan.nombre.includes('Warrior') || plan.nombre.includes('Elite')">MÁS
-            POPULAR</div>
+        <div class="plan-card" *ngFor="let plan of plans()" [ngClass]="'tier-' + plan.tier">
+          <div class="popular-badge" *ngIf="plan.badge" [class.badge-gold]="plan.tier === 'oro'">
+            {{ plan.badge }}
+          </div>
           <div class="plan-header">
             <div class="plan-icon">
-              {{ plan.nombre.includes('Basic') ? '⚡' : (plan.nombre.includes('Elite') ? '🔥' : '👑') }}
+              <img [src]="plan.icon" [alt]="plan.nombre + ' Crown'" class="crown-img">
             </div>
             <h3 class="plan-name">{{ plan.nombre }}</h3>
             <p class="plan-desc">{{ plan.descripcion }}</p>
@@ -35,13 +35,11 @@
             <span class="period">{{ isAnnual() ? '/mes (facturado anual)' : '/mes' }}</span>
           </div>
           <ul class="plan-features">
-            <li class="included">✓ Acceso a sala de pesas</li>
-            <li class="included">✓ Clases grupales</li>
-            <li class="included">✓ Vestidores y duchas</li>
-            <li class="included">✓ App LevelUp básica</li>
+            <li class="included" *ngFor="let benefit of plan.beneficios">
+              <span class="check-icon">✓</span> {{ benefit }}
+            </li>
           </ul>
-          <button class="plan-btn" [class.btn-primary]="plan.nombre.includes('Warrior')"
-            (click)="buyPlan(plan.idMembresia)">
+          <button class="plan-btn" [ngClass]="'btn-tier-' + plan.tier" (click)="buyPlan(plan.idMembresia)">
             ELEGIR PLAN
           </button>
         </div>
