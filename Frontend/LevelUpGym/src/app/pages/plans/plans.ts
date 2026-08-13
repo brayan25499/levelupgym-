@@ -3,6 +3,7 @@ import { MembershipService, Membership } from '../../services/membership';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth';
+import { AlertService } from '../../services/alert.service';
 
 export interface PlanDisplay {
   idMembresia: number;
@@ -72,6 +73,7 @@ const DEFAULT_PLANS_DATA: Record<string, Omit<PlanDisplay, 'idMembresia' | 'prec
 export class PlansComponent implements OnInit {
   private membershipService = inject(MembershipService);
   private authService = inject(AuthService);
+  private alertService = inject(AlertService);
   private router = inject(Router);
 
   plans = signal<PlanDisplay[]>([
@@ -129,10 +131,10 @@ export class PlansComponent implements OnInit {
 
     this.membershipService.buyMembership(id).subscribe({
       next: (res) => {
-        alert(res.message);
+        this.alertService.success(res.message || '¡Membresía adquirida con éxito!');
         this.router.navigate(['/dashboard']);
       },
-      error: (err) => alert('Error al procesar compra: ' + (err.error?.message || err.message))
+      error: (err) => this.alertService.error('Error al procesar compra: ' + (err.error?.message || err.message))
     });
   }
 
