@@ -91,6 +91,7 @@
                   <span *ngIf="registerForm.get('numDocumento')?.hasError('required')">Campo obligatorio</span>
                   <span *ngIf="registerForm.get('numDocumento')?.hasError('noSpaces')">No se permiten espacios en el número de documento</span>
                   <span *ngIf="registerForm.get('numDocumento')?.hasError('pattern')">Solo números permitidos</span>
+                  <span *ngIf="registerForm.get('numDocumento')?.hasError('minlength')">Mínimo 5 dígitos</span>
                   <span *ngIf="registerForm.get('numDocumento')?.hasError('maxlength')">Máximo 10 dígitos</span>
                 </div>
             </div>
@@ -117,33 +118,34 @@
                         {{country.flag}} {{country.dialCode}}
                     </option>
                 </select>
-                <input type="text" class="form-input phone-number-input" formControlName="telefono" placeholder="3001234567" [class.invalid]="registerForm.get('telefono')?.invalid && registerForm.get('telefono')?.touched">
+                <input type="text" class="form-input phone-number-input" formControlName="telefono" placeholder="3001234567" maxlength="10" [class.invalid]="registerForm.get('telefono')?.invalid && registerForm.get('telefono')?.touched">
             </div>
             <div class="error-msg" *ngIf="registerForm.get('telefono')?.invalid && registerForm.get('telefono')?.touched">
               <span *ngIf="registerForm.get('telefono')?.hasError('required')">Campo obligatorio</span>
               <span *ngIf="registerForm.get('telefono')?.hasError('spacesAtEnds')">No se permiten espacios al inicio o final</span>
               <span *ngIf="registerForm.get('telefono')?.hasError('onlyNumbers')">Solo números permitidos</span>
-              <span *ngIf="registerForm.get('telefono')?.hasError('maxLength')">Máximo 15 dígitos</span>
+              <span *ngIf="registerForm.get('telefono')?.hasError('minLength')">Mínimo 7 dígitos</span>
+              <span *ngIf="registerForm.get('telefono')?.hasError('maxLength')">Máximo 10 dígitos</span>
             </div>
         </div>
 
         <div class="form-row">
             <div class="form-group">
                 <label>PESO (KG)</label>
-                <input type="text" class="form-input" formControlName="peso" placeholder="75" [class.invalid]="registerForm.get('peso')?.invalid && registerForm.get('peso')?.touched">
+                <input type="text" class="form-input" formControlName="peso" placeholder="75" maxlength="5" [class.invalid]="registerForm.get('peso')?.invalid && registerForm.get('peso')?.touched">
                 <div class="error-msg" *ngIf="registerForm.get('peso')?.invalid && registerForm.get('peso')?.touched">
                   <span *ngIf="registerForm.get('peso')?.hasError('required')">Campo obligatorio</span>
-                  <span *ngIf="registerForm.get('peso')?.hasError('invalidNumeric')">Solo números permitidos</span>
-                  <span *ngIf="registerForm.get('peso')?.hasError('maxLength')">Máximo 3 dígitos</span>
+                  <span *ngIf="registerForm.get('peso')?.hasError('invalidFormat')">Formato inválido (ej: 75 o 75.5)</span>
+                  <span *ngIf="registerForm.get('peso')?.hasError('outOfRange')">Peso debe estar entre 30 y 300 kg</span>
                 </div>
             </div>
             <div class="form-group">
                 <label>ESTATURA (CM)</label>
-                <input type="text" class="form-input" formControlName="estatura" placeholder="175" [class.invalid]="registerForm.get('estatura')?.invalid && registerForm.get('estatura')?.touched">
+                <input type="text" class="form-input" formControlName="estatura" placeholder="175" maxlength="3" [class.invalid]="registerForm.get('estatura')?.invalid && registerForm.get('estatura')?.touched">
                 <div class="error-msg" *ngIf="registerForm.get('estatura')?.invalid && registerForm.get('estatura')?.touched">
                   <span *ngIf="registerForm.get('estatura')?.hasError('required')">Campo obligatorio</span>
-                  <span *ngIf="registerForm.get('estatura')?.hasError('invalidNumeric')">Solo números permitidos</span>
-                  <span *ngIf="registerForm.get('estatura')?.hasError('maxLength')">Máximo 3 dígitos</span>
+                  <span *ngIf="registerForm.get('estatura')?.hasError('invalidFormat')">Solo números enteros permitidos</span>
+                  <span *ngIf="registerForm.get('estatura')?.hasError('outOfRange')">Estatura debe estar entre 100 y 250 cm</span>
                 </div>
             </div>
         </div>

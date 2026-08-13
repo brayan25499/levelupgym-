@@ -164,7 +164,7 @@ export class LoginComponent implements OnDestroy {
       return;
     }
     
-    const emailPattern = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
+    const emailPattern = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.(com|co|es|net|org|edu|gov|io|me|info|cl|ar|mx|pe|ec|ve|com\.co|edu\.co|org\.co)$/i;
     if (!emailPattern.test(email)) {
       this.recoveryEmailInputError = 'Formato de correo electrónico inválido.';
       return;

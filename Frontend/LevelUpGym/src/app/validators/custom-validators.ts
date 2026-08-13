@@ -29,8 +29,9 @@ export function nameValidator(): ValidatorFn {
 
 /**
  * Validador personalizado para Email
- * - Valida formato básico de email
+ * - Valida formato de email
  * - Requiere @
+ * - Requiere una extensión de dominio válida (.com, .co, .es, .net, .org, .edu, .gov, .io, etc.)
  */
 export function emailValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
@@ -50,8 +51,8 @@ export function emailValidator(): ValidatorFn {
       return { 'missingAt': true };
     }
     
-    // Patrón mejorado para email (más flexible que el anterior)
-    const emailPattern = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
+    // Validar formato completo de email con extensión válida
+    const emailPattern = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.(com|co|es|net|org|edu|gov|io|me|info|cl|ar|mx|pe|ec|ve|com\.co|edu\.co|org\.co)$/i;
     
     if (!emailPattern.test(trimmed)) {
       return { 'invalidEmail': true };
@@ -114,13 +115,13 @@ export function passwordValidator(): ValidatorFn {
  * Validador personalizado para Teléfono
  * - No permite espacios al inicio o final
  * - Solo números
- * - Máximo 15 dígitos para números internacionales
+ * - Entre 7 y 10 dígitos (el indicativo del país se agrega por separado)
  */
 export function phoneValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     if (!control.value) return null;
     
-    const value = control.value.trim();
+    const value = control.value.toString().trim();
     
     // Verificar espacios al inicio o final
     if (control.value !== value) {
@@ -132,8 +133,12 @@ export function phoneValidator(): ValidatorFn {
       return { 'onlyNumbers': true };
     }
     
-    // Verificar longitud máxima (15 dígitos para números internacionales)
-    if (value.length > 15) {
+    // Verificar longitud (entre 7 y 10 dígitos)
+    if (value.length < 7) {
+      return { 'minLength': true };
+    }
+    
+    if (value.length > 10) {
       return { 'maxLength': true };
     }
     
@@ -142,26 +147,47 @@ export function phoneValidator(): ValidatorFn {
 }
 
 /**
- * Validador personalizado para Peso y Altura
- * - Solo números
- * - Máximo 3 dígitos
- * - Puede incluir un punto decimal
+ * Validador personalizado para Peso (KG)
+ * - Rango entre 30 kg y 300 kg
+ * - Permite hasta 1 decimal (ej: 75 o 75.5)
  */
-export function numericWithDecimalValidator(): ValidatorFn {
+export function weightValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
-    if (!control.value && control.value !== 0) return null;
+    if (control.value === null || control.value === undefined || control.value === '') return null;
     
-    const value = control.value.toString().trim();
+    const strVal = control.value.toString().trim();
     
-    // Verificar que solo contenga números y un punto decimal
-    if (!/^\d+(\.\d+)?$/.test(value)) {
-      return { 'invalidNumeric': true };
+    if (!/^\d+(\.\d{1})?$/.test(strVal)) {
+      return { 'invalidFormat': true };
     }
     
-    // Verificar longitud máxima de 3 dígitos antes del punto
-    const parts = value.split('.');
-    if (parts[0].length > 3) {
-      return { 'maxLength': true };
+    const val = parseFloat(strVal);
+    if (isNaN(val) || val < 30 || val > 300) {
+      return { 'outOfRange': true };
+    }
+    
+    return null;
+  };
+}
+
+/**
+ * Validador personalizado para Estatura (CM)
+ * - Rango entre 100 cm y 250 cm
+ * - Solo enteros
+ */
+export function heightValidator(): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    if (control.value === null || control.value === undefined || control.value === '') return null;
+    
+    const strVal = control.value.toString().trim();
+    
+    if (!/^\d+$/.test(strVal)) {
+      return { 'invalidFormat': true };
+    }
+    
+    const val = parseInt(strVal, 10);
+    if (isNaN(val) || val < 100 || val > 250) {
+      return { 'outOfRange': true };
     }
     
     return null;
@@ -203,7 +229,7 @@ export function noSpacesValidator(): ValidatorFn {
  * Validador de email para Login
  * - No permite espacios en ninguna posición
  * - Requiere @
- * - Requiere que termine en .com
+ * - Soporta dominios válidos (.com, .co, .es, etc.)
  */
 export function loginEmailValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
@@ -221,8 +247,8 @@ export function loginEmailValidator(): ValidatorFn {
       return { 'missingAt': true };
     }
     
-    // Validar formato completo de email que termine en .com
-    const emailPattern = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.com$/;
+    // Validar formato completo de email con extensión válida
+    const emailPattern = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.(com|co|es|net|org|edu|gov|io|me|info|cl|ar|mx|pe|ec|ve|com\.co|edu\.co|org\.co)$/i;
     
     if (!emailPattern.test(value)) {
       return { 'invalidEmail': true };

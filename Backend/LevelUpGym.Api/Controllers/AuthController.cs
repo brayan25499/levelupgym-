@@ -383,8 +383,8 @@ public class AuthController : ControllerBase
         if (!request.Email.Contains("@"))
             return "El email debe contener @.";
 
-        var emailPattern = @"^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$";
-        if (!Regex.IsMatch(request.Email, emailPattern))
+        var emailPattern = @"^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.(com|co|es|net|org|edu|gov|io|me|info|cl|ar|mx|pe|ec|ve|com\.co|edu\.co|org\.co)$";
+        if (!Regex.IsMatch(request.Email, emailPattern, RegexOptions.IgnoreCase))
             return "Formato de email inválido.";
 
         // Validar Contraseña
@@ -437,15 +437,15 @@ public class AuthController : ControllerBase
         // Validar Peso si se proporciona
         if (request.Peso.HasValue)
         {
-            if (request.Peso <= 0 || request.Peso > 999)
-                return "El peso debe ser un número válido entre 0 y 999.";
+            if (request.Peso < 30 || request.Peso > 300)
+                return "El peso debe estar entre 30 kg y 300 kg.";
         }
 
         // Validar Estatura si se proporciona
         if (request.Estatura.HasValue)
         {
-            if (request.Estatura <= 0 || request.Estatura > 999)
-                return "La estatura debe ser un número válido entre 0 y 999.";
+            if (request.Estatura < 100 || request.Estatura > 250)
+                return "La estatura debe estar entre 100 cm y 250 cm.";
         }
 
         return null; // Sin errores

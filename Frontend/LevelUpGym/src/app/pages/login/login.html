@@ -23,7 +23,7 @@
             <span *ngIf="loginForm.get('email')?.hasError('required')">Campo obligatorio</span>
             <span *ngIf="loginForm.get('email')?.hasError('noSpaces')">El correo electrónico no puede contener espacios</span>
             <span *ngIf="loginForm.get('email')?.hasError('missingAt')">El email debe contener @</span>
-            <span *ngIf="loginForm.get('email')?.hasError('invalidEmail')">El correo debe contener '@' y terminar en '.com'</span>
+            <span *ngIf="loginForm.get('email')?.hasError('invalidEmail')">Formato de email inválido (ej: usuario@dominio.com)</span>
           </div>
         </div>
         <div class="form-group">

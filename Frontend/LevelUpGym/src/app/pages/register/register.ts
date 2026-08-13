@@ -8,7 +8,8 @@ import {
   emailValidator,
   passwordValidator,
   phoneValidator,
-  numericWithDecimalValidator,
+  weightValidator,
+  heightValidator,
   passwordMatchValidator,
   noSpacesValidator
 } from '../../validators/custom-validators';
@@ -59,12 +60,12 @@ export class RegisterComponent implements OnInit {
     password: ['', [Validators.required, passwordValidator()]],
     confirmPassword: ['', [Validators.required]],
     tipoDocumento: ['CC', Validators.required],
-    numDocumento: ['', [Validators.required, Validators.maxLength(10), Validators.pattern(/^[0-9]+$/), noSpacesValidator()]],
+    numDocumento: ['', [Validators.required, Validators.minLength(5), Validators.maxLength(10), Validators.pattern(/^[0-9]+$/), noSpacesValidator()]],
     sexo: ['', Validators.required],
     countryCode: ['+57', Validators.required],
     telefono: ['', [Validators.required, phoneValidator()]],
-    peso: [null, [Validators.required, numericWithDecimalValidator()]],
-    estatura: [null, [Validators.required, numericWithDecimalValidator()]],
+    peso: [null, [Validators.required, weightValidator()]],
+    estatura: [null, [Validators.required, heightValidator()]],
     terminos: [false, Validators.requiredTrue]
   }, {
     validators: passwordMatchValidator('password', 'confirmPassword')
