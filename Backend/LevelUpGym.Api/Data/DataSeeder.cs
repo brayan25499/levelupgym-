@@ -62,6 +62,80 @@ public static class DataSeeder
             context.SaveChanges();
         }
 
+        // 2b. Seed Client User for User Dashboard
+        try
+        {
+            var clientAuth = context.Auths.FirstOrDefault(a => a.Email == "cliente@levelup.com");
+            if (clientAuth == null)
+            {
+                var clientProfile = context.Profiles.FirstOrDefault(p => p.NumDocumento == "555444333");
+                if (clientProfile == null)
+                {
+                    clientProfile = new Profile
+                    {
+                        Nombre = "Usuario",
+                        Apellidos = "Cliente",
+                        TipoDocumento = "CC",
+                        NumDocumento = "555444333",
+                        Telefono = "3205554433",
+                        Sexo = "M",
+                        Peso = 75,
+                        Estatura = 175,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    context.Profiles.Add(clientProfile);
+                    context.SaveChanges();
+                }
+
+                if (!context.Auths.Any(a => a.IdProfile == clientProfile.IdProfile))
+                {
+                    using var hmac = new System.Security.Cryptography.HMACSHA512();
+                    clientAuth = new Auth
+                    {
+                        IdProfile = clientProfile.IdProfile,
+                        Email = "cliente@levelup.com",
+                        Password = hmac.ComputeHash(Encoding.UTF8.GetBytes("Cliente123!")),
+                        PasswordSalt = hmac.Key,
+                        Estado = "ACTIVO",
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    context.Auths.Add(clientAuth);
+                    context.SaveChanges();
+                }
+
+                if (!context.Clients.Any(c => c.IdProfile == clientProfile.IdProfile))
+                {
+                    var clientEntity = new Client
+                    {
+                        IdProfile = clientProfile.IdProfile,
+                        Estado = "ACTIVO",
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    context.Clients.Add(clientEntity);
+                    context.SaveChanges();
+                }
+
+                var clientRole = context.Roles.FirstOrDefault(r => r.Nombre == "Client");
+                if (clientRole != null && clientAuth != null && !context.UserRoles.Any(ur => ur.IdAuth == clientAuth.IdAuth))
+                {
+                    context.UserRoles.Add(new UserRole { IdAuth = clientAuth.IdAuth, IdRol = clientRole.IdRol });
+                    context.SaveChanges();
+                }
+            }
+            else
+            {
+                using var hmac = new System.Security.Cryptography.HMACSHA512();
+                clientAuth.Password = hmac.ComputeHash(Encoding.UTF8.GetBytes("Cliente123!"));
+                clientAuth.PasswordSalt = hmac.Key;
+                clientAuth.Estado = "ACTIVO";
+                context.SaveChanges();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("DataSeeder Client warning: " + ex.Message);
+        }
+
         // 3. Seed EPS
         if (!context.EpsList.Any())
         {
