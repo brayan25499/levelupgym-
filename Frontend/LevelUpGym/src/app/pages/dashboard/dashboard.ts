@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { AuthService } from '../../services/auth';
 import { MembershipService, Membership } from '../../services/membership';
+import { ClassSessionService, ClassSession } from '../../services/class-session.service';
 import { AlertService } from '../../services/alert.service';
 import * as THREE from 'three';
 
@@ -86,6 +87,7 @@ export interface BmiEvaluation {
 export class DashboardComponent implements AfterViewInit, OnDestroy {
   authService = inject(AuthService);
   membershipService = inject(MembershipService);
+  private classService = inject(ClassSessionService);
   private alertService = inject(AlertService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
@@ -396,13 +398,9 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     { id: 4, titulo: 'Récord personal en Press de Banca', descripcion: 'Alcanzar 100 kg en repetición máxima (1RM)', progreso: 50, fechaObjetivo: '10 de Octubre, 2026', estado: 'En progreso' }
   ]);
 
-  sessionsList = signal<UserSession[]>([
-    { id: 101, fecha: '14 de Agosto, 2026', hora: '09:00 AM', entrenamiento: 'Evaluación Físico-Antropométrica', entrenador: 'Carlos Ruiz (Coach Pro)', estado: 'Programada' },
-    { id: 102, fecha: '16 de Agosto, 2026', hora: '05:30 PM', entrenamiento: 'Entrenamiento de Hipertrofia Torso', entrenador: 'Sofía Martínez (Coach)', estado: 'Programada' },
-    { id: 103, fecha: '11 de Agosto, 2026', hora: '08:00 AM', entrenamiento: 'Sesión de Funcional & HIIT', entrenador: 'Carlos Ruiz (Coach Pro)', estado: 'Completada' },
-    { id: 104, fecha: '08 de Agosto, 2026', hora: '06:00 PM', entrenamiento: 'Clase Grupal Spinning Power', entrenador: 'Ana López (Instructor)', estado: 'Completada' },
-    { id: 105, fecha: '04 de Agosto, 2026', hora: '10:00 AM', entrenamiento: 'Asesoría Nutricional Personalizada', entrenador: 'Dra. Elena Gómez (Nutricionista)', estado: 'Cancelada' }
-  ]);
+  // Available classes and enrolled classes
+  availableClasses = signal<ClassSession[]>([]);
+  myClasses = signal<ClassSession[]>([]);
 
   notificationsSettings = {
     emailAlerts: true,
@@ -647,11 +645,45 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
       if (params['section']) {
         this.setSection(params['section']);
       }
+      if (params['tab']) {
+        this.setSection(params['tab']);
+      }
     });
     this.fetchProfile();
     this.fetchPlans();
 
+    this.authService.getProfile().subscribe({
+      next: (data) => {
+        this.profileData.set(data);
+        if (data.peso && data.estatura) {
+          this.bmiForm.patchValue({
+            peso: data.peso,
+            estatura: data.estatura
+          });
+        }
+      },
+      error: () => {
+        this.alertService.error('Error al cargar perfil.');
+      }
+    });
+
+    this.membershipService.getMemberships().subscribe(data => {
+      this.availablePlans.set(data);
+    });
+
+    this.loadClasses();
     this.selectedMuscle.set(this.musclesDatabase['pectoral']);
+  }
+
+  loadClasses() {
+    this.classService.getClasses().subscribe({
+      next: (data) => {
+        const available = data.filter(c => !c.inscrito);
+        const enrolled = data.filter(c => c.inscrito);
+        this.availableClasses.set(available);
+        this.myClasses.set(enrolled);
+      }
+    });
   }
 
   ngAfterViewInit() {
@@ -710,33 +742,35 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     this.selectedExerciseModal.set(null);
   }
 
-  openNewSessionModal() {
+  enrollInClass(idClass: number) {
     if (!this.hasFullAccess()) {
-      this.alertService.info('Agendar sesiones con entrenador requiere Plan PLATA u ORO.', 'Acceso Restringido');
+      this.alertService.info('Inscribirse a clases requiere Plan PLATA u ORO.', 'Acceso Restringido');
       this.setSection('membresia');
       return;
     }
-    this.showNewSessionModal.set(true);
+    
+    this.classService.enroll(idClass).subscribe({
+      next: (res) => {
+        this.alertService.success(res.message);
+        this.loadClasses();
+      },
+      error: (err) => {
+        this.alertService.error(err.error?.message || 'Error al inscribirse');
+      }
+    });
   }
 
-  closeNewSessionModal() {
-    this.showNewSessionModal.set(false);
-  }
-
-  bookNewSession() {
-    if (this.sessionForm.valid) {
-      const val = this.sessionForm.value;
-      const newSess: UserSession = {
-        id: Date.now(),
-        fecha: val.fecha || new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' }),
-        hora: val.hora || '09:00 AM',
-        entrenamiento: val.entrenamiento || 'Entrenamiento Personalizado',
-        entrenador: val.entrenador || 'Carlos Ruiz',
-        estado: 'Programada'
-      };
-      this.sessionsList.update(list => [newSess, ...list]);
-      this.alertService.success('¡Sesión agendada con éxito!');
-      this.closeNewSessionModal();
+  unenrollClass(idClass: number) {
+    if (confirm('¿Seguro que deseas cancelar tu inscripción a esta clase?')) {
+      this.classService.unenroll(idClass).subscribe({
+        next: (res) => {
+          this.alertService.success(res.message);
+          this.loadClasses();
+        },
+        error: (err) => {
+          this.alertService.error(err.error?.message || 'Error al cancelar inscripción');
+        }
+      });
     }
   }
 

@@ -7,6 +7,7 @@
     <nav class="sidebar-nav">
       <button (click)="setTab('resumen')" [class.active]="activeTab === 'resumen'"><span class="menu-icon">📊</span> Resumen</button>
       <button (click)="setTab('clientes')" [class.active]="activeTab === 'clientes'"><span class="menu-icon">👥</span> Clientes</button>
+      <button (click)="setTab('clases')" [class.active]="activeTab === 'clases'"><span class="menu-icon">📅</span> Clases</button>
     </nav>
     <div class="sidebar-footer">
       <button class="btn-logout" (click)="logout()"><span class="menu-icon">🚪</span> Salir</button>
@@ -86,5 +87,83 @@
       </section>
     </div>
 
+    <!-- CLASES TAB -->
+    <div *ngSwitchCase="'clases'" class="tab-content fade-in">
+      <section class="recent-activity">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+          <h2>Gestión de Clases</h2>
+          <button class="btn-primary-glow" (click)="openNewClassModal()">+ Nueva Clase</button>
+        </div>
+        <div class="activity-table-wrapper">
+          <table class="activity-table">
+            <thead>
+              <tr>
+                <th>Clase</th>
+                <th>Fecha / Hora</th>
+                <th>Entrenador</th>
+                <th>Inscritos</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let clase of classes()">
+                <td><strong>{{ clase.nombre }}</strong></td>
+                <td>{{ clase.fecha }} a las {{ clase.hora }}</td>
+                <td>{{ clase.entrenador.nombreCompleto }}</td>
+                <td>{{ clase.inscritos }} / {{ clase.capacidadMaxima }}</td>
+                <td>
+                  <button class="btn-cancelar" (click)="deleteClass(clase.idClass)" style="padding: 0.25rem 0.5rem; background: #dc3545; border: none; border-radius: 4px; color: white; cursor: pointer;">Cancelar</button>
+                </td>
+              </tr>
+              <tr *ngIf="classes().length === 0">
+                <td colspan="5" style="text-align: center; color: #666; padding: 2rem;">No hay clases programadas.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
   </main>
+</div>
+
+<!-- Modal Nueva Clase -->
+<div class="modal-overlay fade-in" *ngIf="showNewClassModal()">
+  <div class="modal-card" style="background: #1e1e1e; padding: 2rem; border-radius: 8px; width: 400px; max-width: 90%; margin: 10% auto; position: relative;">
+    <button class="close-btn" (click)="closeNewClassModal()" style="position: absolute; right: 1rem; top: 1rem; background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;">✕</button>
+    <h2 style="margin-bottom: 1.5rem; color: #fff;">Crear Nueva Clase</h2>
+    <form [formGroup]="classForm" (ngSubmit)="createClass()" style="display: flex; flex-direction: column; gap: 1rem;">
+      
+      <div class="form-field">
+        <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">NOMBRE DE LA CLASE (EJ. SPINNING)</label>
+        <input type="text" formControlName="nombre" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;" required>
+      </div>
+
+      <div class="form-field">
+        <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">ENTRENADOR</label>
+        <select formControlName="idEntrenador" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;" required>
+          <option value="" disabled>Seleccione un entrenador...</option>
+          <option *ngFor="let t of trainers()" [value]="t.idEmpleado">{{ t.nombre }} {{ t.apellidos }}</option>
+        </select>
+      </div>
+
+      <div style="display: flex; gap: 1rem;">
+        <div class="form-field" style="flex: 1;">
+          <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">FECHA</label>
+          <input type="date" formControlName="fecha" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;" required>
+        </div>
+        <div class="form-field" style="flex: 1;">
+          <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">HORA INICIO</label>
+          <input type="time" formControlName="horaInicio" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;" required>
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">CAPACIDAD MÁXIMA</label>
+        <input type="number" formControlName="capacidadMaxima" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;" min="1" required>
+      </div>
+
+      <button type="submit" [disabled]="classForm.invalid" style="margin-top: 1rem; padding: 0.75rem; background: #DC143C; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; transition: 0.3s;" [style.opacity]="classForm.invalid ? '0.5' : '1'">GUARDAR CLASE</button>
+    </form>
+  </div>
 </div>

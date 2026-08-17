@@ -710,10 +710,9 @@
       <section *ngIf="activeSection === 'sesiones'" class="section-container fade-in">
         <div class="section-header-flex">
           <div>
-            <h2 class="section-title">Mis Sesiones Programadas</h2>
-            <p class="section-desc">Consulta y agenda tus entrenamientos guiados y citas personalizadas.</p>
+            <h2 class="section-title">Clases y Sesiones</h2>
+            <p class="section-desc">Inscríbete en las clases disponibles y revisa tus próximas sesiones.</p>
           </div>
-          <button class="btn-primary-glow" (click)="openNewSessionModal()" *ngIf="hasFullAccess()">+ AGENDAR SESIÓN</button>
         </div>
 
         <!-- LOCKED FEATURE BANNER FOR BRONCE / NO PLAN -->
@@ -721,33 +720,58 @@
           <div class="lock-icon-huge">
             <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
           </div>
-          <h3>Agendamiento de Sesiones Exclusivo para Plan PLATA y ORO</h3>
-          <p>El agendamiento de clases grupales y sesiones personalizadas con entrenadores está disponible únicamente para miembros de los planes <strong>PLATA</strong> u <strong>ORO</strong>.</p>
+          <h3>Inscripción a Clases Exclusiva para Plan PLATA y ORO</h3>
+          <p>La asistencia a clases grupales y sesiones dirigidas está disponible únicamente para miembros de los planes <strong>PLATA</strong> u <strong>ORO</strong>.</p>
           <button class="btn-primary-glow" (click)="setSection('membresia')">MEJORAR PLAN</button>
         </div>
 
         <!-- UNLOCKED SESSIONS CONTENT (PLATA / ORO) -->
         <div *ngIf="hasFullAccess()">
-          <div class="sessions-list-grid">
-            <div class="session-card" *ngFor="let sess of sessionsList()">
+          
+          <h3 style="margin-bottom: 1rem; color: #fff; font-size: 1.2rem;">Mis Reservas</h3>
+          <div class="sessions-list-grid" style="margin-bottom: 3rem;">
+            <div class="session-card" *ngFor="let clase of myClasses()">
               <div class="session-time-col">
-                <span class="sess-date">{{ sess.fecha }}</span>
-                <span class="sess-hour">{{ sess.hora }}</span>
+                <span class="sess-date">{{ clase.fecha }}</span>
+                <span class="sess-hour">{{ clase.hora }}</span>
               </div>
               <div class="session-main-col">
-                <h3>{{ sess.entrenamiento }}</h3>
-                <p>Entrenador: <strong>{{ sess.entrenador }}</strong></p>
+                <h3>{{ clase.nombre }}</h3>
+                <p>Entrenador: <strong>{{ clase.entrenador.nombreCompleto }}</strong></p>
               </div>
               <div class="session-status-col">
-                <span class="sess-badge" 
-                      [class.status-prog]="sess.estado === 'Programada'"
-                      [class.status-comp]="sess.estado === 'Completada'"
-                      [class.status-canc]="sess.estado === 'Cancelada'">
-                  {{ sess.estado }}
-                </span>
+                <span class="sess-badge status-prog" style="margin-bottom: 0.5rem; display: inline-block;">{{ clase.estado }}</span>
+                <button class="btn-cancelar" (click)="unenrollClass(clase.idClass)" style="padding: 0.25rem 0.5rem; background: #dc3545; border: none; border-radius: 4px; color: white; cursor: pointer; font-size: 0.8rem; width: 100%;">Cancelar</button>
               </div>
             </div>
+            <div *ngIf="myClasses().length === 0" style="color: #888;">
+              No tienes reservas activas.
+            </div>
           </div>
+
+          <h3 style="margin-bottom: 1rem; color: #fff; font-size: 1.2rem;">Clases Disponibles</h3>
+          <div class="sessions-list-grid">
+            <div class="session-card" *ngFor="let clase of availableClasses()">
+              <div class="session-time-col">
+                <span class="sess-date">{{ clase.fecha }}</span>
+                <span class="sess-hour">{{ clase.hora }}</span>
+              </div>
+              <div class="session-main-col">
+                <h3>{{ clase.nombre }}</h3>
+                <p>Entrenador: <strong>{{ clase.entrenador.nombreCompleto }}</strong></p>
+                <p style="font-size: 0.85rem; margin-top: 0.3rem;">Cupos disponibles: {{ clase.capacidadMaxima - clase.inscritos }}</p>
+              </div>
+              <div class="session-status-col">
+                <button class="btn-primary-action" (click)="enrollInClass(clase.idClass)" [disabled]="clase.inscritos >= clase.capacidadMaxima" [style.opacity]="clase.inscritos >= clase.capacidadMaxima ? '0.5' : '1'" style="padding: 0.5rem 1rem; border: none; border-radius: 4px; color: white; cursor: pointer; font-weight: bold; font-size: 0.9rem;">
+                  {{ clase.inscritos >= clase.capacidadMaxima ? 'AGOTADO' : 'INSCRIBIRSE' }}
+                </button>
+              </div>
+            </div>
+            <div *ngIf="availableClasses().length === 0" style="color: #888;">
+              No hay clases disponibles por el momento.
+            </div>
+          </div>
+
         </div>
       </section>
 
@@ -950,46 +974,7 @@
     </div>
   </div>
 
-  <!-- BOOK NEW SESSION MODAL -->
-  <div class="modal-overlay fade-in" *ngIf="showNewSessionModal()">
-    <div class="modal-card">
-      <button class="close-btn" (click)="closeNewSessionModal()">✕</button>
-      <h2>Agendar Nueva Sesión</h2>
-      <form [formGroup]="sessionForm" (ngSubmit)="bookNewSession()" class="modal-form">
-        <div class="form-field">
-          <label>TIPO DE ENTRENAMIENTO</label>
-          <select formControlName="entrenamiento" class="form-ctrl">
-            <option value="Entrenamiento de Fuerza">Entrenamiento de Fuerza</option>
-            <option value="Evaluación Físico-Antropométrica">Evaluación Físico-Antropométrica</option>
-            <option value="Sesión de Funcional & HIIT">Sesión de Funcional & HIIT</option>
-            <option value="Asesoría Nutricional Personalizada">Asesoría Nutricional Personalizada</option>
-          </select>
-        </div>
 
-        <div class="form-field">
-          <label>ENTRENADOR</label>
-          <select formControlName="entrenador" class="form-ctrl">
-            <option value="Carlos Ruiz (Coach Pro)">Carlos Ruiz (Coach Pro)</option>
-            <option value="Sofía Martínez (Coach)">Sofía Martínez (Coach)</option>
-            <option value="Dra. Elena Gómez (Nutricionista)">Dra. Elena Gómez (Nutricionista)</option>
-          </select>
-        </div>
-
-        <div class="form-grid-2">
-          <div class="form-field">
-            <label>FECHA</label>
-            <input type="text" formControlName="fecha" class="form-ctrl" placeholder="18 de Agosto, 2026">
-          </div>
-          <div class="form-field">
-            <label>HORA</label>
-            <input type="time" formControlName="hora" class="form-ctrl">
-          </div>
-        </div>
-
-        <button type="submit" class="btn-primary-glow w-100">CONFIRMAR AGENDAMIENTO</button>
-      </form>
-    </div>
-  </div>
 
   <!-- CHANGE PASSWORD MODAL -->
   <div class="modal-overlay fade-in" *ngIf="showPasswordModal()">

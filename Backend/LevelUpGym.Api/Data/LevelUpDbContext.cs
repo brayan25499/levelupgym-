@@ -28,6 +28,8 @@ public class LevelUpDbContext : DbContext
     public DbSet<RolGimnasio> RolesGimnasio { get; set; }
     public DbSet<EmpleadoRolGimnasio> EmpleadoRolesGimnasio { get; set; }
     public DbSet<MensajeContacto> MensajesContacto { get; set; }
+    public DbSet<ClassSession> ClassSessions { get; set; }
+    public DbSet<ClassEnrollment> ClassEnrollments { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -162,13 +164,44 @@ public class LevelUpDbContext : DbContext
                 .HasForeignKey(d => d.IdRolGym);
         });
 
-        // MensajesContacto Table
         modelBuilder.Entity<MensajeContacto>(entity =>
         {
             entity.ToTable("mensajes_contacto");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Estado).HasDefaultValue("Pendiente");
             entity.Property(e => e.FechaEnvio).HasDefaultValueSql("GETUTCDATE()");
+        });
+
+        // ClassSessions Table
+        modelBuilder.Entity<ClassSession>(entity =>
+        {
+            entity.ToTable("class_sessions");
+            entity.HasKey(e => e.IdClass);
+            
+            entity.HasOne(d => d.Entrenador)
+                .WithMany()
+                .HasForeignKey(d => d.IdEntrenador)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ClassEnrollment Table
+        modelBuilder.Entity<ClassEnrollment>(entity =>
+        {
+            entity.ToTable("class_enrollments");
+            entity.HasKey(e => e.IdEnrollment);
+            
+            // Un cliente solo puede inscribirse una vez en una misma clase
+            entity.HasIndex(e => new { e.IdClass, e.IdCliente }).IsUnique();
+
+            entity.HasOne(d => d.ClassSession)
+                .WithMany(p => p.Enrollments)
+                .HasForeignKey(d => d.IdClass)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(d => d.Client)
+                .WithMany()
+                .HasForeignKey(d => d.IdCliente)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
     }
