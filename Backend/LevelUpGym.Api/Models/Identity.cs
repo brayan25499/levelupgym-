@@ -103,8 +103,15 @@ public class Employee : BaseEntity
     [StringLength(20)]
     public string? Estado { get; set; }
 
+    [StringLength(150)]
+    public string? Especialidad { get; set; }
+
+    [StringLength(500)]
+    public string? Descripcion { get; set; }
+
     // Navigation
     public virtual Profile Profile { get; set; } = null!;
     public virtual Eps? Eps { get; set; }
     public virtual ICollection<EmployeePayment> Payments { get; set; } = new List<EmployeePayment>();
+    public virtual ICollection<EmpleadoRolGimnasio> EmpleadoRoles { get; set; } = new List<EmpleadoRolGimnasio>();
 }
