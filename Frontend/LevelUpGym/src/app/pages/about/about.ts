@@ -1,8 +1,9 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { ContactService, ContactMessage } from '../../services/contact';
 import { AlertService } from '../../services/alert.service';
+import { EntrenadorService, Entrenador } from '../../services/entrenador.service';
 
 @Component({
   selector: 'app-about',
@@ -10,9 +11,21 @@ import { AlertService } from '../../services/alert.service';
   templateUrl: './about.html',
   styleUrl: './about.css',
 })
-export class AboutComponent {
+export class AboutComponent implements OnInit {
   private contactService = inject(ContactService);
   private alertService = inject(AlertService);
+  private entrenadorService = inject(EntrenadorService);
+
+  entrenadores: Entrenador[] = [];
+  cargandoEntrenadores = true;
+
+  // Gradients for trainer avatars
+  private avatarGradients = [
+    'linear-gradient(135deg, #dc143c, #8b0000)',
+    'linear-gradient(135deg, #ff4500, #dc143c)',
+    'linear-gradient(135deg, #8b0000, #4a0000)',
+    'linear-gradient(135deg, #dc143c, #ff6347)',
+  ];
 
   contactForm: ContactMessage = {
     nombre: '',
@@ -31,6 +44,22 @@ export class AboutComponent {
     asunto: '',
     mensaje: ''
   };
+
+  ngOnInit(): void {
+    this.entrenadorService.getEntrenadores().subscribe({
+      next: (data) => {
+        this.entrenadores = data;
+        this.cargandoEntrenadores = false;
+      },
+      error: () => {
+        this.cargandoEntrenadores = false;
+      }
+    });
+  }
+
+  getAvatarGradient(index: number): string {
+    return this.avatarGradients[index % this.avatarGradients.length];
+  }
 
   // --- Nombre validation ---
   validateNombre(): boolean {

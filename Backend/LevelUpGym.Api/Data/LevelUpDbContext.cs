@@ -25,6 +25,8 @@ public class LevelUpDbContext : DbContext
     public DbSet<Permission> Permissions { get; set; }
     public DbSet<RolePermission> RolePermissions { get; set; }
     public DbSet<UserRole> UserRoles { get; set; }
+    public DbSet<RolGimnasio> RolesGimnasio { get; set; }
+    public DbSet<EmpleadoRolGimnasio> EmpleadoRolesGimnasio { get; set; }
     public DbSet<MensajeContacto> MensajesContacto { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -134,6 +136,30 @@ public class LevelUpDbContext : DbContext
         {
             entity.ToTable("usuarios_roles");
             entity.HasIndex(e => new { e.IdAuth, e.IdRol }).IsUnique();
+        });
+
+        // RolesGimnasio Table (roles funcionales del gimnasio)
+        modelBuilder.Entity<RolGimnasio>(entity =>
+        {
+            entity.ToTable("roles_gimnasio");
+            entity.HasKey(e => e.IdRolGym);
+            entity.HasIndex(e => e.Nombre).IsUnique();
+        });
+
+        // EmpleadoRolGimnasio Table (tabla intermedia empleados <-> roles gimnasio)
+        modelBuilder.Entity<EmpleadoRolGimnasio>(entity =>
+        {
+            entity.ToTable("roles_empleados");
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.IdEmpleado, e.IdRolGym }).IsUnique();
+
+            entity.HasOne(d => d.Employee)
+                .WithMany(p => p.EmpleadoRoles)
+                .HasForeignKey(d => d.IdEmpleado);
+
+            entity.HasOne(d => d.RolGimnasio)
+                .WithMany(p => p.EmpleadoRoles)
+                .HasForeignKey(d => d.IdRolGym);
         });
 
         // MensajesContacto Table
