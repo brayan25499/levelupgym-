@@ -877,190 +877,621 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     this.destroy3DScene();
 
     const width = canvas.parentElement?.clientWidth || canvas.clientWidth || 500;
-    const height = canvas.parentElement?.clientHeight || 550;
+    const height = canvas.parentElement?.clientHeight || canvas.clientHeight || 550;
 
-    // 1. Scene & Studio Lighting Setup
+    // ============================================================
+    // 1. ESCENA
+    // ============================================================
     this.threeScene = new THREE.Scene();
     this.threeScene.background = new THREE.Color(0x090c12);
 
-    this.threeCamera = new THREE.PerspectiveCamera(42, width / height, 0.1, 1000);
-    this.threeCamera.position.set(0, 0.5, 17);
+    this.threeCamera = new THREE.PerspectiveCamera(
+      38,
+      width / height,
+      0.1,
+      1000
+    );
 
-    // 2. High Quality WebGL Renderer
-    this.threeRenderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    this.threeCamera.position.set(0, 0.15, 17.2);
+
+    // ============================================================
+    // 2. RENDERER
+    // ============================================================
+    this.threeRenderer = new THREE.WebGLRenderer({
+      canvas,
+      antialias: true,
+      alpha: true
+    });
+
     this.threeRenderer.setSize(width, height);
     this.threeRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.threeRenderer.shadowMap.enabled = true;
     this.threeRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-    // Studio Ambient & Key Specular Lighting Setup (Matching reference photo)
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
+    // ============================================================
+    // 3. ILUMINACIÓN DE ESTUDIO
+    // ============================================================
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
     this.threeScene.add(ambientLight);
 
-    // Key Specular Light (Top Front Right)
-    const keyLight = new THREE.DirectionalLight(0xffffff, 1.9);
-    keyLight.position.set(6, 12, 8);
+    const keyLight = new THREE.DirectionalLight(0xffffff, 2.2);
+    keyLight.position.set(5, 10, 10);
     this.threeScene.add(keyLight);
 
-    // Soft Fill Light (Top Front Left)
-    const fillLight = new THREE.DirectionalLight(0x94a3b8, 0.85);
-    fillLight.position.set(-6, 8, 6);
+    const fillLight = new THREE.DirectionalLight(0xaab4c4, 1.0);
+    fillLight.position.set(-7, 7, 8);
     this.threeScene.add(fillLight);
 
-    // Crimson Back Rim Light (Contour highlight)
-    const rimLightCrimson = new THREE.DirectionalLight(0xdc143c, 1.5);
-    rimLightCrimson.position.set(-5, 0, -8);
+    const rimLightCrimson = new THREE.DirectionalLight(0xdc143c, 1.8);
+    rimLightCrimson.position.set(-7, 3, -8);
     this.threeScene.add(rimLightCrimson);
 
-    // Gold Specular Rim Light
-    const rimLightGold = new THREE.PointLight(0xffd700, 1.3, 16);
-    rimLightGold.position.set(4, -2, -4);
+    const rimLightGold = new THREE.PointLight(0xffd700, 0.7, 18);
+    rimLightGold.position.set(5, 1, -5);
     this.threeScene.add(rimLightGold);
 
-    // 3. Build Realistic Athletic Metallic Black Male Mannequin Figure
+    // ============================================================
+    // 4. GRUPO PRINCIPAL DEL CUERPO
+    // ============================================================
     this.humanModelGroup = new THREE.Group();
     this.muscleMeshes = [];
 
-    // Metallic Black Polish Finish Material (Reference Specification Photo)
-    const createMannequinMaterial = (color = 0x141820) => new THREE.MeshStandardMaterial({
-      color: color,
-      roughness: 0.18,      // Smooth polished sheen
-      metalness: 0.82,      // High metallic reflective body finish
-      emissive: 0x000000
-    });
+    // Material negro metálico brillante, similar al maniquí de referencia.
+    const createMannequinMaterial = (color = 0x171a20) => {
+      return new THREE.MeshStandardMaterial({
+        color,
+        roughness: 0.16,
+        metalness: 0.78,
+        emissive: 0x000000
+      });
+    };
 
-    const bodyBaseMat = createMannequinMaterial(0x12151c);
+    const bodyBaseMat = createMannequinMaterial(0x15181e);
+    const muscleBaseColor = 0x1b2028;
 
-    // Smooth Faceless Mannequin Head (Realistic Oval Proportions)
-    const headGeom = new THREE.SphereGeometry(0.85, 32, 32);
-    headGeom.scale(0.82, 1.25, 0.95);
-    const headMesh = new THREE.Mesh(headGeom, bodyBaseMat);
-    headMesh.position.set(0, 5.7, 0);
-    this.humanModelGroup.add(headMesh);
-
-    // Neck
-    const neckGeom = new THREE.CylinderGeometry(0.40, 0.52, 0.85, 24);
-    const neckMesh = new THREE.Mesh(neckGeom, bodyBaseMat);
-    neckMesh.position.set(0, 4.7, 0);
-    this.humanModelGroup.add(neckMesh);
-
-    // Standing Pedestal Base Shadow Disk
-    const pedestalGeom = new THREE.CylinderGeometry(2.8, 3.2, 0.2, 32);
-    const pedestalMat = new THREE.MeshStandardMaterial({ color: 0x0b0e14, roughness: 0.8, metalness: 0.5 });
-    const pedestalMesh = new THREE.Mesh(pedestalGeom, pedestalMat);
-    pedestalMesh.position.set(0, -4.8, 0);
-    this.humanModelGroup.add(pedestalMesh);
-
-    // Helper to create muscle anatomical mesh
-    const createMuscleMesh = (geometry: THREE.BufferGeometry, muscleId: string, position: [number, number, number], scale: [number, number, number] = [1, 1, 1], rot: [number, number, number] = [0, 0, 0]) => {
-      const mat = createMannequinMaterial(0x181d26);
-      const mesh = new THREE.Mesh(geometry, mat);
+    // ============================================================
+    // HELPERS PARA LA SILUETA BASE
+    // ============================================================
+    const addBodyPart = (
+      geometry: THREE.BufferGeometry,
+      position: [number, number, number],
+      scale: [number, number, number] = [1, 1, 1],
+      rotation: [number, number, number] = [0, 0, 0]
+    ) => {
+      const mesh = new THREE.Mesh(geometry, bodyBaseMat);
       mesh.position.set(...position);
       mesh.scale.set(...scale);
-      mesh.rotation.set(...rot);
-      mesh.userData = { muscleId, ...this.musclesDatabase[muscleId] };
+      mesh.rotation.set(...rotation);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
       this.humanModelGroup?.add(mesh);
-      this.muscleMeshes.push(mesh);
       return mesh;
     };
 
-    // REALISTIC ANATOMICAL MALE MUSCLE GROUPS
+    // ============================================================
+    // 5. CABEZA
+    // ============================================================
+    addBodyPart(
+      new THREE.SphereGeometry(0.82, 48, 48),
+      [0, 5.65, 0],
+      [0.78, 1.12, 0.82]
+    );
 
-    // Trapecio
-    const trapecioGeom = new THREE.ConeGeometry(1.65, 1.0, 24);
-    createMuscleMesh(trapecioGeom, 'trapecio', [0, 4.3, -0.15], [1, 1, 0.6]);
+    // ============================================================
+    // 6. CUELLO
+    // ============================================================
+    addBodyPart(
+      new THREE.CapsuleGeometry(0.40, 0.48, 12, 32),
+      [0, 4.82, 0],
+      [1, 1, 0.9]
+    );
 
-    // Pectoral Mayor (Left & Right Spherical Sculpted Contours)
-    const chestGeom = new THREE.SphereGeometry(0.72, 24, 24);
-    chestGeom.scale(1.15, 0.75, 0.55);
-    createMuscleMesh(chestGeom, 'pectoral', [-0.58, 3.45, 0.38]);
-    createMuscleMesh(chestGeom, 'pectoral', [0.58, 3.45, 0.38]);
+    // ============================================================
+    // 7. TORSO ATLÉTICO
+    // ============================================================
+    // Parte alta del torso: más ancha para formar la V de hombros.
+    addBodyPart(
+      new THREE.SphereGeometry(1, 48, 48),
+      [0, 3.75, 0],
+      [1.65, 1.25, 0.72]
+    );
 
-    // Deltoides (Shoulders)
-    const shoulderGeom = new THREE.SphereGeometry(0.68, 24, 24);
-    createMuscleMesh(shoulderGeom, 'deltoides', [-1.55, 3.65, 0]);
-    createMuscleMesh(shoulderGeom, 'deltoides', [1.55, 3.65, 0]);
+    // Torso central.
+    addBodyPart(
+      new THREE.CapsuleGeometry(0.95, 2.15, 12, 40),
+      [0, 3.0, 0],
+      [1.15, 1.0, 0.72]
+    );
 
-    // Bíceps
-    const bicepsGeom = new THREE.CylinderGeometry(0.42, 0.36, 1.35, 24);
-    createMuscleMesh(bicepsGeom, 'biceps', [-1.65, 2.5, 0.16]);
-    createMuscleMesh(bicepsGeom, 'biceps', [1.65, 2.5, 0.16]);
+    // Cintura estrecha.
+    addBodyPart(
+      new THREE.SphereGeometry(1, 48, 48),
+      [0, 1.85, 0],
+      [0.82, 0.85, 0.63]
+    );
 
-    // Tríceps
-    const tricepsGeom = new THREE.CylinderGeometry(0.44, 0.38, 1.35, 24);
-    createMuscleMesh(tricepsGeom, 'triceps', [-1.65, 2.5, -0.22]);
-    createMuscleMesh(tricepsGeom, 'triceps', [1.65, 2.5, -0.22]);
+    // Pelvis / cadera.
+    addBodyPart(
+      new THREE.SphereGeometry(1, 48, 48),
+      [0, 0.95, 0],
+      [1.05, 0.72, 0.70]
+    );
 
-    // Abdominales / Core
-    const absGeom = new THREE.BoxGeometry(1.22, 1.85, 0.52);
-    createMuscleMesh(absGeom, 'abs', [0, 2.05, 0.35]);
+    // ============================================================
+    // 8. HOMBROS
+    // ============================================================
+    const shoulderGeometry = new THREE.SphereGeometry(0.65, 40, 40);
 
-    // Dorsal Ancho (Back V-Taper)
-    const dorsalGeom = new THREE.BoxGeometry(2.3, 1.9, 0.52);
-    createMuscleMesh(dorsalGeom, 'dorsal', [0, 3.15, -0.38]);
+    addBodyPart(
+      shoulderGeometry,
+      [-1.38, 3.72, 0],
+      [1.15, 1.0, 0.9]
+    );
 
-    // Lumbares
-    const lumbaresGeom = new THREE.BoxGeometry(1.3, 0.95, 0.46);
-    createMuscleMesh(lumbaresGeom, 'lumbares', [0, 1.6, -0.36]);
+    addBodyPart(
+      shoulderGeometry,
+      [1.38, 3.72, 0],
+      [1.15, 1.0, 0.9]
+    );
 
-    // Glúteos
-    const gluteGeom = new THREE.SphereGeometry(0.85, 24, 24);
-    createMuscleMesh(gluteGeom, 'gluteos', [-0.6, 0.3, -0.26]);
-    createMuscleMesh(gluteGeom, 'gluteos', [0.6, 0.3, -0.26]);
+    // ============================================================
+    // 9. BRAZOS SUPERIORES
+    // ============================================================
+    const upperArmGeometry = new THREE.CapsuleGeometry(0.40, 1.25, 12, 32);
 
-    // Cuádriceps
-    const quadGeom = new THREE.CylinderGeometry(0.66, 0.48, 2.45, 24);
-    createMuscleMesh(quadGeom, 'cuadriceps', [-0.7, -1.2, 0.2]);
-    createMuscleMesh(quadGeom, 'cuadriceps', [0.7, -1.2, 0.2]);
+    addBodyPart(
+      upperArmGeometry,
+      [-1.65, 2.65, 0],
+      [1.12, 1.05, 0.95],
+      [0, 0, -0.04]
+    );
 
-    // Isquiotibiales
-    const hamstringGeom = new THREE.CylinderGeometry(0.62, 0.45, 2.45, 24);
-    createMuscleMesh(hamstringGeom, 'isquiotibiales', [-0.7, -1.2, -0.2]);
-    createMuscleMesh(hamstringGeom, 'isquiotibiales', [0.7, -1.2, -0.2]);
+    addBodyPart(
+      upperArmGeometry,
+      [1.65, 2.65, 0],
+      [1.12, 1.05, 0.95],
+      [0, 0, 0.04]
+    );
 
-    // Gemelos
-    const calfGeom = new THREE.CylinderGeometry(0.48, 0.28, 2.0, 24);
-    createMuscleMesh(calfGeom, 'gemelos', [-0.7, -3.5, -0.06]);
-    createMuscleMesh(calfGeom, 'gemelos', [0.7, -3.5, -0.06]);
+    // ============================================================
+    // 10. CODOS
+    // ============================================================
+    const elbowGeometry = new THREE.SphereGeometry(0.38, 32, 32);
 
-    // Group offset positioning
-    this.humanModelGroup.position.set(0, -0.6, 0);
+    addBodyPart(
+      elbowGeometry,
+      [-1.70, 1.75, 0],
+      [1, 1.1, 0.9]
+    );
+
+    addBodyPart(
+      elbowGeometry,
+      [1.70, 1.75, 0],
+      [1, 1.1, 0.9]
+    );
+
+    // ============================================================
+    // 11. ANTEBRAZOS
+    // ============================================================
+    const forearmGeometry = new THREE.CapsuleGeometry(0.31, 1.30, 12, 32);
+
+    addBodyPart(
+      forearmGeometry,
+      [-1.70, 0.95, 0.02],
+      [1.08, 1.05, 0.92],
+      [0, 0, -0.03]
+    );
+
+    addBodyPart(
+      forearmGeometry,
+      [1.70, 0.95, 0.02],
+      [1.08, 1.05, 0.92],
+      [0, 0, 0.03]
+    );
+
+    // ============================================================
+    // 12. MANOS
+    // ============================================================
+    const handGeometry = new THREE.SphereGeometry(0.34, 32, 32);
+
+    addBodyPart(
+      handGeometry,
+      [-1.70, 0.05, 0.02],
+      [0.75, 1.15, 0.58]
+    );
+
+    addBodyPart(
+      handGeometry,
+      [1.70, 0.05, 0.02],
+      [0.75, 1.15, 0.58]
+    );
+
+    // ============================================================
+    // 13. GLÚTEOS / TRANSICIÓN DE CADERA
+    // ============================================================
+    const gluteBaseGeometry = new THREE.SphereGeometry(0.72, 40, 40);
+
+    addBodyPart(
+      gluteBaseGeometry,
+      [-0.52, 0.65, -0.30],
+      [1.05, 1.0, 0.75]
+    );
+
+    addBodyPart(
+      gluteBaseGeometry,
+      [0.52, 0.65, -0.30],
+      [1.05, 1.0, 0.75]
+    );
+
+    // ============================================================
+    // 14. MUSLOS
+    // ============================================================
+    const thighGeometry = new THREE.CapsuleGeometry(0.56, 1.85, 12, 36);
+
+    addBodyPart(
+      thighGeometry,
+      [-0.64, -0.55, 0],
+      [1.10, 1.10, 0.92]
+    );
+
+    addBodyPart(
+      thighGeometry,
+      [0.64, -0.55, 0],
+      [1.10, 1.10, 0.92]
+    );
+
+    // ============================================================
+    // 15. RODILLAS
+    // ============================================================
+    const kneeGeometry = new THREE.SphereGeometry(0.50, 36, 36);
+
+    addBodyPart(
+      kneeGeometry,
+      [-0.64, -1.75, 0.04],
+      [0.95, 0.85, 0.82]
+    );
+
+    addBodyPart(
+      kneeGeometry,
+      [0.64, -1.75, 0.04],
+      [0.95, 0.85, 0.82]
+    );
+
+    // ============================================================
+    // 16. PANTORRILLAS
+    // ============================================================
+    const calfGeometry = new THREE.CapsuleGeometry(0.42, 1.65, 12, 32);
+
+    addBodyPart(
+      calfGeometry,
+      [-0.64, -3.15, 0],
+      [1.0, 1.08, 0.90]
+    );
+
+    addBodyPart(
+      calfGeometry,
+      [0.64, -3.15, 0],
+      [1.0, 1.08, 0.90]
+    );
+
+    // ============================================================
+    // 17. TOBILLOS
+    // ============================================================
+    const ankleGeometry = new THREE.SphereGeometry(0.28, 28, 28);
+
+    addBodyPart(
+      ankleGeometry,
+      [-0.64, -4.15, 0],
+      [1, 1.2, 0.9]
+    );
+
+    addBodyPart(
+      ankleGeometry,
+      [0.64, -4.15, 0],
+      [1, 1.2, 0.9]
+    );
+
+    // ============================================================
+    // 18. PIES
+    // ============================================================
+    const footGeometry = new THREE.SphereGeometry(0.48, 36, 36);
+
+    addBodyPart(
+      footGeometry,
+      [-0.64, -4.55, 0.28],
+      [0.95, 0.55, 1.65]
+    );
+
+    addBodyPart(
+      footGeometry,
+      [0.64, -4.55, 0.28],
+      [0.95, 0.55, 1.65]
+    );
+
+    // ============================================================
+    // 19. MÚSCULOS SELECCIONABLES
+    // ============================================================
+    const createMuscleMesh = (
+      geometry: THREE.BufferGeometry,
+      muscleId: string,
+      position: [number, number, number],
+      scale: [number, number, number] = [1, 1, 1],
+      rotation: [number, number, number] = [0, 0, 0]
+    ) => {
+      const mat = createMannequinMaterial(muscleBaseColor);
+      const mesh = new THREE.Mesh(geometry, mat);
+
+      mesh.position.set(...position);
+      mesh.scale.set(...scale);
+      mesh.rotation.set(...rotation);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+
+      mesh.userData = {
+        muscleId,
+        ...(this.musclesDatabase[muscleId] || {})
+      };
+
+      this.humanModelGroup?.add(mesh);
+      this.muscleMeshes.push(mesh);
+
+      return mesh;
+    };
+
+    // ------------------------------------------------------------
+    // TRAPECIO
+    // ------------------------------------------------------------
+    createMuscleMesh(
+      new THREE.ConeGeometry(1.35, 1.0, 48),
+      'trapecio',
+      [0, 4.15, -0.02],
+      [1.2, 1, 0.65]
+    );
+
+    // ------------------------------------------------------------
+    // PECTORALES
+    // ------------------------------------------------------------
+    const chestGeometry = new THREE.SphereGeometry(0.70, 40, 40);
+
+    createMuscleMesh(
+      chestGeometry,
+      'pectoral',
+      [-0.55, 3.48, 0.52],
+      [1.30, 0.78, 0.55],
+      [0, 0, -0.08]
+    );
+
+    createMuscleMesh(
+      chestGeometry,
+      'pectoral',
+      [0.55, 3.48, 0.52],
+      [1.30, 0.78, 0.55],
+      [0, 0, 0.08]
+    );
+
+    // ------------------------------------------------------------
+    // DELTOIDES
+    // ------------------------------------------------------------
+    const deltoidGeometry = new THREE.SphereGeometry(0.58, 36, 36);
+
+    createMuscleMesh(
+      deltoidGeometry,
+      'deltoides',
+      [-1.38, 3.72, 0.22],
+      [1.12, 1.0, 0.9]
+    );
+
+    createMuscleMesh(
+      deltoidGeometry,
+      'deltoides',
+      [1.38, 3.72, 0.22],
+      [1.12, 1.0, 0.9]
+    );
+
+    // ------------------------------------------------------------
+    // BÍCEPS
+    // ------------------------------------------------------------
+    const bicepsGeometry = new THREE.CapsuleGeometry(0.34, 0.90, 10, 28);
+
+    createMuscleMesh(
+      bicepsGeometry,
+      'biceps',
+      [-1.66, 2.62, 0.30],
+      [1.05, 1.05, 0.90]
+    );
+
+    createMuscleMesh(
+      bicepsGeometry,
+      'biceps',
+      [1.66, 2.62, 0.30],
+      [1.05, 1.05, 0.90]
+    );
+
+    // ------------------------------------------------------------
+    // TRÍCEPS
+    // ------------------------------------------------------------
+    const tricepsGeometry = new THREE.CapsuleGeometry(0.34, 0.90, 10, 28);
+
+    createMuscleMesh(
+      tricepsGeometry,
+      'triceps',
+      [-1.66, 2.62, -0.28],
+      [1.05, 1.05, 0.88]
+    );
+
+    createMuscleMesh(
+      tricepsGeometry,
+      'triceps',
+      [1.66, 2.62, -0.28],
+      [1.05, 1.05, 0.88]
+    );
+
+    // ------------------------------------------------------------
+    // ABDOMINALES
+    // ------------------------------------------------------------
+    createMuscleMesh(
+      new THREE.SphereGeometry(0.82, 40, 40),
+      'abs',
+      [0, 2.28, 0.54],
+      [0.78, 1.20, 0.42]
+    );
+
+    // ------------------------------------------------------------
+    // DORSAL
+    // ------------------------------------------------------------
+    createMuscleMesh(
+      new THREE.SphereGeometry(1.05, 40, 40),
+      'dorsal',
+      [0, 3.10, -0.48],
+      [1.25, 1.0, 0.34]
+    );
+
+    // ------------------------------------------------------------
+    // LUMBARES
+    // ------------------------------------------------------------
+    createMuscleMesh(
+      new THREE.SphereGeometry(0.68, 36, 36),
+      'lumbares',
+      [0, 1.55, -0.45],
+      [1.0, 0.72, 0.38]
+    );
+
+    // ------------------------------------------------------------
+    // GLÚTEOS
+    // ------------------------------------------------------------
+    const gluteGeometry = new THREE.SphereGeometry(0.72, 40, 40);
+
+    createMuscleMesh(
+      gluteGeometry,
+      'gluteos',
+      [-0.55, 0.55, -0.55],
+      [1.05, 1.0, 0.70]
+    );
+
+    createMuscleMesh(
+      gluteGeometry,
+      'gluteos',
+      [0.55, 0.55, -0.55],
+      [1.05, 1.0, 0.70]
+    );
+
+    // ------------------------------------------------------------
+    // CUÁDRICEPS
+    // ------------------------------------------------------------
+    const quadGeometry = new THREE.CapsuleGeometry(0.57, 1.75, 10, 32);
+
+    createMuscleMesh(
+      quadGeometry,
+      'cuadriceps',
+      [-0.64, -0.62, 0.36],
+      [1.05, 1.05, 0.72]
+    );
+
+    createMuscleMesh(
+      quadGeometry,
+      'cuadriceps',
+      [0.64, -0.62, 0.36],
+      [1.05, 1.05, 0.72]
+    );
+
+    // ------------------------------------------------------------
+    // ISQUIOTIBIALES
+    // ------------------------------------------------------------
+    const hamstringGeometry = new THREE.CapsuleGeometry(0.52, 1.75, 10, 32);
+
+    createMuscleMesh(
+      hamstringGeometry,
+      'isquiotibiales',
+      [-0.64, -0.62, -0.35],
+      [1.0, 1.05, 0.72]
+    );
+
+    createMuscleMesh(
+      hamstringGeometry,
+      'isquiotibiales',
+      [0.64, -0.62, -0.35],
+      [1.0, 1.05, 0.72]
+    );
+
+    // ------------------------------------------------------------
+    // GEMELOS
+    // ------------------------------------------------------------
+    const calfMuscleGeometry = new THREE.CapsuleGeometry(0.40, 1.40, 10, 28);
+
+    createMuscleMesh(
+      calfMuscleGeometry,
+      'gemelos',
+      [-0.64, -3.12, -0.18],
+      [1.0, 1.05, 0.75]
+    );
+
+    createMuscleMesh(
+      calfMuscleGeometry,
+      'gemelos',
+      [0.64, -3.12, -0.18],
+      [1.0, 1.05, 0.75]
+    );
+
+    // ============================================================
+    // 20. POSICIÓN FINAL DEL MODELO
+    // ============================================================
+    this.humanModelGroup.position.set(0, -0.35, 0);
+    this.humanModelGroup.scale.set(1, 1, 1);
     this.threeScene.add(this.humanModelGroup);
 
-    // 4. Mouse Event Listeners (3D Orbit Rotation & Raycasting Selection)
+    // ============================================================
+    // 21. INTERACCIÓN CON MOUSE / RAYCASTING
+    // ============================================================
     const domElement = this.threeRenderer.domElement;
 
     const onPointerMove = (e: MouseEvent) => {
       const rect = domElement.getBoundingClientRect();
-      this.mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-      this.mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
 
-      // Rotate mannequin on drag
+      this.mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      this.mouse.y = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
+
+      // Rotación manual.
       if (this.isDragging3D && this.humanModelGroup) {
         const deltaX = e.clientX - this.previousMousePosition.x;
         const deltaY = e.clientY - this.previousMousePosition.y;
 
         this.humanModelGroup.rotation.y += deltaX * 0.01;
         this.humanModelGroup.rotation.x += deltaY * 0.005;
-        this.humanModelGroup.rotation.x = Math.max(-0.4, Math.min(0.4, this.humanModelGroup.rotation.x));
+        this.humanModelGroup.rotation.x = Math.max(
+          -0.4,
+          Math.min(0.4, this.humanModelGroup.rotation.x)
+        );
       }
-      this.previousMousePosition = { x: e.clientX, y: e.clientY };
 
-      // Raycasting Hover Effect
-      if (this.threeCamera && this.threeScene) {
+      this.previousMousePosition = {
+        x: e.clientX,
+        y: e.clientY
+      };
+
+      // Hover de músculos.
+      if (this.threeCamera) {
         this.raycaster.setFromCamera(this.mouse, this.threeCamera);
-        const intersects = this.raycaster.intersectObjects(this.muscleMeshes, false);
+
+        const intersects = this.raycaster.intersectObjects(
+          this.muscleMeshes,
+          false
+        );
 
         if (intersects.length > 0) {
           const hitMesh = intersects[0].object as THREE.Mesh;
+
           domElement.style.cursor = 'pointer';
-          this.hoveredMuscleName.set(hitMesh.userData['nombre'] || 'Músculo');
+
+          this.hoveredMuscleName.set(
+            hitMesh.userData['nombre'] || 'Músculo'
+          );
 
           if (this.hoveredMesh !== hitMesh) {
             this.resetHoveredMesh();
             this.hoveredMesh = hitMesh;
+
             const mat = hitMesh.material as THREE.MeshStandardMaterial;
-            mat.emissive.setHex(0xdc143c); // Neon Crimson Highlight
+            mat.emissive.setHex(0xdc143c);
             mat.emissiveIntensity = 0.95;
           }
         } else {
@@ -1073,22 +1504,36 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
 
     const onPointerDown = (e: MouseEvent) => {
       this.isDragging3D = true;
-      this.previousMousePosition = { x: e.clientX, y: e.clientY };
+      this.previousMousePosition = {
+        x: e.clientX,
+        y: e.clientY
+      };
+      domElement.style.cursor = 'grabbing';
     };
 
     const onPointerUp = (e: MouseEvent) => {
       this.isDragging3D = false;
+      domElement.style.cursor = 'grab';
 
       const rect = domElement.getBoundingClientRect();
       const clickX = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-      const clickY = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      const clickY = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
 
       if (this.threeCamera) {
-        this.raycaster.setFromCamera(new THREE.Vector2(clickX, clickY), this.threeCamera);
-        const intersects = this.raycaster.intersectObjects(this.muscleMeshes, false);
+        this.raycaster.setFromCamera(
+          new THREE.Vector2(clickX, clickY),
+          this.threeCamera
+        );
+
+        const intersects = this.raycaster.intersectObjects(
+          this.muscleMeshes,
+          false
+        );
+
         if (intersects.length > 0) {
           const hitMesh = intersects[0].object as THREE.Mesh;
           const muscleId = hitMesh.userData['muscleId'];
+
           if (muscleId && this.musclesDatabase[muscleId]) {
             this.selectMuscle(muscleId);
           }
@@ -1098,27 +1543,41 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
 
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
+
       if (this.threeCamera) {
         this.threeCamera.position.z += e.deltaY * 0.01;
-        this.threeCamera.position.z = Math.max(8, Math.min(26, this.threeCamera.position.z));
+        this.threeCamera.position.z = Math.max(
+          8,
+          Math.min(24, this.threeCamera.position.z)
+        );
       }
     };
 
+    domElement.style.cursor = 'grab';
     domElement.addEventListener('pointermove', onPointerMove);
     domElement.addEventListener('pointerdown', onPointerDown);
     domElement.addEventListener('pointerup', onPointerUp);
+    domElement.addEventListener('pointerleave', () => {
+      this.isDragging3D = false;
+      domElement.style.cursor = 'grab';
+    });
     domElement.addEventListener('wheel', onWheel, { passive: false });
 
-    // 5. Animation Loop
+    // ============================================================
+    // 22. ANIMACIÓN
+    // ============================================================
     const animate = () => {
       this.threeAnimationId = requestAnimationFrame(animate);
 
       if (!this.isDragging3D && this.humanModelGroup) {
-        this.humanModelGroup.rotation.y += 0.0025; // Gentle ambient rotation
+        this.humanModelGroup.rotation.y += 0.002;
       }
 
       if (this.threeRenderer && this.threeScene && this.threeCamera) {
-        this.threeRenderer.render(this.threeScene, this.threeCamera);
+        this.threeRenderer.render(
+          this.threeScene,
+          this.threeCamera
+        );
       }
     };
 
@@ -1145,7 +1604,7 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
       this.humanModelGroup.rotation.set(0, 0, 0);
     }
     if (this.threeCamera) {
-      this.threeCamera.position.set(0, 0.5, 17);
+      this.threeCamera.position.set(0, 0.2, 18.5);
     }
   }
 
