@@ -178,17 +178,17 @@ public static class DataSeeder
         }
 
         // 6. Seed Entrenadores (empleados con roles de gimnasio)
-        if (!context.Employees.Any(e => e.EmpleadoRoles.Any()))
-        {
-            var rolHeadCoach = context.RolesGimnasio.First(r => r.Nombre == "Head Coach");
-            var rolPowerlifting = context.RolesGimnasio.First(r => r.Nombre == "Powerlifting");
-            var rolHiit = context.RolesGimnasio.First(r => r.Nombre == "Especialista HIIT & Funcional");
-            var rolBoxeo = context.RolesGimnasio.First(r => r.Nombre == "Coach Boxeo & MMA");
-            var rolNutricion = context.RolesGimnasio.First(r => r.Nombre == "Nutricionista Deportiva");
-            var epsSanitas = context.EpsList.First(e => e.Nombre == "Sanitas");
-            var epsSura = context.EpsList.First(e => e.Nombre == "Sura");
+        var rolHeadCoach = context.RolesGimnasio.First(r => r.Nombre == "Head Coach");
+        var rolPowerlifting = context.RolesGimnasio.First(r => r.Nombre == "Powerlifting");
+        var rolHiit = context.RolesGimnasio.First(r => r.Nombre == "Especialista HIIT & Funcional");
+        var rolBoxeo = context.RolesGimnasio.First(r => r.Nombre == "Coach Boxeo & MMA");
+        var rolNutricion = context.RolesGimnasio.First(r => r.Nombre == "Nutricionista Deportiva");
+        var epsSanitas = context.EpsList.First(e => e.Nombre == "Sanitas");
+        var epsSura = context.EpsList.First(e => e.Nombre == "Sura");
 
-            // Entrenador 1: Miguel Vargas - Head Coach · Powerlifting
+        // Entrenador 1: Miguel Vargas - Head Coach · Powerlifting
+        if (!context.Profiles.Any(p => p.NumDocumento == "1000000001"))
+        {
             var profile1 = new Profile
             {
                 Nombre = "Miguel", Apellidos = "Vargas",
@@ -215,8 +215,12 @@ public static class DataSeeder
                 new EmpleadoRolGimnasio { IdEmpleado = emp1.IdEmpleado, IdRolGym = rolHeadCoach.IdRolGym },
                 new EmpleadoRolGimnasio { IdEmpleado = emp1.IdEmpleado, IdRolGym = rolPowerlifting.IdRolGym }
             );
+            context.SaveChanges();
+        }
 
-            // Entrenador 2: Laura Pinto - Especialista · HIIT & Funcional
+        // Entrenador 2: Laura Pinto - Especialista · HIIT & Funcional
+        if (!context.Profiles.Any(p => p.NumDocumento == "1000000002"))
+        {
             var profile2 = new Profile
             {
                 Nombre = "Laura", Apellidos = "Pinto",
@@ -242,8 +246,12 @@ public static class DataSeeder
             context.EmpleadoRolesGimnasio.Add(
                 new EmpleadoRolGimnasio { IdEmpleado = emp2.IdEmpleado, IdRolGym = rolHiit.IdRolGym }
             );
+            context.SaveChanges();
+        }
 
-            // Entrenador 3: Julián Castro - Coach · Boxeo & MMA
+        // Entrenador 3: Julián Castro - Coach · Boxeo & MMA
+        if (!context.Profiles.Any(p => p.NumDocumento == "1000000003"))
+        {
             var profile3 = new Profile
             {
                 Nombre = "Julián", Apellidos = "Castro",
@@ -269,8 +277,12 @@ public static class DataSeeder
             context.EmpleadoRolesGimnasio.Add(
                 new EmpleadoRolGimnasio { IdEmpleado = emp3.IdEmpleado, IdRolGym = rolBoxeo.IdRolGym }
             );
+            context.SaveChanges();
+        }
 
-            // Entrenador 4: Sofía Reyes - Nutricionista · Deportiva
+        // Entrenador 4: Sofía Reyes - Nutricionista · Deportiva
+        if (!context.Profiles.Any(p => p.NumDocumento == "1000000004"))
+        {
             var profile4 = new Profile
             {
                 Nombre = "Sofía", Apellidos = "Reyes",
@@ -296,7 +308,37 @@ public static class DataSeeder
             context.EmpleadoRolesGimnasio.Add(
                 new EmpleadoRolGimnasio { IdEmpleado = emp4.IdEmpleado, IdRolGym = rolNutricion.IdRolGym }
             );
+            context.SaveChanges();
+        }
 
+        // Entrenador 5: Andrés Méndez - CrossFit · Funcional
+        if (!context.Profiles.Any(p => p.NumDocumento == "1000000005"))
+        {
+            var profile5 = new Profile
+            {
+                Nombre = "Andrés", Apellidos = "Méndez",
+                TipoDocumento = "CC", NumDocumento = "1000000005",
+                Sexo = "Masculino", Telefono = "3145678901"
+            };
+            context.Profiles.Add(profile5);
+            context.SaveChanges();
+
+            var emp5 = new Employee
+            {
+                IdProfile = profile5.IdProfile,
+                IdEps = epsSanitas.IdEps,
+                FechaContratacion = new DateOnly(2021, 11, 10),
+                SalarioBase = 3100000,
+                Estado = "Activo",
+                Especialidad = "CrossFit · Funcional",
+                Descripcion = "Certificado internacional en CrossFit L2. Especialista en halterofilia."
+            };
+            context.Employees.Add(emp5);
+            context.SaveChanges();
+
+            context.EmpleadoRolesGimnasio.Add(
+                new EmpleadoRolGimnasio { IdEmpleado = emp5.IdEmpleado, IdRolGym = rolHiit.IdRolGym }
+            );
             context.SaveChanges();
         }
 

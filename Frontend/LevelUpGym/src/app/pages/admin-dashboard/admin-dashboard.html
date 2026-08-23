@@ -8,6 +8,7 @@
       <button (click)="setTab('resumen')" [class.active]="activeTab === 'resumen'"><span class="menu-icon">📊</span> Resumen</button>
       <button (click)="setTab('clientes')" [class.active]="activeTab === 'clientes'"><span class="menu-icon">👥</span> Clientes</button>
       <button (click)="setTab('clases')" [class.active]="activeTab === 'clases'"><span class="menu-icon">📅</span> Clases</button>
+      <button (click)="setTab('entrenadores')" [class.active]="activeTab === 'entrenadores'"><span class="menu-icon">🏋️</span> Entrenadores</button>
     </nav>
     <div class="sidebar-footer">
       <button class="btn-logout" (click)="logout()"><span class="menu-icon">🚪</span> Salir</button>
@@ -124,6 +125,46 @@
       </section>
     </div>
 
+    <!-- ENTRENADORES TAB -->
+    <div *ngSwitchCase="'entrenadores'" class="tab-content fade-in">
+      <section class="recent-activity">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+          <h2>Gestión de Entrenadores</h2>
+          <button class="btn-primary-glow" (click)="openNewTrainerModal()">+ Agregar Entrenador</button>
+        </div>
+        <div class="activity-table-wrapper">
+          <table class="activity-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Especialidad</th>
+                <th>Fecha de Contratación</th>
+                <th>Salario Base</th>
+                <th>Descripción</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let t of adminTrainers()">
+                <td><strong>{{ t.nombre }} {{ t.apellidos }}</strong></td>
+                <td>{{ t.especialidad }}</td>
+                <td>{{ t.fechaContratacion || 'N/A' }}</td>
+                <td>${{ t.salarioBase | number:'1.0-0' }}</td>
+                <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ t.descripcion }}</td>
+                <td>
+                  <button class="btn-text" (click)="openEditTrainerModal(t.idEmpleado)" style="padding: 0.25rem 0.5rem; background: transparent; border: none; color: #00b0ff; cursor: pointer; font-weight: bold; margin-right: 0.5rem;">Editar</button>
+                  <button class="btn-cancelar" (click)="deleteTrainer(t.idEmpleado)" style="padding: 0.25rem 0.5rem; background: #dc3545; border: none; border-radius: 4px; color: white; cursor: pointer; font-weight: bold;">Eliminar</button>
+                </td>
+              </tr>
+              <tr *ngIf="adminTrainers().length === 0">
+                <td colspan="6" style="text-align: center; color: #666; padding: 2rem;">No hay entrenadores registrados en el sistema.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
   </main>
 </div>
 
@@ -164,6 +205,72 @@
       </div>
 
       <button type="submit" [disabled]="classForm.invalid" style="margin-top: 1rem; padding: 0.75rem; background: #DC143C; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; transition: 0.3s;" [style.opacity]="classForm.invalid ? '0.5' : '1'">GUARDAR CLASE</button>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Nuevo/Editar Entrenador -->
+<div class="modal-overlay fade-in" *ngIf="showTrainerModal()">
+  <div class="modal-card" style="background: #1e1e1e; padding: 2rem; border-radius: 8px; width: 450px; max-width: 90%; margin: 5% auto; position: relative;">
+    <button class="close-btn" (click)="closeTrainerModal()" style="position: absolute; right: 1rem; top: 1rem; background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;">✕</button>
+    <h2 style="margin-bottom: 1.5rem; color: #fff;">{{ editingTrainerId() ? 'Editar Entrenador' : 'Agregar Entrenador' }}</h2>
+    <form [formGroup]="trainerForm" (ngSubmit)="saveTrainer()" style="display: flex; flex-direction: column; gap: 1rem;">
+      
+      <div style="display: flex; gap: 1rem;">
+        <div class="form-field" style="flex: 1;">
+          <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">NOMBRE</label>
+          <input type="text" formControlName="nombre" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;" required>
+          <div *ngIf="trainerForm.get('nombre')?.touched && trainerForm.get('nombre')?.errors?.['required']" style="color: #ff4d4d; font-size: 0.75rem; margin-top: 0.25rem;">
+            El nombre es obligatorio.
+          </div>
+        </div>
+        <div class="form-field" style="flex: 1;">
+          <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">APELLIDOS</label>
+          <input type="text" formControlName="apellidos" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;" required>
+          <div *ngIf="trainerForm.get('apellidos')?.touched && trainerForm.get('apellidos')?.errors?.['required']" style="color: #ff4d4d; font-size: 0.75rem; margin-top: 0.25rem;">
+            Los apellidos son obligatorios.
+          </div>
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">ESPECIALIDAD</label>
+        <input type="text" formControlName="especialidad" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;" placeholder="Ej: Powerlifting, CrossFit, HIIT" required>
+        <div *ngIf="trainerForm.get('especialidad')?.touched && trainerForm.get('especialidad')?.errors?.['required']" style="color: #ff4d4d; font-size: 0.75rem; margin-top: 0.25rem;">
+          La especialidad es obligatoria.
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 1rem;">
+        <div class="form-field" style="flex: 1;">
+          <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">FECHA DE CONTRATACIÓN</label>
+          <input type="date" formControlName="fechaContratacion" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;">
+        </div>
+        <div class="form-field" style="flex: 1;">
+          <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">SALARIO BASE</label>
+          <input type="number" formControlName="salarioBase" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;" min="0" required>
+          <div *ngIf="trainerForm.get('salarioBase')?.touched && trainerForm.get('salarioBase')?.errors?.['min']" style="color: #ff4d4d; font-size: 0.75rem; margin-top: 0.25rem;">
+            El salario no puede ser negativo.
+          </div>
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">DESCRIPCIÓN</label>
+        <textarea formControlName="descripcion" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white; resize: vertical;" rows="3"></textarea>
+      </div>
+
+      <div class="form-field" *ngIf="editingTrainerId()">
+        <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">ESTADO</label>
+        <select formControlName="estado" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;">
+          <option value="Activo">Activo</option>
+          <option value="Inactivo">Inactivo</option>
+        </select>
+      </div>
+
+      <button type="submit" [disabled]="trainerForm.invalid" style="margin-top: 1rem; padding: 0.75rem; background: #DC143C; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; transition: 0.3s;" [style.opacity]="trainerForm.invalid ? '0.5' : '1'">
+        {{ editingTrainerId() ? 'GUARDAR CAMBIOS' : 'AGREGAR ENTRENADOR' }}
+      </button>
     </form>
   </div>
 </div>

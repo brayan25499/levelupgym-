@@ -47,13 +47,99 @@
 .big-num { font-family: var(--font-display); font-size: 3rem; color: var(--red); }
 
 .team-section { padding: 5rem 0; background: var(--black); }
-.team-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; }
+.team-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 3rem;
+}
+.carousel-container {
+  position: relative;
+  width: 100%;
+}
+.carousel-viewport {
+  overflow: hidden;
+  width: 100%;
+  margin: 0 -0.75rem;
+}
+.carousel-track {
+  display: flex;
+  flex-wrap: nowrap;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.team-card-wrapper {
+  padding: 0 0.75rem;
+  flex: 0 0 25%;
+  width: 25%;
+  box-sizing: border-box;
+}
+@media (max-width: 1024px) {
+  .team-card-wrapper {
+    flex: 0 0 50%;
+    width: 50%;
+  }
+}
+@media (max-width: 768px) {
+  .team-card-wrapper {
+    flex: 0 0 100%;
+    width: 100%;
+  }
+}
 .team-card {
   background: var(--card-bg);
   border: 1px solid var(--border);
   padding: 2rem;
   text-align: center;
   transition: var(--transition);
+  height: 100%;
+}
+.carousel-nav {
+  display: flex;
+  gap: 0.75rem;
+}
+.carousel-nav-btn {
+  background: var(--dark-2);
+  border: 1px solid var(--border);
+  color: var(--white);
+  width: 44px;
+  height: 44px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 1.2rem;
+}
+.carousel-nav-btn:hover:not([disabled]) {
+  background: var(--red);
+  border-color: var(--red);
+  box-shadow: 0 0 15px var(--red-glow);
+}
+.carousel-nav-btn[disabled] {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+.carousel-dots {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 2rem;
+}
+.carousel-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--gray);
+  border: none;
+  cursor: pointer;
+  transition: var(--transition);
+  padding: 0;
+}
+.carousel-dot.active {
+  background: var(--red);
+  transform: scale(1.2);
+  box-shadow: 0 0 8px var(--red);
 }
 .team-avatar {
   width: 80px; height: 80px;
@@ -82,9 +168,7 @@
   margin-bottom: 1rem;
 }
 
-@media (max-width: 1024px) {
-  .team-grid { grid-template-columns: repeat(2, 1fr); }
-}
+
 
 @media (max-width: 768px) {
   .about-grid, .contact-grid { grid-template-columns: 1fr; }

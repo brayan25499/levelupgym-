@@ -82,23 +82,54 @@
   <!-- TEAM -->
   <section class="team-section">
     <div class="container">
-      <div class="section-tag">NUESTRO EQUIPO</div>
-      <h2 class="section-title">LOS <span class="accent">ENTRENADORES</span></h2>
-      <div class="team-grid" *ngIf="!cargandoEntrenadores; else loadingTeam">
-        <div class="team-card" *ngFor="let entrenador of entrenadores; let i = index">
-          <div class="team-avatar" [style.background]="getAvatarGradient(i)">{{ entrenador.iniciales }}</div>
-          <h3>{{ entrenador.nombre }} {{ entrenador.apellidos }}</h3>
-          <span class="team-role">{{ entrenador.especialidad }}</span>
-          <p>{{ entrenador.descripcion }}</p>
-          <div class="team-socials"><span>IG</span><span>TW</span></div>
+      <div class="team-header">
+        <div>
+          <div class="section-tag">NUESTRO EQUIPO</div>
+          <h2 class="section-title" style="margin-bottom: 0;">LOS <span class="accent">ENTRENADORES</span></h2>
+        </div>
+        <div class="carousel-nav" *ngIf="!cargandoEntrenadores && entrenadores.length > visibleCount">
+          <button class="carousel-nav-btn" (click)="prev()" [disabled]="currentIndex === 0">‹</button>
+          <button class="carousel-nav-btn" (click)="next()" [disabled]="currentIndex >= maxIndex">›</button>
         </div>
       </div>
+
+      <div class="carousel-container" *ngIf="!cargandoEntrenadores; else loadingTeam">
+        <div class="carousel-viewport">
+          <div class="carousel-track" [style.transform]="'translateX(' + (-currentIndex * (100 / visibleCount)) + '%)'">
+            <div class="team-card-wrapper" *ngFor="let entrenador of entrenadores; let i = index">
+              <div class="team-card">
+                <div class="team-avatar" [style.background]="getAvatarGradient(i)">{{ entrenador.iniciales }}</div>
+                <h3>{{ entrenador.nombre }} {{ entrenador.apellidos }}</h3>
+                <span class="team-role">{{ entrenador.especialidad }}</span>
+                <p>{{ entrenador.descripcion }}</p>
+                <div class="team-socials"><span>IG</span><span>TW</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Indicators -->
+        <div class="carousel-dots" *ngIf="entrenadores.length > visibleCount">
+          <button class="carousel-dot" 
+                  *ngFor="let dot of getDotsArray(); let idx = index" 
+                  [class.active]="currentIndex === idx"
+                  (click)="goToSlide(idx)">
+          </button>
+        </div>
+      </div>
+
       <ng-template #loadingTeam>
-        <div class="team-grid">
-          <div class="team-card" *ngFor="let placeholder of [1,2,3,4]">
-            <div class="team-avatar" style="background: linear-gradient(135deg, #333, #555)">...</div>
-            <h3>Cargando...</h3>
-            <span class="team-role">—</span>
+        <div class="carousel-container">
+          <div class="carousel-viewport">
+            <div class="carousel-track">
+              <div class="team-card-wrapper" *ngFor="let placeholder of [1,2,3,4]">
+                <div class="team-card">
+                  <div class="team-avatar" style="background: linear-gradient(135deg, #333, #555)">...</div>
+                  <h3>Cargando...</h3>
+                  <span class="team-role">—</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </ng-template>
