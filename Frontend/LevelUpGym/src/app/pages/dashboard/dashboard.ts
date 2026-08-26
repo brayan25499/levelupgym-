@@ -6,6 +6,9 @@ import { AuthService } from '../../services/auth';
 import { MembershipService, Membership } from '../../services/membership';
 import { ClassSessionService, ClassSession } from '../../services/class-session.service';
 import { AlertService } from '../../services/alert.service';
+import { ProgressService, ProgressReport } from '../../services/progress.service';
+import { GoalService, GoalTypeItem, UserGoalDto } from '../../services/goal.service';
+import { MembershipService, Membership, UpgradeCalculation } from '../../services/membership';
 import * as THREE from 'three';
 
 export interface ExerciseItem {
@@ -89,6 +92,8 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   membershipService = inject(MembershipService);
   private classService = inject(ClassSessionService);
   private alertService = inject(AlertService);
+  private progressService = inject(ProgressService);
+  private goalService = inject(GoalService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private fb = inject(FormBuilder);
@@ -102,13 +107,35 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   today = new Date();
   sidebarMobileOpen = signal<boolean>(false);
 
-  // IMC State & History
+  // IMC & Progress State
   imcRecords = signal<ImcRecord[]>([]);
+  progressReports = signal<ProgressReport[]>([]);
+  userGoals = signal<UserGoalDto[]>([]);
+  availableGoalTypes = signal<GoalTypeItem[]>([]);
   showBmiModal = signal<boolean>(false);
+  showNewGoalModal = signal<boolean>(false);
+
+  // Upgrade Membership State
+  showUpgradeModal = signal<boolean>(false);
+  upgradeCalc = signal<UpgradeCalculation | null>(null);
+  isUpgrading = signal<boolean>(false);
 
   bmiForm = this.fb.group({
     peso: [null as number | null, [Validators.required, Validators.min(20), Validators.max(300)]],
-    estatura: [null as number | null, [Validators.required, Validators.min(50), Validators.max(260)]]
+    estatura: [null as number | null, [Validators.required, Validators.min(50), Validators.max(260)]],
+    porcentajeGrasa: [null as number | null, [Validators.min(0), Validators.max(100)]],
+    cintura: [null as number | null, [Validators.min(0), Validators.max(300)]],
+    pecho: [null as number | null, [Validators.min(0), Validators.max(300)]],
+    brazo: [null as number | null, [Validators.min(0), Validators.max(150)]],
+    pierna: [null as number | null, [Validators.min(0), Validators.max(200)]],
+    fechaMedicion: ['']
+  });
+
+  goalForm = this.fb.group({
+    idTipoObjetivo: [null as number | null, Validators.required],
+    valorMeta: [null as number | null, [Validators.required, Validators.min(0.1)]],
+    fechaLimite: [''],
+    descripcion: ['']
   });
 
   // Modals & Views
@@ -417,6 +444,10 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     return Boolean(this.profileData()?.activeMembership);
   }
 
+  getActiveMembership(): any {
+    return this.profileData()?.activeMembership ?? null;
+  }
+
   getMembershipName(): string {
     return this.profileData()?.activeMembership?.nombre?.toLowerCase() || '';
   }
@@ -536,6 +567,110 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   // ==========================================
   // IMC CALCULATION MODAL & HISTORY MANAGEMENT
   // ==========================================
+  get previewImc(): number | null {
+    const val = this.bmiForm.value;
+    if (!val.peso || !val.estatura || val.peso <= 0 || val.estatura <= 0) return null;
+    const estaturaM = val.estatura > 3 ? val.estatura / 100 : val.estatura;
+    return parseFloat((val.peso / (estaturaM * estaturaM)).toFixed(2));
+  }
+
+  get pesoActualVal(): number | null {
+    const reports = this.progressReports();
+    if (reports.length > 0 && reports[reports.length - 1].peso) {
+      return reports[reports.length - 1].peso;
+    }
+    const data = this.profileData();
+    return data?.peso ? parseFloat(data.peso) : null;
+  }
+
+  get imcActualVal(): number | null {
+    const reports = this.progressReports();
+    if (reports.length > 0 && reports[reports.length - 1].imc) {
+      return parseFloat(reports[reports.length - 1].imc!);
+    }
+    return this.getBmiEvaluation()?.imc ?? null;
+  }
+
+  get pesoInicialVal(): number | null {
+    const reports = this.progressReports();
+    if (reports.length > 0 && reports[0].peso) {
+      return reports[0].peso;
+    }
+    return this.pesoActualVal;
+  }
+
+  get diferenciaPesoVal(): number | null {
+    const actual = this.pesoActualVal;
+    const inicial = this.pesoInicialVal;
+    if (actual !== null && inicial !== null) {
+      return parseFloat((actual - inicial).toFixed(2));
+    }
+    return null;
+  }
+
+  get ultimaMedicionObj(): ProgressReport | null {
+    const reports = this.progressReports();
+    return reports.length > 0 ? reports[reports.length - 1] : null;
+  }
+
+  get fechaUltimaMedicionStr(): string {
+    const ult = this.ultimaMedicionObj;
+    if (!ult) return 'Sin mediciones';
+    if (ult.fechaMedicion) {
+      return new Date(ult.fechaMedicion).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+    if (ult.createdAt) {
+      return new Date(ult.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+    return '';
+  }
+
+  get dynamicSvgPoints(): string {
+    const reports = this.progressReports();
+    if (reports.length === 0) return '50,110 140,95 240,75 330,65';
+    if (reports.length === 1) return '50,80 350,80';
+
+    const minImc = Math.min(...reports.map(r => r.imc ? parseFloat(r.imc) : 20)) - 1;
+    const maxImc = Math.max(...reports.map(r => r.imc ? parseFloat(r.imc) : 25)) + 1;
+    const range = maxImc - minImc || 1;
+
+    const width = 300;
+    const startX = 50;
+    const stepX = width / (reports.length - 1);
+
+    return reports.map((r, idx) => {
+      const imcVal = r.imc ? parseFloat(r.imc) : 22;
+      const x = startX + (idx * stepX);
+      const y = 130 - (((imcVal - minImc) / range) * 100);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(' ');
+  }
+
+  get dynamicSvgCircles(): { cx: number; cy: number; imc: string; fecha: string }[] {
+    const reports = this.progressReports();
+    if (reports.length === 0) return [];
+    const minImc = Math.min(...reports.map(r => r.imc ? parseFloat(r.imc) : 20)) - 1;
+    const maxImc = Math.max(...reports.map(r => r.imc ? parseFloat(r.imc) : 25)) + 1;
+    const range = maxImc - minImc || 1;
+
+    const width = 300;
+    const startX = 50;
+    const stepX = reports.length > 1 ? width / (reports.length - 1) : 0;
+
+    return reports.map((r, idx) => {
+      const imcVal = r.imc ? parseFloat(r.imc) : 22;
+      const x = reports.length === 1 ? 200 : startX + (idx * stepX);
+      const y = 130 - (((imcVal - minImc) / range) * 100);
+      const fecha = r.fechaMedicion ? new Date(r.fechaMedicion).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }) : '';
+      return {
+        cx: parseFloat(x.toFixed(1)),
+        cy: parseFloat(y.toFixed(1)),
+        imc: r.imc || '0',
+        fecha
+      };
+    });
+  }
+
   openBmiModal() {
     const data = this.profileData();
     if (data) {
@@ -557,87 +692,131 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
-    const { peso, estatura } = this.bmiForm.value;
+    const val = this.bmiForm.value;
+    const peso = val.peso;
+    const estatura = val.estatura;
+
     if (!peso || !estatura || peso <= 0 || estatura <= 0) {
       this.alertService.error('El peso y la estatura deben ser números mayores a 0.');
       return;
     }
 
-    // Convert cm to meters correctly
-    const estaturaM = estatura > 3 ? estatura / 100 : estatura;
-    const imc = parseFloat((peso / (estaturaM * estaturaM)).toFixed(1));
-    const fecha = new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
-
-    // 1. Update User Profile Data
-    const data = this.profileData() || {};
-    const updatedPayload = {
-      nombre: data.nombre,
-      apellidos: data.apellidos,
-      telefono: data.telefono,
-      sexo: data.sexo,
+    const payload = {
       peso: peso,
-      estatura: estatura
+      altura: estatura,
+      porcentajeGrasa: val.porcentajeGrasa ? val.porcentajeGrasa : null,
+      cintura: val.cintura ? val.cintura : null,
+      pecho: val.pecho ? val.pecho : null,
+      brazo: val.brazo ? val.brazo : null,
+      pierna: val.pierna ? val.pierna : null,
+      fechaMedicion: val.fechaMedicion ? val.fechaMedicion : null
     };
 
-    this.authService.updateProfile(updatedPayload).subscribe({
+    this.progressService.create(payload).subscribe({
       next: (res) => {
         this.fetchProfile();
-
-        // 2. Add to Local Storage IMC History for current user
-        const userId = data.id || data.email || 'user';
-        const key = `imc_history_${userId}`;
-        const newRecord: ImcRecord = {
-          id: Date.now().toString(),
-          fecha: fecha,
-          pesoKg: peso,
-          estaturaM: parseFloat(estaturaM.toFixed(2)),
-          imc: imc
-        };
-
-        const existingHistoryStr = localStorage.getItem(key);
-        let historyList: ImcRecord[] = existingHistoryStr ? JSON.parse(existingHistoryStr) : [];
-        // Prepend new record to top of history
-        historyList = [newRecord, ...historyList.filter(r => r.fecha !== fecha)];
-        localStorage.setItem(key, JSON.stringify(historyList));
-        this.imcRecords.set(historyList);
-
-        this.alertService.success(`¡IMC Calculado: ${imc}! Tu registro se guardó correctamente.`);
+        this.loadProgressHistory();
+        this.alertService.success(`¡Medición registrada con éxito! IMC calculado automáticamente: ${res.imc}`);
         this.closeBmiModal();
       },
       error: (err) => {
-        this.alertService.error('Error al guardar datos de IMC: ' + (err.error?.message || err.message || err.error));
+        this.alertService.error('Error al guardar medición: ' + (err.error?.message || err.message || err.error));
       }
     });
   }
 
   loadImcHistory() {
-    const data = this.profileData();
-    if (!data) return;
-    const userId = data.id || data.email || 'user';
-    const key = `imc_history_${userId}`;
-    const existing = localStorage.getItem(key);
-    if (existing) {
-      try {
-        const parsed: ImcRecord[] = JSON.parse(existing);
-        this.imcRecords.set(parsed);
-      } catch (e) {
-        console.error('Error parsing IMC history', e);
+    this.loadProgressHistory();
+  }
+
+  loadProgressHistory() {
+    this.progressService.getHistory().subscribe({
+      next: (reports) => {
+        this.progressReports.set(reports);
+        const mapped: ImcRecord[] = reports.map(r => ({
+          id: r.idProgreso.toString(),
+          fecha: r.fechaMedicion ? new Date(r.fechaMedicion).toLocaleDateString('es-ES') : (r.createdAt ? new Date(r.createdAt).toLocaleDateString('es-ES') : ''),
+          pesoKg: r.peso,
+          estaturaM: r.altura ? parseFloat(r.altura) : 0,
+          imc: r.imc ? parseFloat(r.imc) : 0
+        }));
+        this.imcRecords.set(mapped);
+        this.fetchGoals();
+      },
+      error: (err) => {
+        console.error('Error al cargar historial de mediciones', err);
       }
-    } else {
-      // Seed default initial record if profile has weight & height
-      const evalBmi = this.getBmiEvaluation();
-      if (evalBmi) {
-        const seededRecord: ImcRecord = {
-          id: 'seed-1',
-          fecha: evalBmi.fechaActualizacion,
-          pesoKg: evalBmi.pesoKg,
-          estaturaM: evalBmi.estaturaM,
-          imc: evalBmi.imc
-        };
-        this.imcRecords.set([seededRecord]);
-        localStorage.setItem(key, JSON.stringify([seededRecord]));
+    });
+  }
+
+  fetchGoals() {
+    this.goalService.getGoals().subscribe({
+      next: (goals) => {
+        this.userGoals.set(goals);
+      },
+      error: (err) => {
+        console.error('Error al cargar objetivos', err);
       }
+    });
+  }
+
+  fetchGoalTypes() {
+    this.goalService.getGoalTypes().subscribe({
+      next: (types) => {
+        this.availableGoalTypes.set(types);
+      },
+      error: (err) => {
+        console.error('Error al cargar tipos de objetivos', err);
+      }
+    });
+  }
+
+  openNewGoalModal() {
+    this.fetchGoalTypes();
+    this.goalForm.reset();
+    this.showNewGoalModal.set(true);
+  }
+
+  closeNewGoalModal() {
+    this.showNewGoalModal.set(false);
+  }
+
+  get selectedGoalTypeUnit(): string {
+    const selectedId = this.goalForm.value.idTipoObjetivo;
+    if (!selectedId) return '';
+    const gt = this.availableGoalTypes().find(t => t.idTipoObjetivo === Number(selectedId));
+    return gt ? gt.unidad : '';
+  }
+
+  createGoal() {
+    if (this.goalForm.invalid) {
+      this.alertService.error('Completa los campos requeridos del objetivo.');
+      return;
     }
+
+    const { idTipoObjetivo, valorMeta, fechaLimite, descripcion } = this.goalForm.value;
+    if (!idTipoObjetivo || !valorMeta || valorMeta <= 0) {
+      this.alertService.error('Selecciona un tipo de objetivo y una meta mayor a 0.');
+      return;
+    }
+
+    const payload = {
+      idTipoObjetivo: Number(idTipoObjetivo),
+      valorMeta: Number(valorMeta),
+      fechaLimite: fechaLimite ? fechaLimite : null,
+      descripcion: descripcion ? descripcion : null
+    };
+
+    this.goalService.createGoal(payload).subscribe({
+      next: (res) => {
+        this.alertService.success('¡Objetivo creado con éxito!');
+        this.fetchGoals();
+        this.closeNewGoalModal();
+      },
+      error: (err) => {
+        this.alertService.error('Error al crear objetivo: ' + (err.error?.message || err.message || err.error));
+      }
+    });
   }
 
   ngOnInit() {
@@ -824,26 +1003,98 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     this.passwordForm.reset();
   }
 
+  // Payment Checkout Modal State
+  showPaymentCheckoutModal = signal<boolean>(false);
+  selectedPaymentMethod = signal<'PSE' | 'TARJETA'>('PSE');
+  selectedBank = signal<string>('Bancolombia');
+  selectedPersonType = signal<'NATURAL' | 'JURIDICA'>('NATURAL');
+  cardHolder = signal<string>('');
+  cardNumber = signal<string>('');
+  cardExp = signal<string>('');
+  cardCvv = signal<string>('');
+  isProcessingPayment = signal<boolean>(false);
+  targetCheckoutPlan = signal<Membership | null>(null);
+  checkoutAmount = signal<number>(0);
+  isUpgradeFlow = signal<boolean>(false);
+
   buyPlan(id: number) {
-    this.membershipService.buyMembership(id).subscribe({
+    const plan = this.availablePlans().find(p => p.idMembresia === id);
+    if (!plan) return;
+
+    const activeMem = this.getActiveMembership();
+    this.targetCheckoutPlan.set(plan);
+
+    if (activeMem && activeMem.idMembresia) {
+      // User has active membership: calculate surplus via Backend API
+      this.isUpgradeFlow.set(true);
+      this.membershipService.calculateUpgrade(plan.idMembresia).subscribe({
+        next: (calc) => {
+          this.upgradeCalc.set(calc);
+          this.checkoutAmount.set(calc.excedenteAPagar);
+          this.showPaymentCheckoutModal.set(true);
+        },
+        error: (err) => {
+          this.alertService.error('No se pudo calcular el valor del cambio de plan: ' + (err.error?.message || err.message || err.error));
+        }
+      });
+    } else {
+      // First-time purchase
+      this.isUpgradeFlow.set(false);
+      this.upgradeCalc.set(null);
+      this.checkoutAmount.set(plan.precio);
+      this.showPaymentCheckoutModal.set(true);
+    }
+  }
+
+  cancelPaymentCheckout() {
+    this.showPaymentCheckoutModal.set(false);
+    this.alertService.info('Proceso de pago cancelado. Tu membresía no ha sido modificada.');
+  }
+
+  submitPaymentCheckout() {
+    const plan = this.targetCheckoutPlan();
+    if (!plan) return;
+
+    if (this.selectedPaymentMethod() === 'TARJETA' && !this.cardHolder()) {
+      this.alertService.error('Por favor ingresa el nombre del titular de la tarjeta.');
+      return;
+    }
+
+    this.isProcessingPayment.set(true);
+
+    const req = {
+      newPlanId: plan.idMembresia,
+      paymentMethod: this.selectedPaymentMethod(),
+      bankName: this.selectedPaymentMethod() === 'PSE' ? this.selectedBank() : undefined,
+      personType: this.selectedPaymentMethod() === 'PSE' ? this.selectedPersonType() : undefined,
+      cardHolder: this.selectedPaymentMethod() === 'TARJETA' ? this.cardHolder() : undefined,
+      cardLast4: this.selectedPaymentMethod() === 'TARJETA' ? (this.cardNumber().replace(/\s/g, '').slice(-4) || '4242') : undefined,
+      referenceId: `LEVELUP-2026-${Math.floor(100000 + Math.random() * 900000)}`
+    };
+
+    this.membershipService.processPayment(req).subscribe({
       next: (res) => {
+        this.isProcessingPayment.set(false);
+        this.showPaymentCheckoutModal.set(false);
         this.fetchProfile();
-        const plan = this.availablePlans().find(p => p.idMembresia === id);
+
         this.lastReceipt.set({
-          idTransaccion: 'TXN-' + Math.floor(100000 + Math.random() * 900000),
+          idTransaccion: res.referenceId,
           fecha: new Date(),
           nombreCliente: (this.profileData()?.nombre || '') + ' ' + (this.profileData()?.apellidos || ''),
-          planNombre: plan?.nombre || 'Plan Gym',
-          total: plan?.precio || 0,
-          metodoPago: 'Tarjeta de Crédito (Pasarela Encriptada)',
-          vigencia: '1 Mes (Hasta ' + new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString() + ')'
+          planNombre: res.planName,
+          total: res.amountPaid,
+          metodoPago: res.paymentMethod + (res.bankName ? ' (' + res.bankName + ')' : ''),
+          vigencia: 'Válido hasta ' + res.expiresAt
         });
+
         this.showReceiptModal.set(true);
-        this.alertService.success('¡Membresía adquirida con éxito!');
+        this.alertService.success(res.isUpgrade ? '✓ Cambio de plan realizado con éxito' : '✓ Pago realizado correctamente');
         this.setSection('membresia');
       },
       error: (err) => {
-        this.alertService.error('Error al adquirir membresía: ' + (err.error?.message || err.message || err.error));
+        this.isProcessingPayment.set(false);
+        this.alertService.error('El pago no pudo ser procesado. Tu membresía no ha sido modificada. Puedes intentar nuevamente con otro método de pago.');
       }
     });
   }

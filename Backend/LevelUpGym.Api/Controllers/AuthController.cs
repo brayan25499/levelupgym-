@@ -207,7 +207,7 @@ public class AuthController : ControllerBase
         return Ok(new 
         { 
             maskedEmail = MaskEmail(auth.Email),
-            maskedPhone = hasPhone ? MaskPhone(profile!.Telefono) : null,
+            maskedPhone = hasPhone && profile?.Telefono != null ? MaskPhone(profile.Telefono) : null,
             hasPhone = hasPhone
         });
     }

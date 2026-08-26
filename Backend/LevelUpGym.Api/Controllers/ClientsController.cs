@@ -53,6 +53,10 @@ public class ClientsController : ControllerBase
                 .ThenInclude(p => p.Client)
                     .ThenInclude(c => c.Subscriptions)
                         .ThenInclude(s => s.Membership)
+            .Include(a => a.Profile)
+                .ThenInclude(p => p.Client)
+                    .ThenInclude(c => c.Subscriptions)
+                        .ThenInclude(s => s.Status)
             .FirstOrDefaultAsync(a => a.Email == email);
 
         if (auth == null || auth.Profile == null)
@@ -60,9 +64,13 @@ public class ClientsController : ControllerBase
             return NotFound("Perfil no encontrado.");
         }
 
+        var activeStatus = await _context.SubscriptionStatuses.FirstOrDefaultAsync(s => s.Concepto == "ACTIVO");
+        int activeStatusId = activeStatus?.IdEstado ?? 1;
+
         var activeSubscription = auth.Profile.Client?.Subscriptions
-            .Where(s => s.IdEstado == 1 || s.Status.Concepto == "ACTIVO")
+            .Where(s => s.DeletedAt == null && (s.IdEstado == activeStatusId || (s.Status != null && s.Status.Concepto == "ACTIVO")))
             .OrderByDescending(s => s.FechaFin)
+            .ThenByDescending(s => s.CreatedAt)
             .FirstOrDefault();
 
         return Ok(new
@@ -76,13 +84,59 @@ public class ClientsController : ControllerBase
             telefono = auth.Profile.Telefono,
             peso = auth.Profile.Peso,
             estatura = auth.Profile.Estatura,
-            activeMembership = activeSubscription != null ? new
-            {
-                nombre = activeSubscription.Membership.Nombre,
-                descripcion = activeSubscription.Membership.Descripcion,
-                fechaFin = activeSubscription.FechaFin
-            } : null
+            activeMembership = activeSubscription != null ? GetMembershipDetails(activeSubscription) : null
         });
+    }
+
+    private static object GetMembershipDetails(Subscription sub)
+    {
+        var planName = sub.Membership?.Nombre?.ToLower() ?? "bronce";
+        int sesiones = planName.Contains("oro") ? 30 : (planName.Contains("plata") ? 12 : 0);
+
+        var beneficios = new List<string>
+        {
+            "Acceso Libre a Sala de Pesas y Zona Cardio",
+            "Vestidores y Duchas"
+        };
+
+        var servicios = new List<string>
+        {
+            "Musculación y Fuerza",
+            "Zona Cardiovascular"
+        };
+
+        if (planName.Contains("plata") || planName.Contains("oro"))
+        {
+            beneficios.Add("Rutinas de Entrenamiento Guiadas");
+            beneficios.Add("Modelo Anatómico 3D Interactivo");
+            beneficios.Add("Clases Grupales y Sesiones Dirigidas");
+
+            servicios.Add("Clases Grupales (HIIT, Boxeo, Powerlifting)");
+            servicios.Add("Visualizador de Anatomía 3D");
+        }
+
+        if (planName.Contains("oro"))
+        {
+            beneficios.Add("Sesiones Personalizadas con Head Coach");
+            beneficios.Add("Asesoría Nutricional Personalizada");
+
+            servicios.Add("Coaching VIP Personalizado");
+            servicios.Add("Planes de Nutrición Deportiva");
+        }
+
+        return new
+        {
+            idMembresia = sub.Membership?.IdMembresia ?? 0,
+            nombre = sub.Membership?.Nombre ?? "Plan",
+            precio = sub.Membership?.Precio ?? 0m,
+            descripcion = sub.Membership?.Descripcion ?? "",
+            fechaInicio = sub.FechaInicio,
+            fechaFin = sub.FechaFin,
+            estado = "ACTIVA",
+            sesionesIncluidas = sesiones,
+            beneficios,
+            serviciosIncluidos = servicios
+        };
     }
 
     [Authorize]

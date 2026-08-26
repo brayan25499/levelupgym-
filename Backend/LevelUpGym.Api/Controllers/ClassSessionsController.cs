@@ -106,11 +106,12 @@ public class ClassSessionsController : ControllerBase
 
         // Verificar membresía
         var activeSub = client.Subscriptions
-            .Where(s => s.IdEstado == 1 || s.Status.Concepto == "ACTIVO")
+            .Where(s => s.DeletedAt == null && (s.IdEstado == 1 || (s.Status != null && s.Status.Concepto == "ACTIVO")))
             .OrderByDescending(s => s.FechaFin)
             .FirstOrDefault();
 
-        if (activeSub == null || (!activeSub.Membership.Nombre.ToLower().Contains("plata") && !activeSub.Membership.Nombre.ToLower().Contains("oro")))
+        var memName = activeSub?.Membership?.Nombre?.ToLower() ?? "";
+        if (activeSub == null || (!memName.Contains("plata") && !memName.Contains("oro")))
         {
             return BadRequest(new { message = "Se requiere membresía Plata u Oro para inscribirse en clases." });
         }

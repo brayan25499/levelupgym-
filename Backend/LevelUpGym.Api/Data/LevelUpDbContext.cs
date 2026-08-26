@@ -30,6 +30,8 @@ public class LevelUpDbContext : DbContext
     public DbSet<MensajeContacto> MensajesContacto { get; set; }
     public DbSet<ClassSession> ClassSessions { get; set; }
     public DbSet<ClassEnrollment> ClassEnrollments { get; set; }
+    public DbSet<GoalType> GoalTypes { get; set; }
+    public DbSet<Goal> Goals { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -202,6 +204,42 @@ public class LevelUpDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(d => d.IdCliente)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // GoalTypes Table & Seed Data
+        modelBuilder.Entity<GoalType>(entity =>
+        {
+            entity.ToTable("GoalTypes");
+            entity.HasKey(e => e.IdTipoObjetivo);
+            entity.HasIndex(e => e.Nombre).IsUnique();
+
+            entity.HasData(
+                new GoalType { IdTipoObjetivo = 1, Nombre = "Peso", Descripcion = "Alcanzar un peso corporal determinado.", Unidad = "kg", TipoDato = "DECIMAL", Direccion = "MENOR", Activo = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new GoalType { IdTipoObjetivo = 2, Nombre = "IMC", Descripcion = "Alcanzar un índice de masa corporal determinado.", Unidad = "-", TipoDato = "DECIMAL", Direccion = "MENOR", Activo = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new GoalType { IdTipoObjetivo = 3, Nombre = "Cintura", Descripcion = "Reducir la medida de cintura.", Unidad = "cm", TipoDato = "DECIMAL", Direccion = "MENOR", Activo = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new GoalType { IdTipoObjetivo = 4, Nombre = "Pecho", Descripcion = "Aumentar la medida de pecho.", Unidad = "cm", TipoDato = "DECIMAL", Direccion = "MAYOR", Activo = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new GoalType { IdTipoObjetivo = 5, Nombre = "Brazo", Descripcion = "Aumentar la medida de brazo.", Unidad = "cm", TipoDato = "DECIMAL", Direccion = "MAYOR", Activo = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new GoalType { IdTipoObjetivo = 6, Nombre = "Pierna", Descripcion = "Aumentar la medida de pierna.", Unidad = "cm", TipoDato = "DECIMAL", Direccion = "MAYOR", Activo = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+                new GoalType { IdTipoObjetivo = 7, Nombre = "Porcentaje de grasa", Descripcion = "Reducir el porcentaje de grasa corporal.", Unidad = "%", TipoDato = "DECIMAL", Direccion = "MENOR", Activo = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
+            );
+        });
+
+        // Goals Table
+        modelBuilder.Entity<Goal>(entity =>
+        {
+            entity.ToTable("Goals");
+            entity.HasKey(e => e.IdObjetivo);
+            entity.Property(e => e.ValorMeta).HasPrecision(18, 2);
+
+            entity.HasOne(d => d.Client)
+                .WithMany(p => p.Goals)
+                .HasForeignKey(d => d.IdCliente)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(d => d.GoalType)
+                .WithMany(p => p.Goals)
+                .HasForeignKey(d => d.IdTipoObjetivo)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
     }

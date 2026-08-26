@@ -117,30 +117,33 @@ public class EntrenadoresController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<EntrenadorAdminDto>> CreateEntrenador(CreateEntrenadorDto request)
     {
+        var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+        if (string.IsNullOrEmpty(email)) return Unauthorized(new { message = "Usuario no autenticado." });
+
         if (string.IsNullOrWhiteSpace(request.Nombre))
-            return BadRequest("El nombre es obligatorio.");
+            return BadRequest(new { message = "El nombre es obligatorio." });
 
         if (string.IsNullOrWhiteSpace(request.Apellidos))
-            return BadRequest("Los apellidos son obligatorios.");
+            return BadRequest(new { message = "Los apellidos son obligatorios." });
 
         if (request.SalarioBase.HasValue && request.SalarioBase < 0)
-            return BadRequest("El salario base no puede ser negativo.");
+            return BadRequest(new { message = "El salario base no puede ser negativo." });
 
-        // Generar un número de documento único y válido
+        // Generar un número de documento único para el perfil
         var numDoc = new Random().Next(100000000, 999999999).ToString();
         while (await _context.Profiles.AnyAsync(p => p.NumDocumento == numDoc))
         {
             numDoc = new Random().Next(100000000, 999999999).ToString();
         }
 
-        // Crear perfil
+        // 1. Crear perfil
         var profile = new Profile
         {
             Nombre = request.Nombre.Trim(),
             Apellidos = request.Apellidos.Trim(),
             TipoDocumento = "CC",
             NumDocumento = numDoc,
-            Sexo = "No especificado",
+            Sexo = "N/A",
             CreatedAt = DateTime.UtcNow
         };
         _context.Profiles.Add(profile);
@@ -156,33 +159,44 @@ public class EntrenadoresController : ControllerBase
             }
         }
 
-        // Crear empleado
+        // 2. Crear registro de empleado/entrenador
         var employee = new Employee
         {
             IdProfile = profile.IdProfile,
             FechaContratacion = fechaContratacion,
             SalarioBase = request.SalarioBase,
             Estado = "Activo",
-            Especialidad = request.Especialidad?.Trim(),
+            Especialidad = string.IsNullOrWhiteSpace(request.Especialidad) ? "Entrenamiento Personal" : request.Especialidad.Trim(),
             Descripcion = request.Descripcion?.Trim(),
             CreatedAt = DateTime.UtcNow
         };
         _context.Employees.Add(employee);
         await _context.SaveChangesAsync();
 
-        // Asignar un rol de gimnasio por defecto para que aparezca en el frontend
-        var defaultRole = await _context.RolesGimnasio.FirstOrDefaultAsync();
-        if (defaultRole != null)
+        // 3. Asignar rol funcional de gimnasio (RolGimnasio) en roles_empleados
+        var defaultRole = await _context.RolesGimnasio.FirstOrDefaultAsync(r => r.Nombre.Contains("Coach") || r.Nombre.Contains("Entrenador"))
+            ?? await _context.RolesGimnasio.FirstOrDefaultAsync();
+
+        if (defaultRole == null)
         {
-            var empRol = new EmpleadoRolGimnasio
+            defaultRole = new RolGimnasio
             {
-                IdEmpleado = employee.IdEmpleado,
-                IdRolGym = defaultRole.IdRolGym,
+                Nombre = "Entrenador Certificado",
+                Descripcion = "Rol general de entrenador de gimnasio",
                 CreatedAt = DateTime.UtcNow
             };
-            _context.EmpleadoRolesGimnasio.Add(empRol);
+            _context.RolesGimnasio.Add(defaultRole);
             await _context.SaveChangesAsync();
         }
+
+        var empRol = new EmpleadoRolGimnasio
+        {
+            IdEmpleado = employee.IdEmpleado,
+            IdRolGym = defaultRole.IdRolGym,
+            CreatedAt = DateTime.UtcNow
+        };
+        _context.EmpleadoRolesGimnasio.Add(empRol);
+        await _context.SaveChangesAsync();
 
         var responseDto = new EntrenadorAdminDto
         {

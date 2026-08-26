@@ -160,29 +160,45 @@
       var pct = 0;
       var pctInterval = setInterval(function () {
         pct = pct >= 96 ? 96 : pct + Math.floor(Math.random() * 6) + 1;
-        pctEl.textContent = pct + '%';
+        if (pctEl) pctEl.textContent = pct + '%';
       }, 180);
 
+      var isHidden = false;
+      var fallbackTimer = null;
+      var observer = null;
+
       function hidePreloader() {
-        clearInterval(pctInterval);
-        pctEl.textContent = '100%';
-        var el = document.getElementById('app-preloader');
-        setTimeout(function () {
-          el.classList.add('fade-out');
-          setTimeout(function () { el.remove(); }, 500);
-        }, 200);
+        if (isHidden) return;
+        isHidden = true;
+
+        if (pctInterval) clearInterval(pctInterval);
+        if (fallbackTimer) clearTimeout(fallbackTimer);
+        if (observer) observer.disconnect();
+
+        if (pctEl) pctEl.textContent = '100%';
+
+        var preloader = document.getElementById('app-preloader');
+        if (preloader) {
+          preloader.classList.add('fade-out');
+          setTimeout(function () {
+            if (preloader && preloader.parentNode) {
+              preloader.parentNode.removeChild(preloader);
+            }
+          }, 500);
+        }
       }
 
       var appRoot = document.querySelector('app-root');
-      var observer = new MutationObserver(function () {
-        if (appRoot.children.length > 0) {
-          observer.disconnect();
-          hidePreloader();
-        }
-      });
-      observer.observe(appRoot, { childList: true });
+      if (appRoot) {
+        observer = new MutationObserver(function () {
+          if (appRoot.children.length > 0) {
+            hidePreloader();
+          }
+        });
+        observer.observe(appRoot, { childList: true });
+      }
 
-      setTimeout(hidePreloader, 6000);
+      fallbackTimer = setTimeout(hidePreloader, 4000);
     })();
   </script>
 </body>

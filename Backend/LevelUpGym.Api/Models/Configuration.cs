@@ -70,6 +70,16 @@ public class Progress : BaseEntity
     [StringLength(3)]
     public string? Imc { get; set; }
     
+    public decimal? PorcentajeGrasa { get; set; }
+    
+    public decimal? Cintura { get; set; }
+    
+    public decimal? Pecho { get; set; }
+    
+    public decimal? Brazo { get; set; }
+    
+    public decimal? Pierna { get; set; }
+    
     public DateOnly? FechaMedicion { get; set; }
 
     // Navigation

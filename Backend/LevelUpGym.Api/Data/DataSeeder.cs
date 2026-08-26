@@ -125,7 +125,7 @@ public static class DataSeeder
             else
             {
                 using var hmac = new System.Security.Cryptography.HMACSHA512();
-                clientAuth.Password = hmac.ComputeHash(Encoding.UTF8.GetBytes("Cliente123!"));
+                clientAuth.Password = hmac.ComputeHash(Encoding.UTF8.GetBytes("cliente123"));
                 clientAuth.PasswordSalt = hmac.Key;
                 clientAuth.Estado = "ACTIVO";
                 context.SaveChanges();

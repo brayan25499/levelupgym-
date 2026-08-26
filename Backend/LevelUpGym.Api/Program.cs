@@ -26,6 +26,7 @@ public class Program
         builder.Services.AddScoped<IJwtService, JwtService>();
         builder.Services.AddSingleton<IOtpService, OtpService>();
         builder.Services.AddScoped<IEmailService, ConsoleEmailService>();
+        builder.Services.AddScoped<IGoalEvaluationService, GoalEvaluationService>();
 
         builder.Services.AddCors(options =>
         {

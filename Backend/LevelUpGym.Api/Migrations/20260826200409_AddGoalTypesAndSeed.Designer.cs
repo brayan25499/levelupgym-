@@ -4,6 +4,7 @@ using LevelUpGym.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LevelUpGym.Api.Migrations
 {
     [DbContext(typeof(LevelUpDbContext))]
-    partial class LevelUpDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260826200409_AddGoalTypesAndSeed")]
+    partial class AddGoalTypesAndSeed
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -368,57 +371,6 @@ namespace LevelUpGym.Api.Migrations
                     b.HasKey("IdEps");
 
                     b.ToTable("EpsList");
-                });
-
-            modelBuilder.Entity("LevelUpGym.Api.Models.Goal", b =>
-                {
-                    b.Property<int>("IdObjetivo")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdObjetivo"));
-
-                    b.Property<DateTime?>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Descripcion")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<string>("Estado")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<DateOnly>("FechaInicio")
-                        .HasColumnType("date");
-
-                    b.Property<DateOnly?>("FechaLimite")
-                        .HasColumnType("date");
-
-                    b.Property<int>("IdCliente")
-                        .HasColumnType("int");
-
-                    b.Property<int>("IdTipoObjetivo")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<decimal>("ValorMeta")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
-                    b.HasKey("IdObjetivo");
-
-                    b.HasIndex("IdCliente");
-
-                    b.HasIndex("IdTipoObjetivo");
-
-                    b.ToTable("Goals", (string)null);
                 });
 
             modelBuilder.Entity("LevelUpGym.Api.Models.GoalType", b =>
@@ -1145,25 +1097,6 @@ namespace LevelUpGym.Api.Migrations
                     b.Navigation("Employee");
                 });
 
-            modelBuilder.Entity("LevelUpGym.Api.Models.Goal", b =>
-                {
-                    b.HasOne("LevelUpGym.Api.Models.Client", "Client")
-                        .WithMany("Goals")
-                        .HasForeignKey("IdCliente")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("LevelUpGym.Api.Models.GoalType", "GoalType")
-                        .WithMany("Goals")
-                        .HasForeignKey("IdTipoObjetivo")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Client");
-
-                    b.Navigation("GoalType");
-                });
-
             modelBuilder.Entity("LevelUpGym.Api.Models.Membership", b =>
                 {
                     b.HasOne("LevelUpGym.Api.Models.Item", "Item")
@@ -1253,8 +1186,6 @@ namespace LevelUpGym.Api.Migrations
 
             modelBuilder.Entity("LevelUpGym.Api.Models.Client", b =>
                 {
-                    b.Navigation("Goals");
-
                     b.Navigation("ProgressReports");
 
                     b.Navigation("Subscriptions");
@@ -1270,11 +1201,6 @@ namespace LevelUpGym.Api.Migrations
             modelBuilder.Entity("LevelUpGym.Api.Models.Eps", b =>
                 {
                     b.Navigation("Employees");
-                });
-
-            modelBuilder.Entity("LevelUpGym.Api.Models.GoalType", b =>
-                {
-                    b.Navigation("Goals");
                 });
 
             modelBuilder.Entity("LevelUpGym.Api.Models.Item", b =>

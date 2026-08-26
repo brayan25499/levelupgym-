@@ -40,16 +40,6 @@
         <span class="menu-label">Inicio</span>
       </button>
 
-      <button (click)="setSection('entrenamientos')" [class.active]="activeSection === 'entrenamientos'">
-        <span class="menu-icon">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5h11M6.5 17.5h11M3 10v4M21 10v4M4.5 8v8M19.5 8v8"></path></svg>
-        </span> 
-        <span class="menu-label">Entrenamientos</span>
-        <span class="lock-icon-sm" *ngIf="!hasFullAccess()">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-        </span>
-      </button>
-
       <button (click)="setSection('musculos')" [class.active]="activeSection === 'musculos'">
         <span class="menu-icon">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4" r="2"></circle><path d="M12 6v6m0 0l-3 5m3-5l3 5m-6-8h6"></path></svg>
@@ -131,10 +121,6 @@
       </div>
       <div class="header-right">
         <span class="date-badge">{{ today | date:'mediumDate' }}</span>
-        <button class="btn-3d-shortcut" (click)="setSection('musculos')">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 6px;"><circle cx="12" cy="4" r="2"></circle><path d="M12 6v6m0 0l-3 5m3-5l3 5m-6-8h6"></path></svg>
-          <span>Modelo 3D</span>
-        </button>
       </div>
     </header>
 
@@ -173,7 +159,7 @@
           </div>
 
           <!-- Próximo Entrenamiento Summary Card -->
-          <div class="summary-card card-clickable" (click)="setSection('entrenamientos')">
+          <div class="summary-card card-clickable" (click)="setSection('sesiones')">
             <div class="card-header-row">
               <span class="card-icon-box">
                 <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5h11M6.5 17.5h11M3 10v4M21 10v4M4.5 8v8M19.5 8v8"></path></svg>
@@ -244,54 +230,7 @@
         </div>
       </section>
 
-      <!-- ================= 2. ENTRENAMIENTOS SECTION ================= -->
-      <section *ngIf="activeSection === 'entrenamientos'" class="section-container fade-in">
-        <div class="section-header-block">
-          <h2 class="section-title">Mis Entrenamientos</h2>
-          <p class="section-desc">Rutinas y ejercicios diseñados para maximizar tu rendimiento físico.</p>
-        </div>
 
-        <!-- LOCKED FEATURE BANNER FOR BRONCE / NO PLAN -->
-        <div class="locked-feature-banner" *ngIf="!hasFullAccess()">
-          <div class="lock-icon-huge">
-            <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-          </div>
-          <h3>Rutinas de Entrenamiento Exclusivas para Plan PLATA y ORO</h3>
-          <p>Tu membresía actual <strong>{{ getMembershipName() ? (getMembershipName() | uppercase) : 'BRONCE' }}</strong> incluye acceso básico a sala de pesas y vestidores. Las rutinas de entrenamiento guiadas, desgloses por grupo muscular y guías de ejercicios están disponibles únicamente para los miembros de los planes <strong>PLATA</strong> y <strong>ORO</strong>.</p>
-          <button class="btn-primary-glow" (click)="setSection('membresia')">ACTUALIZAR PLAN AHORA</button>
-        </div>
-
-        <!-- UNLOCKED CONTENT (PLATA / ORO) -->
-        <div *ngIf="hasFullAccess()">
-          <div class="disclaimer-alert">
-            <span class="alert-icon">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-            </span>
-            <p>Los ejercicios mostrados son informativos. Para aprender correctamente la técnica y recibir una recomendación adecuada, consulta con tu entrenador de LevelUpGym.</p>
-          </div>
-
-          <div class="routines-grid">
-            <div class="routine-card" *ngFor="let routine of routinesList()">
-              <div class="routine-header">
-                <span class="level-tag">{{ routine.nivel }}</span>
-                <span class="time-tag">Duración: {{ routine.duracionMin }} min</span>
-              </div>
-              <h3 class="routine-title">{{ routine.titulo }}</h3>
-              <p class="routine-muscle">Grupo: {{ routine.grupoMuscular }}</p>
-
-              <div class="exercise-cards-list">
-                <div class="exercise-item-card" *ngFor="let ex of routine.ejercicios">
-                  <div class="ex-info">
-                    <h4>{{ ex.nombre }}</h4>
-                    <p class="ex-sub">{{ ex.musculo }} • {{ ex.series }} Series × {{ ex.repeticiones }} Reps (Descanso: {{ ex.descanso }})</p>
-                  </div>
-                  <button class="btn-view-exercise" (click)="openExerciseModal(ex)">Ver ejercicio</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       <!-- ================= 3. EXPLORAR MÚSCULOS 3D SECTION ================= -->
       <section *ngIf="activeSection === 'musculos'" class="section-container fade-in">
@@ -385,44 +324,46 @@
           <p class="section-desc">Monitorea tus entrenamientos, la evolución de tu Índice de Masa Corporal (IMC) y tus métricas corporales.</p>
         </div>
 
-        <!-- 1. BLOQUE RESUMEN DE ACTIVIDAD -->
+        <!-- 1. BLOQUE RESUMEN DE PROGRESO Y IMC -->
         <div class="sub-block-wrapper">
-          <h3 class="sub-block-title">Resumen de Actividad</h3>
+          <h3 class="sub-block-title">Métricas Principales de Progreso</h3>
           <div class="stats-cards-grid">
             <div class="stat-box">
               <span class="stat-icon">
-                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5h11M6.5 17.5h11M3 10v4M21 10v4M4.5 8v8M19.5 8v8"></path></svg>
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#ffd700" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
               </span>
               <div class="stat-info">
-                <span class="stat-label">Entrenamientos Realizados</span>
-                <span class="stat-number">24</span>
+                <span class="stat-label">Peso Actual</span>
+                <span class="stat-number">{{ pesoActualVal !== null ? pesoActualVal + ' kg' : '--' }}</span>
               </div>
             </div>
             <div class="stat-box">
               <span class="stat-icon">
-                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#22c55e" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#dc143c" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
               </span>
               <div class="stat-info">
-                <span class="stat-label">Sesiones Completadas</span>
-                <span class="stat-number">22</span>
+                <span class="stat-label">IMC Actual</span>
+                <span class="stat-number">{{ imcActualVal !== null ? imcActualVal : '--' }}</span>
               </div>
             </div>
             <div class="stat-box">
               <span class="stat-icon">
-                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.45 1-1 1H7v4h10v-4h-2c-.55 0-1-.45-1-1v-2.34"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"></path></svg>
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#3b82f6" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
               </span>
               <div class="stat-info">
-                <span class="stat-label">Objetivos</span>
-                <span class="stat-number">4 Meta</span>
+                <span class="stat-label">Peso Inicial</span>
+                <span class="stat-number">{{ pesoInicialVal !== null ? pesoInicialVal + ' kg' : '--' }}</span>
               </div>
             </div>
             <div class="stat-box">
               <span class="stat-icon">
-                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#22c55e" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
               </span>
               <div class="stat-info">
-                <span class="stat-label">Nivel de Actividad</span>
-                <span class="stat-number">Activo</span>
+                <span class="stat-label">Diferencia de Peso</span>
+                <span class="stat-number" [style.color]="diferenciaPesoVal !== null && diferenciaPesoVal < 0 ? '#22c55e' : (diferenciaPesoVal !== null && diferenciaPesoVal > 0 ? '#ef4444' : '#ffffff')">
+                  {{ diferenciaPesoVal !== null ? (diferenciaPesoVal > 0 ? '+' + diferenciaPesoVal : diferenciaPesoVal) + ' kg' : '--' }}
+                </span>
               </div>
             </div>
           </div>
@@ -510,30 +451,28 @@
 
         <!-- 3. BLOQUE EVOLUCIÓN E HISTORIAL DE MEDICIONES -->
         <div class="sub-block-wrapper">
-          <h3 class="sub-block-title">📈 Evolución e Historial del IMC</h3>
+          <h3 class="sub-block-title">📈 Evolución e Historial del IMC y Mediciones</h3>
           
           <div class="evolution-grid">
             <!-- Gráfica Sencilla de Evolución SVG -->
             <div class="chart-card">
               <h4>Evolución del IMC (Gráfica de Tendencia)</h4>
-              <div class="svg-chart-container" *ngIf="imcRecords().length > 0; else noChartData">
+              <div class="svg-chart-container" *ngIf="progressReports().length > 0; else noChartData">
                 <svg viewBox="0 0 400 160" class="imc-trend-svg">
                   <line x1="40" y1="130" x2="380" y2="130" stroke="rgba(255,255,255,0.1)" stroke-width="1" />
                   <line x1="40" y1="80" x2="380" y2="80" stroke="rgba(255,255,255,0.1)" stroke-width="1" stroke-dasharray="4" />
                   <line x1="40" y1="30" x2="380" y2="30" stroke="rgba(255,255,255,0.1)" stroke-width="1" stroke-dasharray="4" />
                   
                   <polyline fill="none" stroke="#dc143c" stroke-width="3" 
-                            points="50,110 140,95 240,75 330,65" />
+                            [attr.points]="dynamicSvgPoints" />
                   
-                  <circle cx="50" cy="110" r="5" fill="#ffd700" />
-                  <circle cx="140" cy="95" r="5" fill="#ffd700" />
-                  <circle cx="240" cy="75" r="5" fill="#ffd700" />
-                  <circle cx="330" cy="65" r="6" fill="#dc143c" stroke="#ffffff" stroke-width="2" />
+                  <circle *ngFor="let circle of dynamicSvgCircles" [attr.cx]="circle.cx" [attr.cy]="circle.cy" r="5" fill="#ffd700">
+                    <title>IMC: {{ circle.imc }} ({{ circle.fecha }})</title>
+                  </circle>
 
-                  <text x="40" y="150" fill="#94a3b8" font-size="11">Ago 01</text>
-                  <text x="130" y="150" fill="#94a3b8" font-size="11">Ago 05</text>
-                  <text x="230" y="150" fill="#94a3b8" font-size="11">Ago 10</text>
-                  <text x="320" y="150" fill="#94a3b8" font-size="11">Actual</text>
+                  <text *ngFor="let circle of dynamicSvgCircles" [attr.x]="circle.cx - 15" y="150" fill="#94a3b8" font-size="10">
+                    {{ circle.fecha }}
+                  </text>
                 </svg>
               </div>
               <ng-template #noChartData>
@@ -541,9 +480,9 @@
               </ng-template>
             </div>
 
-            <!-- Tabla de Historial de Mediciones -->
+            <!-- Tabla de Historial de Mediciones Completa -->
             <div class="history-table-card">
-              <h4>Historial de Mediciones</h4>
+              <h4>Historial de Mediciones Corporales</h4>
               <div class="table-responsive">
                 <table class="imc-history-table">
                   <thead>
@@ -552,17 +491,27 @@
                       <th class="text-right">Peso</th>
                       <th class="text-right">Estatura</th>
                       <th class="text-right">IMC</th>
+                      <th class="text-right">% Grasa</th>
+                      <th class="text-right">Cintura</th>
+                      <th class="text-right">Pecho</th>
+                      <th class="text-right">Brazo</th>
+                      <th class="text-right">Pierna</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr *ngFor="let rec of imcRecords()">
-                      <td>{{ rec.fecha }}</td>
-                      <td class="text-right">{{ rec.pesoKg }} kg</td>
-                      <td class="text-right">{{ rec.estaturaM }} m</td>
+                    <tr *ngFor="let rec of progressReports()">
+                      <td>{{ rec.fechaMedicion ? (rec.fechaMedicion | date:'dd/MM/yyyy') : (rec.createdAt | date:'dd/MM/yyyy') }}</td>
+                      <td class="text-right">{{ rec.peso }} kg</td>
+                      <td class="text-right">{{ rec.altura }} m</td>
                       <td class="text-right bold-gold">{{ rec.imc }}</td>
+                      <td class="text-right">{{ rec.porcentajeGrasa ? rec.porcentajeGrasa + '%' : '--' }}</td>
+                      <td class="text-right">{{ rec.cintura ? rec.cintura + ' cm' : '--' }}</td>
+                      <td class="text-right">{{ rec.pecho ? rec.pecho + ' cm' : '--' }}</td>
+                      <td class="text-right">{{ rec.brazo ? rec.brazo + ' cm' : '--' }}</td>
+                      <td class="text-right">{{ rec.pierna ? rec.pierna + ' cm' : '--' }}</td>
                     </tr>
-                    <tr *ngIf="imcRecords().length === 0">
-                      <td colspan="4" class="text-center">Sin mediciones registradas.</td>
+                    <tr *ngIf="progressReports().length === 0">
+                      <td colspan="9" class="text-center">Sin mediciones registradas.</td>
                     </tr>
                   </tbody>
                 </table>
@@ -595,36 +544,65 @@
 
       <!-- ================= 5. MIS OBJETIVOS SECTION ================= -->
       <section *ngIf="activeSection === 'objetivos'" class="section-container fade-in">
-        <div class="section-header-block">
-          <h2 class="section-title">Mis Objetivos</h2>
-          <p class="section-desc">Haz seguimiento visual a tus metas de entrenamiento y rendimiento.</p>
+        <div class="section-header-block sub-header-flex">
+          <div>
+            <h2 class="section-title">Mis Objetivos</h2>
+            <p class="section-desc">Haz seguimiento visual a tus metas de entrenamiento y rendimiento físico.</p>
+          </div>
+          <button class="btn-primary-glow" (click)="openNewGoalModal()">+ Nuevo Objetivo</button>
         </div>
 
-        <div class="goals-list-grid">
-          <div class="goal-card" *ngFor="let goal of goalsList()">
+        <div class="goals-list-grid" *ngIf="userGoals().length > 0; else noGoalsBlock">
+          <div class="goal-card" *ngFor="let goal of userGoals()">
             <div class="goal-header">
-              <h3>{{ goal.titulo }}</h3>
-              <span class="status-badge" [class.badge-completed]="goal.estado === 'Completado'">
-                {{ goal.estado }}
+              <h3>🎯 {{ goal.nombreTipoObjetivo }}: {{ goal.valorMeta }} {{ goal.unidad }}</h3>
+              <span class="status-badge" 
+                    [class.badge-completed]="goal.estado === 'COMPLETADO'"
+                    [class.badge-in-progress]="goal.estado === 'EN_PROGRESO'">
+                {{ goal.estado === 'COMPLETADO' ? '🟢 Completado' : '🟡 En progreso' }}
               </span>
             </div>
-            <p class="goal-desc">{{ goal.descripcion }}</p>
+            <p class="goal-desc">{{ goal.descripcion || 'Objetivo de entrenamiento y control físico.' }}</p>
+
+            <div class="goal-metrics-row">
+              <div class="g-metric">
+                <span class="lbl">Actual:</span>
+                <span class="val">{{ goal.valorActual !== null ? goal.valorActual + ' ' + goal.unidad : '--' }}</span>
+              </div>
+              <div class="g-metric highlight">
+                <span class="lbl">Meta:</span>
+                <span class="val gold">{{ goal.valorMeta }} {{ goal.unidad }}</span>
+              </div>
+              <div class="g-metric">
+                <span class="lbl">Inicial:</span>
+                <span class="val">{{ goal.valorInicial !== null ? goal.valorInicial + ' ' + goal.unidad : '--' }}</span>
+              </div>
+            </div>
 
             <div class="goal-progress-box">
               <div class="progress-label-row">
                 <span>Progreso</span>
-                <span class="percent-val">{{ goal.progreso }}%</span>
+                <span class="percent-val">{{ goal.porcentajeProgreso }}%</span>
               </div>
               <div class="progress-track">
-                <div class="progress-fill" [style.width.%]="goal.progreso"></div>
+                <div class="progress-fill" [style.width.%]="goal.porcentajeProgreso"></div>
               </div>
             </div>
 
             <div class="goal-footer">
-              <span>Fecha meta: {{ goal.fechaObjetivo }}</span>
+              <span>Inicio: {{ goal.fechaInicio | date:'dd/MM/yyyy' }}</span>
+              <span *ngIf="goal.fechaLimite">Fecha límite: {{ goal.fechaLimite | date:'dd/MM/yyyy' }}</span>
             </div>
           </div>
         </div>
+
+        <ng-template #noGoalsBlock>
+          <div class="no-goals-card">
+            <h3>Aún no has creado objetivos de entrenamiento</h3>
+            <p>Define tus metas de peso, IMC, masa muscular o porcentaje de grasa para monitorear tu avance automático.</p>
+            <button class="btn-primary-glow" (click)="openNewGoalModal()">Crear mi primer objetivo</button>
+          </div>
+        </ng-template>
       </section>
 
       <!-- ================= 6. MI MEMBRESÍA SECTION ================= -->
@@ -648,23 +626,36 @@
                 <span class="val active-status">ACTIVA ✓</span>
               </div>
               <div class="detail-box">
-                <span class="label">Fecha de Vencimiento</span>
-                <span class="val">{{ profileData().activeMembership.fechaFin | date:'longDate' | uppercase }}</span>
+                <span class="label">Precio Mensual</span>
+                <span class="val font-bold gold-text">${{ profileData().activeMembership.precio | number:'1.0-0' }} COP</span>
               </div>
               <div class="detail-box">
-                <span class="label">Días Restantes</span>
-                <span class="val gold-text">24 Días</span>
+                <span class="label">Sesiones Dirigidas</span>
+                <span class="val font-bold">{{ profileData().activeMembership.sesionesIncluidas ? profileData().activeMembership.sesionesIncluidas + ' / mes' : 'Acceso Libre' }}</span>
+              </div>
+              <div class="detail-box">
+                <span class="label">Fecha de Vencimiento</span>
+                <span class="val">{{ profileData().activeMembership.fechaFin | date:'longDate' | uppercase }}</span>
               </div>
             </div>
 
             <div class="benefits-included">
-              <h4>Beneficios Incluidos en tu Plan:</h4>
+              <h4>Beneficios del Plan {{ profileData().activeMembership.nombre }}:</h4>
               <div class="benefits-chips">
-                <span class="benefit-chip">✓ Acceso Libre a Gimnasio</span>
-                <span class="benefit-chip">✓ Vestidores y Duchas</span>
-                <span class="benefit-chip" *ngIf="hasFullAccess()">✓ Rutinas de Entrenamiento Guiadas</span>
-                <span class="benefit-chip" *ngIf="hasFullAccess()">✓ Modelo Anatómico 3D Interactivo</span>
-                <span class="benefit-chip" *ngIf="hasFullAccess()">✓ Clases Grupales y Sesiones con Coach</span>
+                <ng-container *ngIf="profileData().activeMembership.beneficios?.length; else fallbackBenefits">
+                  <span class="benefit-chip" *ngFor="let b of profileData().activeMembership.beneficios">✓ {{ b }}</span>
+                </ng-container>
+                <ng-template #fallbackBenefits>
+                  <span class="benefit-chip">✓ Acceso Libre a Gimnasio</span>
+                  <span class="benefit-chip">✓ Vestidores y Duchas</span>
+                  <span class="benefit-chip" *ngIf="hasFullAccess()">✓ Rutinas Guiadas y Modelo 3D</span>
+                  <span class="benefit-chip" *ngIf="hasFullAccess()">✓ Clases Grupales y Coach</span>
+                </ng-template>
+              </div>
+
+              <h4 class="mt-3" *ngIf="profileData().activeMembership.serviciosIncluidos?.length">Servicios Incluidos:</h4>
+              <div class="benefits-chips" *ngIf="profileData().activeMembership.serviciosIncluidos?.length">
+                <span class="benefit-chip service-accent" *ngFor="let s of profileData().activeMembership.serviciosIncluidos">⚡ {{ s }}</span>
               </div>
             </div>
           </div>
@@ -912,27 +903,224 @@
 
   <!-- ================= MODALS ================= -->
 
-  <!-- MODAL CALCULADORA DE IMC -->
-  <div class="modal-overlay fade-in" *ngIf="showBmiModal()">
+  <!-- MODAL CREACIÓN DE NUEVO OBJETIVO -->
+  <div class="modal-overlay fade-in" *ngIf="showNewGoalModal()">
     <div class="modal-card">
-      <button class="close-btn" (click)="closeBmiModal()">✕</button>
-      <h2>Calculadora de IMC</h2>
-      <p class="modal-sub-desc">Ingresa tu peso en kilogramos y tu estatura en centímetros o metros. El cálculo aplicará la fórmula: <code>IMC = peso / (estatura × estatura)</code>.</p>
+      <button class="close-btn" (click)="closeNewGoalModal()">✕</button>
+      <h2>Crear Nuevo Objetivo Físico</h2>
+      <p class="modal-sub-desc">Establece tu meta. El sistema calculará tu progreso automáticamente con cada medición que registres.</p>
+
+      <form [formGroup]="goalForm" (ngSubmit)="createGoal()" class="modal-form">
+        <div class="form-field">
+          <label>TIPO DE OBJETIVO *</label>
+          <select formControlName="idTipoObjetivo" class="form-ctrl">
+            <option [ngValue]="null" disabled>-- Selecciona un tipo de objetivo --</option>
+            <option *ngFor="let type of availableGoalTypes()" [value]="type.idTipoObjetivo">
+              {{ type.nombre }} ({{ type.unidad }}) - Meta {{ type.direccion === 'MENOR' ? 'Disminución' : 'Aumento' }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label>VALOR META {{ selectedGoalTypeUnit ? '(' + selectedGoalTypeUnit + ')' : '' }} *</label>
+          <input type="number" formControlName="valorMeta" class="form-ctrl" placeholder="Ej: 75.0" step="0.1">
+          <span class="field-hint">Meta numérica que deseas alcanzar</span>
+        </div>
+
+        <div class="form-field">
+          <label>FECHA LÍMITE (OPCIONAL)</label>
+          <input type="date" formControlName="fechaLimite" class="form-ctrl">
+        </div>
+
+        <div class="form-field">
+          <label>DESCRIPCIÓN / MOTIVACIÓN (OPCIONAL)</label>
+          <textarea formControlName="descripcion" class="form-ctrl" rows="3" placeholder="Ej: Reducir masa grasa para el verano..."></textarea>
+        </div>
+
+        <button type="submit" class="btn-primary-glow w-100">ESTABLECER OBJETIVO</button>
+      </form>
+    </div>
+  </div>
+  <!-- MODAL PROCESO Y PASARELA DE PAGO DE MEMBRESÍA (COMPRA Y CAMBIO DE PLAN) -->
+  <div class="modal-overlay fade-in" *ngIf="showPaymentCheckoutModal() && targetCheckoutPlan()">
+    <div class="modal-card modal-medium" style="max-width: 520px; width: 100%;">
+      <button class="close-btn" (click)="cancelPaymentCheckout()">✕</button>
       
+      <div class="modal-header">
+        <span class="modal-tag">{{ isUpgradeFlow() ? 'CAMBIO DE PLAN' : 'NUEVA SUSCRIPCIÓN' }}</span>
+        <h2 style="margin-top: 0.25rem;">Proceso de Pago Seguro</h2>
+      </div>
+
+      <!-- RESUMEN DE COMPRA / CAMBIO -->
+      <div class="upgrade-summary-box" style="margin-top: 1rem;">
+        <div class="upgrade-summary-row" *ngIf="isUpgradeFlow() && upgradeCalc()">
+          <span class="lbl">Plan actual:</span>
+          <span class="val font-semibold">{{ upgradeCalc()!.nombrePlanActual }} (${{ upgradeCalc()!.valorPlanActual | number:'1.0-0' }} COP)</span>
+        </div>
+        <div class="upgrade-summary-row highlight-new">
+          <span class="lbl">{{ isUpgradeFlow() ? 'Nuevo plan:' : 'Plan seleccionado:' }}</span>
+          <span class="val font-bold gold-text">{{ targetCheckoutPlan()!.nombre }}</span>
+        </div>
+        <div class="upgrade-summary-row">
+          <span class="lbl">Precio del plan:</span>
+          <span class="val font-bold">${{ targetCheckoutPlan()!.precio | number:'1.0-0' }} COP</span>
+        </div>
+        <div class="upgrade-summary-row surplus-row">
+          <span class="lbl">{{ isUpgradeFlow() ? 'Excedente a pagar:' : 'Total a pagar:' }}</span>
+          <span class="val total-amount" style="color: #00e676; font-size: 1.25rem; font-weight: 800;">
+            ${{ checkoutAmount() | number:'1.0-0' }} COP
+          </span>
+        </div>
+      </div>
+
+      <!-- SELECCIÓN DE MÉTODO DE PAGO -->
+      <div class="payment-method-selector" style="margin-top: 1.25rem;">
+        <label style="display: block; font-size: 0.85rem; font-weight: 700; color: #ccc; margin-bottom: 0.5rem; text-transform: uppercase;">
+          Método de Pago
+        </label>
+        <div style="display: flex; gap: 0.75rem;">
+          <button type="button" 
+                  (click)="selectedPaymentMethod.set('PSE')"
+                  [style.border]="selectedPaymentMethod() === 'PSE' ? '2px solid #00b0ff' : '1px solid #333'"
+                  [style.background]="selectedPaymentMethod() === 'PSE' ? 'rgba(0, 176, 255, 0.15)' : '#1e1e1e'"
+                  style="flex: 1; padding: 0.75rem; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: 0.2s;">
+            <span>🏦</span> PSE (Débito)
+          </button>
+          <button type="button" 
+                  (click)="selectedPaymentMethod.set('TARJETA')"
+                  [style.border]="selectedPaymentMethod() === 'TARJETA' ? '2px solid #00e676' : '1px solid #333'"
+                  [style.background]="selectedPaymentMethod() === 'TARJETA' ? 'rgba(0, 230, 118, 0.15)' : '#1e1e1e'"
+                  style="flex: 1; padding: 0.75rem; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: 0.2s;">
+            <span>💳</span> Tarjeta
+          </button>
+        </div>
+      </div>
+
+      <!-- FORMULARIO PSE -->
+      <div *ngIf="selectedPaymentMethod() === 'PSE'" style="margin-top: 1.25rem; background: #1a1a1a; padding: 1rem; border-radius: 8px; border: 1px solid #2a2a2a;">
+        <div class="form-field">
+          <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.4rem;">SELECCIONA TU BANCO</label>
+          <select [ngModel]="selectedBank()" (ngModelChange)="selectedBank.set($event)" style="width: 100%; padding: 0.75rem; border-radius: 6px; border: 1px solid #333; background: #262626; color: white; font-weight: 500;">
+            <option value="Bancolombia">Bancolombia</option>
+            <option value="Banco de Bogotá">Banco de Bogotá</option>
+            <option value="Davivienda">Davivienda</option>
+            <option value="Nequi">Nequi</option>
+            <option value="Daviplata">Daviplata</option>
+            <option value="BBVA Colombia">BBVA Colombia</option>
+            <option value="Banco de Occidente">Banco de Occidente</option>
+            <option value="Scotiabank Colpatria">Scotiabank Colpatria</option>
+            <option value="Banco Popular">Banco Popular</option>
+            <option value="Banco Itaú">Banco Itaú</option>
+          </select>
+        </div>
+
+        <div class="form-field" style="margin-top: 0.75rem;">
+          <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.4rem;">TIPO DE PERSONA</label>
+          <div style="display: flex; gap: 1.5rem; margin-top: 0.25rem;">
+            <label style="color: white; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;">
+              <input type="radio" name="personType" value="NATURAL" [ngModel]="selectedPersonType()" (ngModelChange)="selectedPersonType.set($event)"> Persona Natural
+            </label>
+            <label style="color: white; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;">
+              <input type="radio" name="personType" value="JURIDICA" [ngModel]="selectedPersonType()" (ngModelChange)="selectedPersonType.set($event)"> Persona Jurídica
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- FORMULARIO TARJETA -->
+      <div *ngIf="selectedPaymentMethod() === 'TARJETA'" style="margin-top: 1.25rem; background: #1a1a1a; padding: 1rem; border-radius: 8px; border: 1px solid #2a2a2a;">
+        <div class="form-field">
+          <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.4rem;">NÚMERO DE TARJETA</label>
+          <input type="text" [ngModel]="cardNumber()" (ngModelChange)="cardNumber.set($event)" placeholder="4532 •••• •••• 8892" maxlength="19" style="width: 100%; padding: 0.75rem; border-radius: 6px; border: 1px solid #333; background: #262626; color: white;">
+        </div>
+        <div class="form-field" style="margin-top: 0.75rem;">
+          <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.4rem;">NOMBRE DEL TITULAR</label>
+          <input type="text" [ngModel]="cardHolder()" (ngModelChange)="cardHolder.set($event)" placeholder="Ej: JUAN PEREZ" style="width: 100%; padding: 0.75rem; border-radius: 6px; border: 1px solid #333; background: #262626; color: white;">
+        </div>
+        <div style="display: flex; gap: 0.75rem; margin-top: 0.75rem;">
+          <div class="form-field" style="flex: 1;">
+            <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.4rem;">VENCIMIENTO</label>
+            <input type="text" [ngModel]="cardExp()" (ngModelChange)="cardExp.set($event)" placeholder="MM/YY" maxlength="5" style="width: 100%; padding: 0.75rem; border-radius: 6px; border: 1px solid #333; background: #262626; color: white;">
+          </div>
+          <div class="form-field" style="flex: 1;">
+            <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.4rem;">CVV</label>
+            <input type="password" [ngModel]="cardCvv()" (ngModelChange)="cardCvv.set($event)" placeholder="•••" maxlength="4" style="width: 100%; padding: 0.75rem; border-radius: 6px; border: 1px solid #333; background: #262626; color: white;">
+          </div>
+        </div>
+      </div>
+
+      <!-- BOTONES DE ACCIÓN -->
+      <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+        <button type="button" class="btn-ghost" (click)="cancelPaymentCheckout()" style="flex: 1; padding: 0.75rem; border-radius: 6px; border: 1px solid #444; background: transparent; color: #aaa; font-weight: bold; cursor: pointer;">
+          Cancelar Pago
+        </button>
+        <button type="button" 
+                (click)="submitPaymentCheckout()" 
+                [disabled]="isProcessingPayment()"
+                style="flex: 1.5; padding: 0.75rem; border-radius: 6px; border: none; background: linear-gradient(135deg, #DC143C 0%, #ff4d4d 100%); color: white; font-weight: 800; cursor: pointer; box-shadow: 0 4px 15px rgba(220, 20, 60, 0.4); transition: 0.2s;"
+                [style.opacity]="isProcessingPayment() ? '0.6' : '1'">
+          {{ isProcessingPayment() ? 'Procesando Pago...' : 'Confirmar y Pagar ($' + (checkoutAmount() | number:'1.0-0') + ' COP)' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay fade-in" *ngIf="showBmiModal()">
+    <div class="modal-card modal-large">
+      <button class="close-btn" (click)="closeBmiModal()">✕</button>
+      <h2>Registro de Mediciones & Control de IMC</h2>
+      <p class="modal-sub-desc">Ingresa tus datos físicos. El IMC se calculará automáticamente con la fórmula: <code>IMC = peso / (estatura × estatura)</code>.</p>
+      
+      <div class="live-bmi-preview" *ngIf="previewImc !== null">
+        <span class="preview-lbl">IMC Estimado:</span>
+        <span class="preview-val">{{ previewImc }}</span>
+      </div>
+
       <form [formGroup]="bmiForm" (ngSubmit)="calculateAndSaveBmi()" class="modal-form">
-        <div class="form-field">
-          <label>PESO (KG)</label>
-          <input type="number" formControlName="peso" class="form-ctrl" placeholder="Ej: 70" step="0.1">
-          <span class="field-hint">Introduce tu peso exacto en kilogramos (ej. 70 kg)</span>
+        <div class="form-grid-2">
+          <div class="form-field">
+            <label>PESO (KG) *</label>
+            <input type="number" formControlName="peso" class="form-ctrl" placeholder="Ej: 78.5" step="0.1">
+            <span class="field-hint">Peso exacto en kg</span>
+          </div>
+
+          <div class="form-field">
+            <label>ESTATURA (CM o Metros) *</label>
+            <input type="number" formControlName="estatura" class="form-ctrl" placeholder="Ej: 175 (o 1.75)" step="0.01">
+            <span class="field-hint">Estatura en m o cm</span>
+          </div>
         </div>
 
-        <div class="form-field">
-          <label>ESTATURA (CM o Metros)</label>
-          <input type="number" formControlName="estatura" class="form-ctrl" placeholder="Ej: 175 (o 1.75)" step="0.01">
-          <span class="field-hint">Introduce tu estatura en centímetros (ej. 175) o en metros (ej. 1.75)</span>
+        <h3 class="form-section-subtitle">Mediciones Corporal Opcionales</h3>
+
+        <div class="form-grid-3">
+          <div class="form-field">
+            <label>% GRASA CORPORAL</label>
+            <input type="number" formControlName="porcentajeGrasa" class="form-ctrl" placeholder="Ej: 21.5" step="0.1">
+          </div>
+          <div class="form-field">
+            <label>CINTURA (CM)</label>
+            <input type="number" formControlName="cintura" class="form-ctrl" placeholder="Ej: 84.5" step="0.1">
+          </div>
+          <div class="form-field">
+            <label>PECHO (CM)</label>
+            <input type="number" formControlName="pecho" class="form-ctrl" placeholder="Ej: 98.0" step="0.1">
+          </div>
+          <div class="form-field">
+            <label>BRAZO (CM)</label>
+            <input type="number" formControlName="brazo" class="form-ctrl" placeholder="Ej: 32.5" step="0.1">
+          </div>
+          <div class="form-field">
+            <label>PIERNA (CM)</label>
+            <input type="number" formControlName="pierna" class="form-ctrl" placeholder="Ej: 55.0" step="0.1">
+          </div>
+          <div class="form-field">
+            <label>FECHA DE MEDICIÓN</label>
+            <input type="date" formControlName="fechaMedicion" class="form-ctrl">
+          </div>
         </div>
 
-        <button type="submit" class="btn-primary-glow w-100">CALCULAR Y GUARDAR MI IMC</button>
+        <button type="submit" class="btn-primary-glow w-100">GUARDAR MEDICIÓN Y CALCULAR IMC</button>
       </form>
     </div>
   </div>

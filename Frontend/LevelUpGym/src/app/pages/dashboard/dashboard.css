@@ -1297,21 +1297,96 @@
 }
 
 .status-badge.badge-completed {
-  background: rgba(34, 197, 94, 0.15);
+  background: rgba(34, 197, 94, 0.2);
   color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.4);
+}
+.status-badge.badge-in-progress {
+  background: rgba(59, 130, 246, 0.18);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.35);
 }
 
-.goal-desc { font-size: 0.88rem; color: var(--dash-text-muted); margin-bottom: 1.25rem; }
+.goal-desc { font-size: 0.88rem; color: var(--dash-text-muted); margin-bottom: 1rem; }
+
+.goal-metrics-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.25rem;
+  text-align: center;
+}
+.g-metric .lbl { font-size: 0.72rem; color: var(--dash-text-muted); display: block; }
+.g-metric .val { font-size: 0.95rem; font-weight: 700; color: #f8fafc; }
+.g-metric .val.gold { color: #ffd700; }
 
 .goal-progress-box { margin-bottom: 1rem; }
 .progress-label-row { display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 0.4rem; }
 .percent-val { font-weight: 800; color: var(--dash-accent); }
 .progress-track { height: 10px; background: rgba(255, 255, 255, 0.08); border-radius: 5px; overflow: hidden; }
-.progress-fill { height: 100%; background: var(--dash-accent); border-radius: 5px; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, #dc143c 0%, #ffd700 100%); border-radius: 5px; transition: width 0.4s ease; }
 
-.goal-footer { font-size: 0.78rem; color: var(--dash-text-muted); }
+.goal-footer { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--dash-text-muted); }
+
+.no-goals-card {
+  background: var(--dash-card);
+  border: 1px dashed var(--dash-border);
+  border-radius: 14px;
+  padding: 3rem 2rem;
+  text-align: center;
+}
+.no-goals-card h3 { font-size: 1.2rem; margin-bottom: 0.5rem; }
+.no-goals-card p { color: var(--dash-text-muted); font-size: 0.9rem; margin-bottom: 1.5rem; }
 
 /* ================= 6. MI MEMBRESÍA & UPGRADES ================= */
+.upgrade-summary-box {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--dash-border);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  margin: 1.25rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.upgrade-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.95rem;
+}
+.upgrade-summary-row .lbl { color: var(--dash-text-muted); }
+.upgrade-summary-row .val { color: #f8fafc; }
+
+.upgrade-summary-row.surplus-row {
+  border-top: 1px dashed var(--dash-border);
+  padding-top: 0.85rem;
+  margin-top: 0.25rem;
+}
+.upgrade-summary-row.surplus-row .lbl { font-weight: 700; color: #f8fafc; font-size: 1.05rem; }
+.upgrade-summary-row.surplus-row .total-amount { font-size: 1.3rem; font-weight: 900; color: var(--dash-accent); }
+
+.upgrade-notice-alert {
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: #93c5fd;
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  margin-bottom: 1.25rem;
+}
+
+.modal-actions-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
 .membership-card-premium {
   background: linear-gradient(135deg, rgba(220, 20, 60, 0.2) 0%, rgba(20, 24, 34, 0.95) 100%);
   border: 1.5px solid var(--dash-accent);
@@ -1353,8 +1428,8 @@
 
 .membership-details-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1.25rem;
   background: rgba(0, 0, 0, 0.4);
   padding: 1.25rem;
   border-radius: 12px;
@@ -1362,7 +1437,7 @@
 }
 
 .detail-box .label { font-size: 0.78rem; color: var(--dash-text-muted); display: block; margin-bottom: 0.25rem; }
-.detail-box .val { font-size: 1.1rem; font-weight: 800; }
+.detail-box .val { font-size: 1.05rem; font-weight: 800; }
 .active-status { color: #22c55e; }
 .gold-text { color: var(--dash-gold); }
 
@@ -1373,6 +1448,11 @@
   font-size: 0.82rem;
   padding: 0.35rem 0.8rem;
   border-radius: 20px;
+}
+.benefit-chip.service-accent {
+  background: rgba(220, 20, 60, 0.18);
+  border: 1px solid rgba(220, 20, 60, 0.35);
+  color: #f87171;
 }
 
 .plans-upgrade-container {
@@ -1693,6 +1773,31 @@
 .spec-box .val { font-size: 1.1rem; font-weight: 800; color: var(--dash-accent); }
 
 .modal-form { display: flex; flex-direction: column; gap: 1.25rem; margin-top: 1.5rem; }
+.modal-card.modal-large { max-width: 680px; }
+
+.live-bmi-preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(220, 20, 60, 0.12);
+  border: 1px solid rgba(220, 20, 60, 0.3);
+  padding: 0.75rem 1.25rem;
+  border-radius: 10px;
+  margin-top: 1rem;
+}
+.preview-lbl { font-size: 0.9rem; font-weight: 600; color: #cbd5e1; }
+.preview-val { font-size: 1.4rem; font-weight: 800; color: #ffd700; }
+
+.form-section-subtitle {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #ffd700;
+  margin-top: 0.5rem;
+  margin-bottom: -0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 .w-100 { width: 100%; }
 
 /* Fade Animations */
