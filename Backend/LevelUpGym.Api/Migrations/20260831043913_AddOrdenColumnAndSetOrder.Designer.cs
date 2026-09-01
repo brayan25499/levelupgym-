@@ -4,6 +4,7 @@ using LevelUpGym.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LevelUpGym.Api.Migrations
 {
     [DbContext(typeof(LevelUpDbContext))]
-    partial class LevelUpDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260831043913_AddOrdenColumnAndSetOrder")]
+    partial class AddOrdenColumnAndSetOrder
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -452,9 +455,6 @@ namespace LevelUpGym.Api.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<int>("Orden")
-                        .HasColumnType("int");
-
                     b.Property<string>("TipoDato")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -470,9 +470,8 @@ namespace LevelUpGym.Api.Migrations
 
                     b.HasKey("IdTipoObjetivo");
 
-                    b.HasIndex("Nombre", "Direccion")
-                        .IsUnique()
-                        .HasFilter("[DeletedAt] IS NULL");
+                    b.HasIndex("Nombre")
+                        .IsUnique();
 
                     b.ToTable("GoalTypes", (string)null);
 
@@ -485,7 +484,6 @@ namespace LevelUpGym.Api.Migrations
                             Descripcion = "Alcanzar un peso corporal determinado.",
                             Direccion = "MENOR",
                             Nombre = "Peso",
-                            Orden = 0,
                             TipoDato = "DECIMAL",
                             Unidad = "kg"
                         },
@@ -497,7 +495,6 @@ namespace LevelUpGym.Api.Migrations
                             Descripcion = "Alcanzar un índice de masa corporal determinado.",
                             Direccion = "MENOR",
                             Nombre = "IMC",
-                            Orden = 0,
                             TipoDato = "DECIMAL",
                             Unidad = "-"
                         },
@@ -509,7 +506,6 @@ namespace LevelUpGym.Api.Migrations
                             Descripcion = "Reducir la medida de cintura.",
                             Direccion = "MENOR",
                             Nombre = "Cintura",
-                            Orden = 0,
                             TipoDato = "DECIMAL",
                             Unidad = "cm"
                         },
@@ -521,7 +517,6 @@ namespace LevelUpGym.Api.Migrations
                             Descripcion = "Aumentar la medida de pecho.",
                             Direccion = "MAYOR",
                             Nombre = "Pecho",
-                            Orden = 0,
                             TipoDato = "DECIMAL",
                             Unidad = "cm"
                         },
@@ -533,7 +528,6 @@ namespace LevelUpGym.Api.Migrations
                             Descripcion = "Aumentar la medida de brazo.",
                             Direccion = "MAYOR",
                             Nombre = "Brazo",
-                            Orden = 0,
                             TipoDato = "DECIMAL",
                             Unidad = "cm"
                         },
@@ -545,7 +539,6 @@ namespace LevelUpGym.Api.Migrations
                             Descripcion = "Aumentar la medida de pierna.",
                             Direccion = "MAYOR",
                             Nombre = "Pierna",
-                            Orden = 0,
                             TipoDato = "DECIMAL",
                             Unidad = "cm"
                         });

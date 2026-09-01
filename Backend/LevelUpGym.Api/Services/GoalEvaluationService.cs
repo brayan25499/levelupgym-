@@ -104,11 +104,6 @@ public class GoalEvaluationService : IGoalEvaluationService
             case "pierna":
                 return progress.Pierna;
 
-            case "porcentaje de grasa":
-            case "porcentaje grasa":
-            case "grasa":
-                return progress.PorcentajeGrasa;
-
             default:
                 return null;
         }

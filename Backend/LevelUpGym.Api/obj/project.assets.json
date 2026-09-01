@@ -3611,23 +3611,23 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\Explore\\.nuget\\packages\\": {},
-    "D:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
+    "C:\\Users\\Dagadev\\.nuget\\packages\\": {},
+    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "F:\\levelup\\levelupgym-\\Backend\\LevelUpGym.Api\\LevelUpGym.Api.csproj",
+      "projectUniqueName": "D:\\proyectos\\levelupgym-\\Backend\\LevelUpGym.Api\\LevelUpGym.Api.csproj",
       "projectName": "LevelUpGym.Api",
-      "projectPath": "F:\\levelup\\levelupgym-\\Backend\\LevelUpGym.Api\\LevelUpGym.Api.csproj",
-      "packagesPath": "C:\\Users\\Explore\\.nuget\\packages\\",
-      "outputPath": "F:\\levelup\\levelupgym-\\Backend\\LevelUpGym.Api\\obj\\",
+      "projectPath": "D:\\proyectos\\levelupgym-\\Backend\\LevelUpGym.Api\\LevelUpGym.Api.csproj",
+      "packagesPath": "C:\\Users\\Dagadev\\.nuget\\packages\\",
+      "outputPath": "D:\\proyectos\\levelupgym-\\Backend\\LevelUpGym.Api\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
-        "D:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\Explore\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\Dagadev\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -3636,7 +3636,6 @@
       ],
       "sources": {
         "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-        "C:\\Program Files\\dotnet\\library-packs": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
@@ -3656,7 +3655,7 @@
         "auditLevel": "low",
         "auditMode": "all"
       },
-      "SdkAnalysisLevel": "10.0.300"
+      "SdkAnalysisLevel": "10.0.400"
     },
     "frameworks": {
       "net10.0": {
@@ -3711,7 +3710,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.303/PortableRuntimeIdentifierGraph.json",
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.400/PortableRuntimeIdentifierGraph.json",
         "packagesToPrune": {
           "Microsoft.AspNetCore": "(,10.0.32767]",
           "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",

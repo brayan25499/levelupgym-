@@ -9,6 +9,7 @@
       <button (click)="setTab('clientes')" [class.active]="activeTab === 'clientes'"><span class="menu-icon">👥</span> Clientes</button>
       <button (click)="setTab('clases')" [class.active]="activeTab === 'clases'"><span class="menu-icon">📅</span> Clases</button>
       <button (click)="setTab('entrenadores')" [class.active]="activeTab === 'entrenadores'"><span class="menu-icon">🏋️</span> Entrenadores</button>
+      <button (click)="setTab('objetivos')" [class.active]="activeTab === 'objetivos'"><span class="menu-icon">🎯</span> Objetivos disponibles</button>
     </nav>
     <div class="sidebar-footer">
       <button class="btn-logout" (click)="logout()"><span class="menu-icon">🚪</span> Salir</button>
@@ -19,7 +20,7 @@
     <header class="content-header">
       <h1>Bienvenido, <span class="accent">Admin</span></h1>
       <div class="user-info">
-        <span>admin@levelup.com</span>
+        <span>admin&#64;levelup.com</span>
         <div class="avatar">A</div>
       </div>
     </header>
@@ -45,11 +46,11 @@
         </div>
         <div class="stat-card">
           <div class="stat-info">
-            <span class="label">Clientes Registrados</span>
-            <h2 class="value">{{ newMembersCount() }}</h2>
-            <span class="trend positive">Activos en la plataforma 👥</span>
+            <span class="label">Objetivos Disponibles</span>
+            <h2 class="value">{{ goalTypes().length }}</h2>
+            <span class="trend positive">Catálogo activo 🎯</span>
           </div>
-          <div class="stat-icon">👥</div>
+          <div class="stat-icon">🎯</div>
         </div>
       </div>
     </div>
@@ -165,6 +166,59 @@
       </section>
     </div>
 
+    <!-- OBJETIVOS DISPONIBLES TAB -->
+    <div *ngSwitchCase="'objetivos'" class="tab-content fade-in">
+      <section class="recent-activity">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+          <h2>Catálogo de Objetivos Disponibles</h2>
+          <button class="btn-primary-glow" (click)="openNewGoalTypeModal()">+ Nuevo Tipo de Objetivo</button>
+        </div>
+        <div class="activity-table-wrapper">
+          <table class="activity-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Descripción</th>
+                <th>Unidad</th>
+                <th>Tipo de dato</th>
+                <th>Dirección</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let gt of goalTypes()">
+                <td><strong>{{ gt.nombre }}</strong></td>
+                <td style="max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ gt.descripcion || '—' }}</td>
+                <td>{{ gt.unidad }}</td>
+                <td><span class="tipo-dato-badge">{{ gt.tipoDato }}</span></td>
+                <td>
+                  <span class="direccion-badge" [class.menor]="gt.direccion === 'MENOR'" [class.mayor]="gt.direccion === 'MAYOR'">
+                    {{ gt.direccion === 'MENOR' ? '↓ Reducir' : '↑ Aumentar' }}
+                  </span>
+                </td>
+                <td>
+                  <span class="status-badge" [class.success]="gt.activo" [class.pending]="!gt.activo">
+                    {{ gt.activo ? 'ACTIVO' : 'INACTIVO' }}
+                  </span>
+                </td>
+                <td class="actions-cell">
+                  <button class="btn-action btn-edit" (click)="openEditGoalTypeModal(gt)">Editar</button>
+                  <button class="btn-action btn-toggle" [class.btn-deactivate]="gt.activo" [class.btn-activate]="!gt.activo" (click)="toggleGoalTypeActive(gt)">
+                    {{ gt.activo ? 'Desactivar' : 'Activar' }}
+                  </button>
+                  <button class="btn-action btn-delete" (click)="deleteGoalType(gt)">Eliminar</button>
+                </td>
+              </tr>
+              <tr *ngIf="goalTypes().length === 0">
+                <td colspan="7" style="text-align: center; color: #666; padding: 2rem;">No hay tipos de objetivo registrados. Crea el primero.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
   </main>
 </div>
 
@@ -270,6 +324,68 @@
 
       <button type="submit" [disabled]="trainerForm.invalid" style="margin-top: 1rem; padding: 0.75rem; background: #DC143C; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; transition: 0.3s;" [style.opacity]="trainerForm.invalid ? '0.5' : '1'">
         {{ editingTrainerId() ? 'GUARDAR CAMBIOS' : 'AGREGAR ENTRENADOR' }}
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Nuevo/Editar GoalType -->
+<div class="modal-overlay fade-in" *ngIf="showGoalTypeModal()">
+  <div class="modal-card" style="background: #1e1e1e; padding: 2rem; border-radius: 8px; width: 480px; max-width: 90%; margin: 5% auto; position: relative;">
+    <button class="close-btn" (click)="closeGoalTypeModal()" style="position: absolute; right: 1rem; top: 1rem; background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;">✕</button>
+    <h2 style="margin-bottom: 1.5rem; color: #fff;">{{ editingGoalTypeId() ? 'Editar Tipo de Objetivo' : 'Nuevo Tipo de Objetivo' }}</h2>
+    <form [formGroup]="goalTypeForm" (ngSubmit)="saveGoalType()" style="display: flex; flex-direction: column; gap: 1rem;">
+      
+      <div class="form-field">
+        <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">NOMBRE</label>
+        <input type="text" formControlName="nombre" placeholder="Ej: Peso, Cintura, Brazo" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;" required>
+        <div *ngIf="goalTypeForm.get('nombre')?.touched && goalTypeForm.get('nombre')?.errors?.['required']" style="color: #ff4d4d; font-size: 0.75rem; margin-top: 0.25rem;">
+          El nombre es obligatorio.
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">DESCRIPCIÓN</label>
+        <textarea formControlName="descripcion" placeholder="Ej: Alcanzar un peso corporal determinado." style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white; resize: vertical;" rows="2"></textarea>
+      </div>
+
+      <div style="display: flex; gap: 1rem;">
+        <div class="form-field" style="flex: 1;">
+          <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">UNIDAD</label>
+          <input type="text" formControlName="unidad" placeholder="Ej: kg, cm, -" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;" required>
+          <div *ngIf="goalTypeForm.get('unidad')?.touched && goalTypeForm.get('unidad')?.errors?.['required']" style="color: #ff4d4d; font-size: 0.75rem; margin-top: 0.25rem;">
+            La unidad es obligatoria.
+          </div>
+        </div>
+        <div class="form-field" style="flex: 1;">
+          <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">TIPO DE DATO</label>
+          <select formControlName="tipoDato" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;">
+            <option value="DECIMAL">DECIMAL</option>
+            <option value="INTEGER">INTEGER</option>
+            <option value="STRING">STRING</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 1rem;">
+        <div class="form-field" style="flex: 1;">
+          <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">DIRECCIÓN DEL OBJETIVO</label>
+          <select formControlName="direccion" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;">
+            <option value="MENOR">↓ MENOR (Reducir)</option>
+            <option value="MAYOR">↑ MAYOR (Aumentar)</option>
+          </select>
+        </div>
+        <div class="form-field" style="flex: 1;">
+          <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">ESTADO</label>
+          <select formControlName="activo" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;">
+            <option [ngValue]="true">Activo</option>
+            <option [ngValue]="false">Inactivo</option>
+          </select>
+        </div>
+      </div>
+
+      <button type="submit" [disabled]="goalTypeForm.invalid" style="margin-top: 1rem; padding: 0.75rem; background: #DC143C; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; transition: 0.3s;" [style.opacity]="goalTypeForm.invalid ? '0.5' : '1'">
+        {{ editingGoalTypeId() ? 'GUARDAR CAMBIOS' : 'CREAR TIPO DE OBJETIVO' }}
       </button>
     </form>
   </div>

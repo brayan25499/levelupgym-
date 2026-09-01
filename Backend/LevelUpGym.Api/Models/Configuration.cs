@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace LevelUpGym.Api.Models;
 
@@ -59,18 +60,16 @@ public class Progress : BaseEntity
 {
     [Key]
     public int IdProgreso { get; set; }
-    
+
     public int IdCliente { get; set; }
     
     public decimal? Peso { get; set; }
     
-    [StringLength(4)]
+    [StringLength(20)]
     public string? Altura { get; set; }
     
-    [StringLength(3)]
+    [StringLength(20)]
     public string? Imc { get; set; }
-    
-    public decimal? PorcentajeGrasa { get; set; }
     
     public decimal? Cintura { get; set; }
     
@@ -82,7 +81,8 @@ public class Progress : BaseEntity
     
     public DateOnly? FechaMedicion { get; set; }
 
-    // Navigation
+    // Navigation — ligada únicamente a IdCliente
+    [ForeignKey("IdCliente")]
     public virtual Client Client { get; set; } = null!;
 }
 

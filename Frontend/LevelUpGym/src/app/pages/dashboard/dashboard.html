@@ -319,64 +319,86 @@
 
       <!-- ================= 4. MI PROGRESO & SECCIÓN "MI IMC" ORGANIZADA ================= -->
       <section *ngIf="activeSection === 'progreso'" class="section-container fade-in">
-        <div class="section-header-block">
-          <h2 class="section-title">Mi Progreso & Control de IMC</h2>
-          <p class="section-desc">Monitorea tus entrenamientos, la evolución de tu Índice de Masa Corporal (IMC) y tus métricas corporales.</p>
-        </div>
-
-        <!-- 1. BLOQUE RESUMEN DE PROGRESO Y IMC -->
-        <div class="sub-block-wrapper">
-          <h3 class="sub-block-title">Métricas Principales de Progreso</h3>
-          <div class="stats-cards-grid">
-            <div class="stat-box">
-              <span class="stat-icon">
-                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#ffd700" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
-              </span>
-              <div class="stat-info">
-                <span class="stat-label">Peso Actual</span>
-                <span class="stat-number">{{ pesoActualVal !== null ? pesoActualVal + ' kg' : '--' }}</span>
-              </div>
-            </div>
-            <div class="stat-box">
-              <span class="stat-icon">
-                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#dc143c" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
-              </span>
-              <div class="stat-info">
-                <span class="stat-label">IMC Actual</span>
-                <span class="stat-number">{{ imcActualVal !== null ? imcActualVal : '--' }}</span>
-              </div>
-            </div>
-            <div class="stat-box">
-              <span class="stat-icon">
-                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#3b82f6" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-              </span>
-              <div class="stat-info">
-                <span class="stat-label">Peso Inicial</span>
-                <span class="stat-number">{{ pesoInicialVal !== null ? pesoInicialVal + ' kg' : '--' }}</span>
-              </div>
-            </div>
-            <div class="stat-box">
-              <span class="stat-icon">
-                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#22c55e" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
-              </span>
-              <div class="stat-info">
-                <span class="stat-label">Diferencia de Peso</span>
-                <span class="stat-number" [style.color]="diferenciaPesoVal !== null && diferenciaPesoVal < 0 ? '#22c55e' : (diferenciaPesoVal !== null && diferenciaPesoVal > 0 ? '#ef4444' : '#ffffff')">
-                  {{ diferenciaPesoVal !== null ? (diferenciaPesoVal > 0 ? '+' + diferenciaPesoVal : diferenciaPesoVal) + ' kg' : '--' }}
-                </span>
-              </div>
-            </div>
+        <div class="section-header-block sub-header-flex">
+          <div>
+            <h2 class="section-title">Mi Progreso & Mediciones Corporales</h2>
+            <p class="section-desc">Monitorea la evolución de tus medidas físicas, índice de masa corporal (IMC) e historial de entrenamiento.</p>
           </div>
+          <button class="btn-primary-glow btn-header-action" (click)="openBmiModal()">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px; vertical-align: middle;"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+            Actualizar mediciones
+          </button>
         </div>
 
-        <!-- 2. BLOQUE TARJETA "MI IMC" -->
+        <!-- 1. BLOQUE RESUMEN DE MEDICIONES ACTUALES DEL PERFIL -->
         <div class="sub-block-wrapper">
           <div class="sub-header-flex">
-            <h3 class="sub-block-title">Mi IMC</h3>
-            <button class="btn-primary-glow" (click)="openBmiModal()">
-              {{ getBmiEvaluation() ? 'Actualizar Medición' : 'Calcular IMC' }}
+            <h3 class="sub-block-title">📊 Mediciones Actuales del Perfil</h3>
+            <span class="measurement-date-tag">Última actualización: {{ fechaUltimaMedicionStr }}</span>
+          </div>
+
+          <div class="measurements-current-grid">
+            <div class="measurement-card-item highlight-accent">
+              <span class="m-card-label">PESO ACTUAL</span>
+              <span class="m-card-value">{{ pesoActualVal !== null ? pesoActualVal + ' kg' : '--' }}</span>
+              <span class="m-card-sub" *ngIf="diferenciaPesoVal !== null" [style.color]="diferenciaPesoVal < 0 ? '#22c55e' : (diferenciaPesoVal > 0 ? '#ef4444' : '#ffffff')">
+                {{ diferenciaPesoVal > 0 ? '+' + diferenciaPesoVal : diferenciaPesoVal }} kg vs inicial
+              </span>
+              <span class="m-card-sub" *ngIf="diferenciaPesoVal === null">Sin referencia previa</span>
+            </div>
+
+            <div class="measurement-card-item">
+              <span class="m-card-label">ESTATURA</span>
+              <span class="m-card-value">{{ estaturaActualVal !== null ? estaturaActualVal + ' m' : '--' }}</span>
+              <span class="m-card-sub">Altura corporal</span>
+            </div>
+
+            <div class="measurement-card-item highlight-gold">
+              <span class="m-card-label">IMC ACTUAL</span>
+              <span class="m-card-value gold">{{ imcActualVal !== null ? imcActualVal : '--' }}</span>
+              <span class="m-card-sub" *ngIf="getBmiEvaluation() as bmi" [ngClass]="bmi.badgeClass">{{ bmi.categoria }}</span>
+              <span class="m-card-sub" *ngIf="!getBmiEvaluation()">kg/m²</span>
+            </div>
+
+            <div class="measurement-card-item">
+              <span class="m-card-label">CINTURA</span>
+              <span class="m-card-value">{{ cinturaActualVal !== null ? cinturaActualVal + ' cm' : '--' }}</span>
+              <span class="m-card-sub">Zona media / abdomen</span>
+            </div>
+
+            <div class="measurement-card-item">
+              <span class="m-card-label">PECHO</span>
+              <span class="m-card-value">{{ pechoActualVal !== null ? pechoActualVal + ' cm' : '--' }}</span>
+              <span class="m-card-sub">Torso superior</span>
+            </div>
+
+            <div class="measurement-card-item">
+              <span class="m-card-label">BRAZO</span>
+              <span class="m-card-value">{{ brazoActualVal !== null ? brazoActualVal + ' cm' : '--' }}</span>
+              <span class="m-card-sub">Bíceps / perímetro</span>
+            </div>
+
+            <div class="measurement-card-item">
+              <span class="m-card-label">PIERNA</span>
+              <span class="m-card-value">{{ piernaActualVal !== null ? piernaActualVal + ' cm' : '--' }}</span>
+              <span class="m-card-sub">Muslo / cuádriceps</span>
+            </div>
+          </div>
+
+          <div class="update-measurements-banner">
+            <div class="banner-text-block">
+              <h4>¿Quieres registrar tus medidas corporales?</h4>
+              <p>Mantén tus registros físicos al día para calcular tu IMC automáticamente y hacer seguimiento exacto de tu progreso.</p>
+            </div>
+            <button class="btn-primary-glow btn-banner-action" (click)="openBmiModal()">
+              Actualizar mediciones
             </button>
           </div>
+        </div>
+
+        <!-- 2. BLOQUE TARJETA "DIAGNÓSTICO Y RECOMENDACIONES DE IMC" -->
+        <div class="sub-block-wrapper">
+          <h3 class="sub-block-title">Diagnóstico & Recomendaciones de IMC</h3>
 
           <div class="bmi-evaluation-card" *ngIf="getBmiEvaluation() as bmi; else noBmiDataCard">
             <div class="bmi-top-row">
@@ -444,14 +466,14 @@
                 <h3>Completa tus datos para calcular tu IMC</h3>
                 <p>Registra tu peso en kilogramos y estatura en metros para obtener tu IMC, evolución y recomendaciones de salud.</p>
               </div>
-              <button class="btn-primary-glow" (click)="openBmiModal()">Calcular IMC</button>
+              <button class="btn-primary-glow" (click)="openBmiModal()">Registrar mediciones</button>
             </div>
           </ng-template>
         </div>
 
         <!-- 3. BLOQUE EVOLUCIÓN E HISTORIAL DE MEDICIONES -->
         <div class="sub-block-wrapper">
-          <h3 class="sub-block-title">📈 Evolución e Historial del IMC y Mediciones</h3>
+          <h3 class="sub-block-title">📈 Evolución e Historial de Mediciones</h3>
           
           <div class="evolution-grid">
             <!-- Gráfica Sencilla de Evolución SVG -->
@@ -491,7 +513,6 @@
                       <th class="text-right">Peso</th>
                       <th class="text-right">Estatura</th>
                       <th class="text-right">IMC</th>
-                      <th class="text-right">% Grasa</th>
                       <th class="text-right">Cintura</th>
                       <th class="text-right">Pecho</th>
                       <th class="text-right">Brazo</th>
@@ -504,14 +525,13 @@
                       <td class="text-right">{{ rec.peso }} kg</td>
                       <td class="text-right">{{ rec.altura }} m</td>
                       <td class="text-right bold-gold">{{ rec.imc }}</td>
-                      <td class="text-right">{{ rec.porcentajeGrasa ? rec.porcentajeGrasa + '%' : '--' }}</td>
                       <td class="text-right">{{ rec.cintura ? rec.cintura + ' cm' : '--' }}</td>
                       <td class="text-right">{{ rec.pecho ? rec.pecho + ' cm' : '--' }}</td>
                       <td class="text-right">{{ rec.brazo ? rec.brazo + ' cm' : '--' }}</td>
                       <td class="text-right">{{ rec.pierna ? rec.pierna + ' cm' : '--' }}</td>
                     </tr>
                     <tr *ngIf="progressReports().length === 0">
-                      <td colspan="9" class="text-center">Sin mediciones registradas.</td>
+                      <td colspan="8" class="text-center">Sin mediciones registradas.</td>
                     </tr>
                   </tbody>
                 </table>
@@ -599,7 +619,7 @@
         <ng-template #noGoalsBlock>
           <div class="no-goals-card">
             <h3>Aún no has creado objetivos de entrenamiento</h3>
-            <p>Define tus metas de peso, IMC, masa muscular o porcentaje de grasa para monitorear tu avance automático.</p>
+            <p>Define tus metas de peso, IMC o masa muscular para monitorear tu avance automático.</p>
             <button class="btn-primary-glow" (click)="openNewGoalModal()">Crear mi primer objetivo</button>
           </div>
         </ng-template>
@@ -1068,8 +1088,8 @@
   <div class="modal-overlay fade-in" *ngIf="showBmiModal()">
     <div class="modal-card modal-large">
       <button class="close-btn" (click)="closeBmiModal()">✕</button>
-      <h2>Registro de Mediciones & Control de IMC</h2>
-      <p class="modal-sub-desc">Ingresa tus datos físicos. El IMC se calculará automáticamente con la fórmula: <code>IMC = peso / (estatura × estatura)</code>.</p>
+      <h2>Actualizar Mediciones & Control de IMC</h2>
+      <p class="modal-sub-desc">Ingresa o modifica tus medidas corporales. El IMC se calculará automáticamente con la fórmula: <code>IMC = peso / (estatura × estatura)</code>.</p>
       
       <div class="live-bmi-preview" *ngIf="previewImc !== null">
         <span class="preview-lbl">IMC Estimado:</span>
@@ -1091,13 +1111,9 @@
           </div>
         </div>
 
-        <h3 class="form-section-subtitle">Mediciones Corporal Opcionales</h3>
+        <h3 class="form-section-subtitle">Medidas Corporales Opcionales</h3>
 
         <div class="form-grid-3">
-          <div class="form-field">
-            <label>% GRASA CORPORAL</label>
-            <input type="number" formControlName="porcentajeGrasa" class="form-ctrl" placeholder="Ej: 21.5" step="0.1">
-          </div>
           <div class="form-field">
             <label>CINTURA (CM)</label>
             <input type="number" formControlName="cintura" class="form-ctrl" placeholder="Ej: 84.5" step="0.1">
@@ -1120,7 +1136,7 @@
           </div>
         </div>
 
-        <button type="submit" class="btn-primary-glow w-100">GUARDAR MEDICIÓN Y CALCULAR IMC</button>
+        <button type="submit" class="btn-primary-glow w-100">GUARDAR MEDICIONES & RECALCULAR IMC</button>
       </form>
     </div>
   </div>

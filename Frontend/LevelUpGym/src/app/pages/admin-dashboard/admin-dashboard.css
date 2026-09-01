@@ -276,3 +276,100 @@
   box-shadow: 0 6px 25px rgba(220, 20, 60, 0.6);
 }
 
+/* GoalTypes Custom Badges & Actions */
+.tipo-dato-badge {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--white);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: var(--font-heading);
+  letter-spacing: 0.5px;
+}
+
+.direccion-badge {
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.direccion-badge.menor {
+  background: rgba(0, 176, 255, 0.1);
+  color: #00b0ff;
+}
+
+.direccion-badge.mayor {
+  background: rgba(255, 215, 0, 0.1);
+  color: var(--gold);
+}
+
+.actions-cell {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.btn-action {
+  padding: 0.35rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+  border: 1px solid transparent;
+  font-family: var(--font-heading);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.btn-edit {
+  background: rgba(0, 176, 255, 0.1);
+  color: #00b0ff;
+  border-color: rgba(0, 176, 255, 0.2);
+}
+
+.btn-edit:hover {
+  background: #00b0ff;
+  color: var(--black);
+}
+
+.btn-toggle.btn-deactivate {
+  background: rgba(255, 193, 7, 0.1);
+  color: #ffc107;
+  border-color: rgba(255, 193, 7, 0.2);
+}
+
+.btn-toggle.btn-deactivate:hover {
+  background: #ffc107;
+  color: var(--black);
+}
+
+.btn-toggle.btn-activate {
+  background: rgba(40, 167, 69, 0.1);
+  color: #28a745;
+  border-color: rgba(40, 167, 69, 0.2);
+}
+
+.btn-toggle.btn-activate:hover {
+  background: #28a745;
+  color: var(--white);
+}
+
+.btn-delete {
+  background: rgba(220, 53, 69, 0.1);
+  color: #dc3545;
+  border-color: rgba(220, 53, 69, 0.2);
+}
+
+.btn-delete:hover {
+  background: #dc3545;
+  color: var(--white);
+}
+
+

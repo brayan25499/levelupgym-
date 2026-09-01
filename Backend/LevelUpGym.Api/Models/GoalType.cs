@@ -6,6 +6,8 @@ public class GoalType : BaseEntity
 {
     [Key]
     public int IdTipoObjetivo { get; set; }
+    [Required]
+    public int Orden { get; set; }
     
     [Required]
     [StringLength(50)]

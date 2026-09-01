@@ -8,7 +8,6 @@ export interface ProgressReport {
   peso: number;
   altura: string;
   imc: string;
-  porcentajeGrasa?: number | null;
   cintura?: number | null;
   pecho?: number | null;
   brazo?: number | null;
@@ -20,7 +19,6 @@ export interface ProgressReport {
 export interface CreateProgressPayload {
   peso: number;
   altura: number;
-  porcentajeGrasa?: number | null;
   cintura?: number | null;
   pecho?: number | null;
   brazo?: number | null;

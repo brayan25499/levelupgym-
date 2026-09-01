@@ -57,7 +57,8 @@ public class GoalsController : ControllerBase
     {
         var types = await _context.GoalTypes
             .Where(gt => gt.Activo && gt.DeletedAt == null)
-            .OrderBy(gt => gt.IdTipoObjetivo)
+            .OrderBy(gt => gt.Nombre)
+            .ThenBy(gt => gt.Direccion == "MAYOR" ? 0 : 1)
             .ToListAsync();
 
         return Ok(types);
@@ -258,11 +259,6 @@ public class GoalsController : ControllerBase
 
             case "pierna":
                 return progress.Pierna;
-
-            case "porcentaje de grasa":
-            case "porcentaje grasa":
-            case "grasa":
-                return progress.PorcentajeGrasa;
 
             default:
                 return null;

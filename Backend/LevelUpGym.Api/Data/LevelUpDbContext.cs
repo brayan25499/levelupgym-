@@ -58,6 +58,20 @@ public class LevelUpDbContext : DbContext
                 .HasForeignKey<Auth>(d => d.IdProfile);
         });
 
+        // Progress Table
+        modelBuilder.Entity<Progress>(entity =>
+        {
+            entity.ToTable("ProgressReports");
+            entity.HasKey(e => e.IdProgreso);
+            entity.Property(e => e.Imc).HasMaxLength(20);
+            entity.Property(e => e.Altura).HasMaxLength(20);
+
+            entity.HasOne(d => d.Client)
+                .WithMany(p => p.ProgressReports)
+                .HasForeignKey(d => d.IdCliente)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
         // Clients Table
         modelBuilder.Entity<Client>(entity =>
         {
@@ -211,7 +225,7 @@ public class LevelUpDbContext : DbContext
         {
             entity.ToTable("GoalTypes");
             entity.HasKey(e => e.IdTipoObjetivo);
-            entity.HasIndex(e => e.Nombre).IsUnique();
+            entity.HasIndex(e => new { e.Nombre, e.Direccion }).IsUnique().HasFilter("[DeletedAt] IS NULL");
 
             entity.HasData(
                 new GoalType { IdTipoObjetivo = 1, Nombre = "Peso", Descripcion = "Alcanzar un peso corporal determinado.", Unidad = "kg", TipoDato = "DECIMAL", Direccion = "MENOR", Activo = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
@@ -219,8 +233,7 @@ public class LevelUpDbContext : DbContext
                 new GoalType { IdTipoObjetivo = 3, Nombre = "Cintura", Descripcion = "Reducir la medida de cintura.", Unidad = "cm", TipoDato = "DECIMAL", Direccion = "MENOR", Activo = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
                 new GoalType { IdTipoObjetivo = 4, Nombre = "Pecho", Descripcion = "Aumentar la medida de pecho.", Unidad = "cm", TipoDato = "DECIMAL", Direccion = "MAYOR", Activo = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
                 new GoalType { IdTipoObjetivo = 5, Nombre = "Brazo", Descripcion = "Aumentar la medida de brazo.", Unidad = "cm", TipoDato = "DECIMAL", Direccion = "MAYOR", Activo = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-                new GoalType { IdTipoObjetivo = 6, Nombre = "Pierna", Descripcion = "Aumentar la medida de pierna.", Unidad = "cm", TipoDato = "DECIMAL", Direccion = "MAYOR", Activo = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-                new GoalType { IdTipoObjetivo = 7, Nombre = "Porcentaje de grasa", Descripcion = "Reducir el porcentaje de grasa corporal.", Unidad = "%", TipoDato = "DECIMAL", Direccion = "MENOR", Activo = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
+                new GoalType { IdTipoObjetivo = 6, Nombre = "Pierna", Descripcion = "Aumentar la medida de pierna.", Unidad = "cm", TipoDato = "DECIMAL", Direccion = "MAYOR", Activo = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
             );
         });
 

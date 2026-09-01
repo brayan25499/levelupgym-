@@ -527,6 +527,120 @@
   line-height: 1.5;
 }
 
+/* ================= CURRENT MEASUREMENTS GRID & BANNER ================= */
+.measurement-date-tag {
+  font-size: 0.8rem;
+  color: var(--dash-text-muted);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--dash-border);
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-weight: 500;
+}
+
+.measurements-current-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.measurement-card-item {
+  background: rgba(20, 24, 34, 0.85);
+  border: 1px solid var(--dash-border);
+  border-radius: 14px;
+  padding: 1.15rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.measurement-card-item:hover {
+  transform: translateY(-3px);
+  border-color: rgba(220, 20, 60, 0.4);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+}
+
+.measurement-card-item.highlight-accent {
+  border-color: rgba(220, 20, 60, 0.45);
+  background: linear-gradient(135deg, rgba(220, 20, 60, 0.12) 0%, rgba(20, 24, 34, 0.9) 100%);
+}
+
+.measurement-card-item.highlight-gold {
+  border-color: rgba(255, 215, 0, 0.45);
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, rgba(20, 24, 34, 0.9) 100%);
+}
+
+.m-card-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--dash-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.m-card-value {
+  font-family: var(--font-display, sans-serif);
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.2;
+}
+
+.m-card-value.gold {
+  color: var(--dash-gold);
+}
+
+.m-card-sub {
+  font-size: 0.76rem;
+  color: var(--dash-text-muted);
+  margin-top: 0.15rem;
+}
+
+.update-measurements-banner {
+  background: linear-gradient(135deg, rgba(220, 20, 60, 0.15) 0%, rgba(255, 215, 0, 0.08) 50%, rgba(20, 24, 34, 0.95) 100%);
+  border: 1.5px solid rgba(220, 20, 60, 0.35);
+  border-radius: 14px;
+  padding: 1.25rem 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-bottom: 0.5rem;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+
+.banner-text-block h4 {
+  margin: 0 0 0.35rem 0;
+  font-size: 1.05rem;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.banner-text-block p {
+  margin: 0;
+  font-size: 0.86rem;
+  color: var(--dash-text-muted);
+  line-height: 1.4;
+}
+
+.btn-banner-action {
+  flex-shrink: 0;
+  padding: 0.65rem 1.35rem;
+  font-size: 0.88rem;
+  white-space: nowrap;
+}
+
+.btn-header-action {
+  padding: 0.6rem 1.2rem;
+  font-size: 0.88rem;
+  display: inline-flex;
+  align-items: center;
+}
+
 /* ================= IMC EVALUATION CARD STYLES ================= */
 .bmi-evaluation-card {
   background: linear-gradient(135deg, rgba(20, 24, 34, 0.95) 0%, rgba(11, 14, 20, 0.98) 100%);

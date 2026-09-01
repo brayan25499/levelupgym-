@@ -71,7 +71,6 @@ public class ProgressController : ControllerBase
                 Peso = p.Peso,
                 Altura = p.Altura,
                 Imc = p.Imc,
-                PorcentajeGrasa = p.PorcentajeGrasa,
                 Cintura = p.Cintura,
                 Pecho = p.Pecho,
                 Brazo = p.Brazo,
@@ -102,7 +101,6 @@ public class ProgressController : ControllerBase
             Peso = p.Peso,
             Altura = p.Altura,
             Imc = p.Imc,
-            PorcentajeGrasa = p.PorcentajeGrasa,
             Cintura = p.Cintura,
             Pecho = p.Pecho,
             Brazo = p.Brazo,
@@ -115,115 +113,41 @@ public class ProgressController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<ProgressDto>> CreateProgress([FromBody] CreateProgressDto dto)
     {
-        var client = await GetCurrentClientAsync();
-        if (client == null) return Unauthorized("Cliente no encontrado.");
-
-        var valError = ValidateProgressData(dto.Peso, dto.Altura, dto.PorcentajeGrasa, dto.Cintura, dto.Pecho, dto.Brazo, dto.Pierna, dto.FechaMedicion);
-        if (valError != null)
+        try
         {
-            return BadRequest(new { message = valError });
-        }
+            var client = await GetCurrentClientAsync();
+            if (client == null) return Unauthorized(new { message = "Cliente no encontrado." });
 
-        // Convert height to meters if provided in cm (> 3)
-        decimal alturaM = dto.Altura > 3 ? dto.Altura / 100m : dto.Altura;
+            var valError = ValidateProgressData(dto.Peso, dto.Altura, dto.Cintura, dto.Pecho, dto.Brazo, dto.Pierna, dto.FechaMedicion);
+            if (valError != null)
+            {
+                return BadRequest(new { message = valError });
+            }
 
-        // Formula: IMC = Peso / (Altura * Altura) rounded to max 2 decimals
-        decimal rawImc = dto.Peso / (alturaM * alturaM);
-        decimal roundedImc = Math.Round(rawImc, 2);
+            // Convert height to meters if provided in cm (> 3)
+            decimal alturaM = dto.Altura > 3 ? dto.Altura / 100m : dto.Altura;
 
-        var progress = new Progress
-        {
-            IdCliente = client.IdCliente,
-            Peso = dto.Peso,
-            Altura = alturaM.ToString("F2", CultureInfo.InvariantCulture),
-            Imc = roundedImc.ToString("F2", CultureInfo.InvariantCulture),
-            PorcentajeGrasa = dto.PorcentajeGrasa,
-            Cintura = dto.Cintura,
-            Pecho = dto.Pecho,
-            Brazo = dto.Brazo,
-            Pierna = dto.Pierna,
-            FechaMedicion = dto.FechaMedicion ?? DateOnly.FromDateTime(DateTime.UtcNow),
-            CreatedAt = DateTime.UtcNow
-        };
+            // Formula: IMC = Peso / (Altura * Altura) rounded to max 2 decimals
+            decimal rawImc = dto.Peso / (alturaM * alturaM);
+            decimal roundedImc = Math.Round(rawImc, 2);
 
-        _context.ProgressReports.Add(progress);
+            var progress = new Progress
+            {
+                IdCliente     = client.IdCliente,
+                Peso          = dto.Peso,
+                Altura        = alturaM.ToString("F2", CultureInfo.InvariantCulture),
+                Imc           = roundedImc.ToString("F2", CultureInfo.InvariantCulture),
+                Cintura       = dto.Cintura,
+                Pecho         = dto.Pecho,
+                Brazo         = dto.Brazo,
+                Pierna        = dto.Pierna,
+                FechaMedicion = dto.FechaMedicion ?? DateOnly.FromDateTime(DateTime.UtcNow),
+                CreatedAt     = DateTime.UtcNow
+            };
 
-        // Synchronize client profile weight & height
-        var profile = await _context.Profiles.FirstOrDefaultAsync(pr => pr.IdProfile == client.IdProfile);
-        if (profile != null)
-        {
-            profile.Peso = dto.Peso;
-            profile.Estatura = alturaM;
-            profile.UpdatedAt = DateTime.UtcNow;
-        }
+            _context.ProgressReports.Add(progress);
 
-        await _context.SaveChangesAsync();
-
-        // Automatically evaluate client active goals after saving new measurement
-        await _goalEvaluationService.EvaluateClientGoalsAsync(client.IdCliente);
-
-        var responseDto = new ProgressDto
-        {
-            IdProgreso = progress.IdProgreso,
-            IdCliente = progress.IdCliente,
-            Peso = progress.Peso,
-            Altura = progress.Altura,
-            Imc = progress.Imc,
-            PorcentajeGrasa = progress.PorcentajeGrasa,
-            Cintura = progress.Cintura,
-            Pecho = progress.Pecho,
-            Brazo = progress.Brazo,
-            Pierna = progress.Pierna,
-            FechaMedicion = progress.FechaMedicion,
-            CreatedAt = progress.CreatedAt
-        };
-
-        return CreatedAtAction(nameof(GetProgressById), new { id = progress.IdProgreso }, responseDto);
-    }
-
-    [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateProgress(int id, [FromBody] UpdateProgressDto dto)
-    {
-        var client = await GetCurrentClientAsync();
-        if (client == null) return Unauthorized("Cliente no encontrado.");
-
-        var progress = await _context.ProgressReports
-            .FirstOrDefaultAsync(pr => pr.IdProgreso == id && pr.IdCliente == client.IdCliente && pr.DeletedAt == null);
-
-        if (progress == null) return NotFound("Medición no encontrada.");
-
-        var valError = ValidateProgressData(dto.Peso, dto.Altura, dto.PorcentajeGrasa, dto.Cintura, dto.Pecho, dto.Brazo, dto.Pierna, dto.FechaMedicion);
-        if (valError != null)
-        {
-            return BadRequest(new { message = valError });
-        }
-
-        decimal alturaM = dto.Altura > 3 ? dto.Altura / 100m : dto.Altura;
-        decimal rawImc = dto.Peso / (alturaM * alturaM);
-        decimal roundedImc = Math.Round(rawImc, 2);
-
-        progress.Peso = dto.Peso;
-        progress.Altura = alturaM.ToString("F2", CultureInfo.InvariantCulture);
-        progress.Imc = roundedImc.ToString("F2", CultureInfo.InvariantCulture);
-        progress.PorcentajeGrasa = dto.PorcentajeGrasa;
-        progress.Cintura = dto.Cintura;
-        progress.Pecho = dto.Pecho;
-        progress.Brazo = dto.Brazo;
-        progress.Pierna = dto.Pierna;
-        if (dto.FechaMedicion.HasValue) progress.FechaMedicion = dto.FechaMedicion.Value;
-        progress.UpdatedAt = DateTime.UtcNow;
-
-        _context.Entry(progress).State = EntityState.Modified;
-
-        // Synchronize client profile weight & height if this is the latest measurement
-        var latestReport = await _context.ProgressReports
-            .Where(p => p.IdCliente == client.IdCliente && p.DeletedAt == null)
-            .OrderByDescending(p => p.FechaMedicion)
-            .ThenByDescending(p => p.CreatedAt)
-            .FirstOrDefaultAsync();
-
-        if (latestReport == null || latestReport.IdProgreso == id)
-        {
+            // Synchronize client profile weight & height
             var profile = await _context.Profiles.FirstOrDefaultAsync(pr => pr.IdProfile == client.IdProfile);
             if (profile != null)
             {
@@ -231,14 +155,115 @@ public class ProgressController : ControllerBase
                 profile.Estatura = alturaM;
                 profile.UpdatedAt = DateTime.UtcNow;
             }
+
+            await _context.SaveChangesAsync();
+
+            // Automatically evaluate client active goals after saving new measurement
+            try
+            {
+                await _goalEvaluationService.EvaluateClientGoalsAsync(client.IdCliente);
+            }
+            catch (Exception exGoals)
+            {
+                Console.WriteLine("Warning evaluating goals: " + exGoals.Message);
+            }
+
+            var responseDto = new ProgressDto
+            {
+                IdProgreso = progress.IdProgreso,
+                IdCliente = progress.IdCliente,
+                Peso = progress.Peso,
+                Altura = progress.Altura,
+                Imc = progress.Imc,
+                Cintura = progress.Cintura,
+                Pecho = progress.Pecho,
+                Brazo = progress.Brazo,
+                Pierna = progress.Pierna,
+                FechaMedicion = progress.FechaMedicion,
+                CreatedAt = progress.CreatedAt
+            };
+
+            return CreatedAtAction(nameof(GetProgressById), new { id = progress.IdProgreso }, responseDto);
         }
+        catch (Exception ex)
+        {
+            var fullMsg = ex.InnerException != null ? $"{ex.Message} --> {ex.InnerException.Message}" : ex.Message;
+            return StatusCode(500, new { message = fullMsg });
+        }
+    }
 
-        await _context.SaveChangesAsync();
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateProgress(int id, [FromBody] UpdateProgressDto dto)
+    {
+        try
+        {
+            var client = await GetCurrentClientAsync();
+            if (client == null) return Unauthorized(new { message = "Cliente no encontrado." });
 
-        // Automatically evaluate client active goals after updating measurement
-        await _goalEvaluationService.EvaluateClientGoalsAsync(client.IdCliente);
+            var progress = await _context.ProgressReports
+                .FirstOrDefaultAsync(pr => pr.IdProgreso == id && pr.IdCliente == client.IdCliente && pr.DeletedAt == null);
 
-        return Ok(new { message = "Medición actualizada exitosamente." });
+            if (progress == null) return NotFound(new { message = "Medición no encontrada." });
+
+            var valError = ValidateProgressData(dto.Peso, dto.Altura, dto.Cintura, dto.Pecho, dto.Brazo, dto.Pierna, dto.FechaMedicion);
+            if (valError != null)
+            {
+                return BadRequest(new { message = valError });
+            }
+
+            decimal alturaM = dto.Altura > 3 ? dto.Altura / 100m : dto.Altura;
+            decimal rawImc = dto.Peso / (alturaM * alturaM);
+            decimal roundedImc = Math.Round(rawImc, 2);
+
+            progress.Peso = dto.Peso;
+            progress.Altura = alturaM.ToString("F2", CultureInfo.InvariantCulture);
+            progress.Imc = roundedImc.ToString("F2", CultureInfo.InvariantCulture);
+            progress.Cintura = dto.Cintura;
+            progress.Pecho = dto.Pecho;
+            progress.Brazo = dto.Brazo;
+            progress.Pierna = dto.Pierna;
+            if (dto.FechaMedicion.HasValue) progress.FechaMedicion = dto.FechaMedicion.Value;
+            progress.UpdatedAt = DateTime.UtcNow;
+
+            _context.Entry(progress).State = EntityState.Modified;
+
+            // Synchronize client profile weight & height if this is the latest measurement
+            var latestReport = await _context.ProgressReports
+                .Where(p => p.IdCliente == client.IdCliente && p.DeletedAt == null)
+                .OrderByDescending(p => p.FechaMedicion)
+                .ThenByDescending(p => p.CreatedAt)
+                .FirstOrDefaultAsync();
+
+            if (latestReport == null || latestReport.IdProgreso == id)
+            {
+                var profile = await _context.Profiles.FirstOrDefaultAsync(pr => pr.IdProfile == client.IdProfile);
+                if (profile != null)
+                {
+                    profile.Peso = dto.Peso;
+                    profile.Estatura = alturaM;
+                    profile.UpdatedAt = DateTime.UtcNow;
+                }
+            }
+
+            await _context.SaveChangesAsync();
+
+            // Automatically evaluate client active goals after updating measurement
+            try
+            {
+                await _goalEvaluationService.EvaluateClientGoalsAsync(client.IdCliente);
+            }
+            catch (Exception exGoals)
+            {
+                Console.WriteLine("Warning evaluating goals: " + exGoals.Message);
+            }
+
+            return Ok(new { message = "Medición actualizada exitosamente." });
+        }
+        catch (Exception ex)
+        {
+            var fullMsg = ex.InnerException != null ? $"{ex.Message} --> {ex.InnerException.Message}" : ex.Message;
+            return StatusCode(500, new { message = fullMsg });
+        }
     }
 
     [HttpDelete("{id}")]
@@ -259,7 +284,7 @@ public class ProgressController : ControllerBase
         return Ok(new { message = "Medición eliminada exitosamente." });
     }
 
-    private static string? ValidateProgressData(decimal peso, decimal altura, decimal? porcentajeGrasa, decimal? cintura, decimal? pecho, decimal? brazo, decimal? pierna, DateOnly? fechaMedicion)
+    private static string? ValidateProgressData(decimal peso, decimal altura, decimal? cintura, decimal? pecho, decimal? brazo, decimal? pierna, DateOnly? fechaMedicion)
     {
         if (peso <= 0 || peso > 500)
         {
@@ -269,11 +294,6 @@ public class ProgressController : ControllerBase
         if (altura <= 0 || altura > 300)
         {
             return "La estatura debe ser un valor válido mayor a 0 (ej. 1.75 m o 175 cm).";
-        }
-
-        if (porcentajeGrasa.HasValue && (porcentajeGrasa.Value < 0 || porcentajeGrasa.Value > 100))
-        {
-            return "El porcentaje de grasa corporal debe estar entre 0% y 100%.";
         }
 
         if ((cintura.HasValue && cintura.Value < 0) ||

@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { AuthService } from '../../services/auth';
-import { MembershipService, Membership } from '../../services/membership';
 import { ClassSessionService, ClassSession } from '../../services/class-session.service';
 import { AlertService } from '../../services/alert.service';
 import { ProgressService, ProgressReport } from '../../services/progress.service';
@@ -123,7 +122,6 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   bmiForm = this.fb.group({
     peso: [null as number | null, [Validators.required, Validators.min(20), Validators.max(300)]],
     estatura: [null as number | null, [Validators.required, Validators.min(50), Validators.max(260)]],
-    porcentajeGrasa: [null as number | null, [Validators.min(0), Validators.max(100)]],
     cintura: [null as number | null, [Validators.min(0), Validators.max(300)]],
     pecho: [null as number | null, [Validators.min(0), Validators.max(300)]],
     brazo: [null as number | null, [Validators.min(0), Validators.max(150)]],
@@ -522,7 +520,7 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
           { nombre: 'Press Militar Sentado / De Pie', enfoque: 'Hombros & Core', razon: 'Desarrollo estético del deltoides y estabilidad del torso.' },
           { nombre: 'Sentadillas Búlgaras con Mancuernas', enfoque: 'Unilateral & Balance', razon: 'Desarrollo simétrico y balance de fuerza en extremidades.' },
           { nombre: 'Remo Unilateral con Mancuerna', enfoque: 'Grosor de Espalda', razon: 'Mejora de la postura corporal y densidad en la espalda alta.' },
-          { nombre: 'Circuito HIIT de 20 Minutos', enfoque: 'Capacidad Aeróbica', razon: 'Mantenimiento del porcentaje de grasa magra y salud cardíaca.' }
+          { nombre: 'Circuito HIIT de 20 Minutos', enfoque: 'Capacidad Aeróbica', razon: 'Mantenimiento del tono muscular magro y salud cardíaca.' }
         ]
       };
     } else if (imc <= 29.9) {
@@ -534,12 +532,12 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
         categoria: 'Sobrepeso Moderado',
         badgeClass: 'bmi-overweight',
         mensaje: 'Tu IMC indica que estás ligeramente por encima de tu peso ideal para tu estatura.',
-        objetivoSugerido: 'Quema Acelerada de Grasa, Tono Muscular y Resistencia Metabólica',
+        objetivoSugerido: 'Acondicionamiento Físico, Tono Muscular y Resistencia Metabólica',
         frecuenciaSugerida: '4 - 5 días a la semana (Circuitos de pesas con pausas cortas + Cardio activo)',
         ejerciciosRecomendados: [
-          { nombre: 'Circuito Metabólico de Pesas (Full Body)', enfoque: 'Gasto Calórico Alto', razon: 'Mantiene la masa muscular activa mientras quema glucógeno y grasa.' },
+          { nombre: 'Circuito Metabólico de Pesas (Full Body)', enfoque: 'Gasto Calórico Alto', razon: 'Mantiene la masa muscular activa mientras optimiza el metabolismo energético.' },
           { nombre: 'Zancadas Caminando con Mancuernas', enfoque: 'Quema & Potencia', razon: 'Elevada demanda cardiovascular y firmeza de tren inferior.' },
-          { nombre: 'Caminata Inclinada en Cinta (12-3-30)', enfoque: 'Cardio Sin Impacto', razon: 'Maximiza la oxidación de grasas sin estresar las articulaciones.' },
+          { nombre: 'Caminata Inclinada en Cinta (12-3-30)', enfoque: 'Cardio Sin Impacto', razon: 'Maximiza el gasto calórico sin estresar las articulaciones.' },
           { nombre: 'Plancha Isométrica & Core Crunches', enfoque: 'Firmeza Abdominal', razon: 'Protección de la columna lumbar y tono en la zona media.' }
         ]
       };
@@ -551,8 +549,8 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
         fechaActualizacion: fecha,
         categoria: 'Obesidad / Acondicionamiento Requerido',
         badgeClass: 'bmi-obese',
-        mensaje: 'Tu IMC indica un nivel elevado de masa corporal. Se recomienda un plan enfocado en reducción de grasa.',
-        objetivoSugerido: 'Reducción Progresiva de Grasa Corporal y Protección Articular',
+        mensaje: 'Tu IMC indica un nivel elevado de masa corporal. Se recomienda un plan enfocado en recomposición corporal y déficit calórico progresivo.',
+        objetivoSugerido: 'Recomposición Corporal Progresiva y Protección Articular',
         frecuenciaSugerida: '3 - 5 días a la semana (Máquinas guiadas + Cardio aeróbico suave)',
         ejerciciosRecomendados: [
           { nombre: 'Bicicleta Estática / Spinning Moderado', enfoque: 'Cardio Protegido', razon: 'Elevado consumo calórico sin impacto en tobillos y rodillas.' },
@@ -581,6 +579,35 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     }
     const data = this.profileData();
     return data?.peso ? parseFloat(data.peso) : null;
+  }
+
+  get estaturaActualVal(): number | null {
+    const reports = this.progressReports();
+    if (reports.length > 0 && reports[reports.length - 1].altura) {
+      return parseFloat(reports[reports.length - 1].altura);
+    }
+    const data = this.profileData();
+    if (data?.estatura) {
+      const parsed = parseFloat(data.estatura);
+      return parsed > 3 ? parseFloat((parsed / 100).toFixed(2)) : parsed;
+    }
+    return null;
+  }
+
+  get cinturaActualVal(): number | null {
+    return this.ultimaMedicionObj?.cintura ?? null;
+  }
+
+  get pechoActualVal(): number | null {
+    return this.ultimaMedicionObj?.pecho ?? null;
+  }
+
+  get brazoActualVal(): number | null {
+    return this.ultimaMedicionObj?.brazo ?? null;
+  }
+
+  get piernaActualVal(): number | null {
+    return this.ultimaMedicionObj?.pierna ?? null;
   }
 
   get imcActualVal(): number | null {
@@ -672,13 +699,41 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   }
 
   openBmiModal() {
+    const ult = this.ultimaMedicionObj;
     const data = this.profileData();
-    if (data) {
-      this.bmiForm.patchValue({
-        peso: data.peso ? parseFloat(data.peso) : null,
-        estatura: data.estatura ? parseFloat(data.estatura) : null
-      });
+
+    const peso = ult?.peso ?? (data?.peso ? parseFloat(data.peso) : null);
+
+    let estatura: number | null = null;
+    if (ult?.altura) {
+      const parsed = parseFloat(ult.altura);
+      estatura = parsed > 3 ? parsed : parseFloat((parsed * 100).toFixed(1));
+    } else if (data?.estatura) {
+      const parsed = parseFloat(data.estatura);
+      estatura = parsed > 3 ? parsed : parseFloat((parsed * 100).toFixed(1));
     }
+
+    let fecha = '';
+    if (ult?.fechaMedicion) {
+      fecha = ult.fechaMedicion.includes('T') ? ult.fechaMedicion.split('T')[0] : ult.fechaMedicion;
+    } else {
+      const d = new Date();
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      fecha = `${year}-${month}-${day}`;
+    }
+
+    this.bmiForm.patchValue({
+      peso: peso,
+      estatura: estatura,
+      cintura: ult?.cintura ?? null,
+      pecho: ult?.pecho ?? null,
+      brazo: ult?.brazo ?? null,
+      pierna: ult?.pierna ?? null,
+      fechaMedicion: fecha
+    });
+
     this.showBmiModal.set(true);
   }
 
@@ -704,7 +759,6 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     const payload = {
       peso: peso,
       altura: estatura,
-      porcentajeGrasa: val.porcentajeGrasa ? val.porcentajeGrasa : null,
       cintura: val.cintura ? val.cintura : null,
       pecho: val.pecho ? val.pecho : null,
       brazo: val.brazo ? val.brazo : null,
@@ -716,7 +770,7 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
       next: (res) => {
         this.fetchProfile();
         this.loadProgressHistory();
-        this.alertService.success(`¡Medición registrada con éxito! IMC calculado automáticamente: ${res.imc}`);
+        this.alertService.success(`¡Mediciones actualizadas con éxito! IMC calculado: ${res.imc}`);
         this.closeBmiModal();
       },
       error: (err) => {

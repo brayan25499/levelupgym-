@@ -24,7 +24,9 @@ public class GoalTypesAdminController : ControllerBase
     {
         var types = await _context.GoalTypes
             .Where(gt => gt.DeletedAt == null)
-            .OrderBy(gt => gt.IdTipoObjetivo)
+            .OrderBy(gt => gt.Orden)
+            .ThenBy(gt => gt.Nombre)
+            .ThenBy(gt => gt.Direccion)
             .ToListAsync();
 
         return Ok(types);
@@ -44,10 +46,10 @@ public class GoalTypesAdminController : ControllerBase
             return BadRequest(new { message = "La dirección debe ser 'MENOR' o 'MAYOR'." });
         }
 
-        bool exists = await _context.GoalTypes.AnyAsync(gt => gt.Nombre.ToLower() == dto.Nombre.Trim().ToLower() && gt.DeletedAt == null);
+        bool exists = await _context.GoalTypes.AnyAsync(gt => gt.Nombre.ToLower() == dto.Nombre.Trim().ToLower() && gt.Direccion == dir && gt.DeletedAt == null);
         if (exists)
         {
-            return BadRequest(new { message = "Ya existe un tipo de objetivo con este nombre." });
+            return BadRequest(new { message = "Ya existe un tipo de objetivo con este nombre y dirección." });
         }
 
         var newType = new GoalType
@@ -84,10 +86,10 @@ public class GoalTypesAdminController : ControllerBase
             return BadRequest(new { message = "La dirección debe ser 'MENOR' o 'MAYOR'." });
         }
 
-        bool exists = await _context.GoalTypes.AnyAsync(gt => gt.IdTipoObjetivo != id && gt.Nombre.ToLower() == dto.Nombre.Trim().ToLower() && gt.DeletedAt == null);
+        bool exists = await _context.GoalTypes.AnyAsync(gt => gt.IdTipoObjetivo != id && gt.Nombre.ToLower() == dto.Nombre.Trim().ToLower() && gt.Direccion == dir && gt.DeletedAt == null);
         if (exists)
         {
-            return BadRequest(new { message = "Ya existe otro tipo de objetivo con este nombre." });
+            return BadRequest(new { message = "Ya existe otro tipo de objetivo con este nombre y dirección." });
         }
 
         goalType.Nombre = dto.Nombre.Trim();

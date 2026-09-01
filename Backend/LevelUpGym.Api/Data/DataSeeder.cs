@@ -10,6 +10,51 @@ public static class DataSeeder
     {
         context.Database.EnsureCreated();
 
+        // Schema patch for ProgressReports columns & removed GoalType 7
+        try
+        {
+            context.Database.ExecuteSqlRaw(@"
+                IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'ProgressReports' AND COLUMN_NAME = 'Imc')
+                BEGIN
+                    ALTER TABLE ProgressReports ALTER COLUMN Imc NVARCHAR(20) NULL;
+                END
+
+                IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'ProgressReports' AND COLUMN_NAME = 'Altura')
+                BEGIN
+                    ALTER TABLE ProgressReports ALTER COLUMN Altura NVARCHAR(20) NULL;
+                END
+
+                IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'ProgressReports' AND COLUMN_NAME = 'ClientIdCliente')
+                BEGIN
+                    EXEC('UPDATE ProgressReports SET IdCliente = ClientIdCliente WHERE (IdCliente IS NULL OR IdCliente = 0) AND ClientIdCliente IS NOT NULL');
+                    IF EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = 'FK_ProgressReports_clientes_ClientIdCliente')
+                        ALTER TABLE ProgressReports DROP CONSTRAINT FK_ProgressReports_clientes_ClientIdCliente;
+                    IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_ProgressReports_ClientIdCliente')
+                        DROP INDEX IX_ProgressReports_ClientIdCliente ON ProgressReports;
+                    ALTER TABLE ProgressReports DROP COLUMN ClientIdCliente;
+                END
+
+                IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'ProgressReports' AND COLUMN_NAME = 'PorcentajeGrasa')
+                BEGIN
+                    ALTER TABLE ProgressReports DROP COLUMN PorcentajeGrasa;
+                END
+
+                IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'Goals')
+                BEGIN
+                    DELETE FROM Goals WHERE IdTipoObjetivo = 7;
+                END
+
+                IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'GoalTypes')
+                BEGIN
+                    DELETE FROM GoalTypes WHERE IdTipoObjetivo = 7;
+                END
+            ");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("DataSeeder Schema Patch: " + ex.Message);
+        }
+
         // 1. Seed Roles
         if (!context.Roles.Any())
         {
