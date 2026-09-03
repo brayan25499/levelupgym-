@@ -19,11 +19,27 @@ public class ClientsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Client>>> GetClients()
+    public async Task<ActionResult<IEnumerable<object>>> GetClients()
     {
-        return await _context.Clients
+        var clients = await _context.Clients
             .Include(c => c.Profile)
+            .Include(c => c.Subscriptions)
+                .ThenInclude(s => s.Membership)
+            .Include(c => c.Subscriptions)
+                .ThenInclude(s => s.Status)
+            .Select(c => new
+            {
+                c.IdCliente,
+                c.Profile,
+                fechaRegistro = c.CreatedAt,
+                membresiaActiva = c.Subscriptions
+                    .Where(s => s.Status.Concepto == "ACTIVO")
+                    .Select(s => new { nombre = s.Membership.Nombre })
+                    .FirstOrDefault()
+            })
             .ToListAsync();
+
+        return Ok(clients);
     }
 
     [HttpGet("{id}")]
@@ -225,4 +241,3 @@ public class UpdateProfileRequest
     public decimal? Peso { get; set; }
     public decimal? Estatura { get; set; }
 }
-

@@ -5,22 +5,28 @@
       <p class="role-badge">ADMIN PANEL</p>
     </div>
     <nav class="sidebar-nav">
-      <button (click)="setTab('resumen')" [class.active]="activeTab === 'resumen'"><span class="menu-icon">📊</span> Resumen</button>
-      <button (click)="setTab('clientes')" [class.active]="activeTab === 'clientes'"><span class="menu-icon">👥</span> Clientes</button>
-      <button (click)="setTab('clases')" [class.active]="activeTab === 'clases'"><span class="menu-icon">📅</span> Clases</button>
-      <button (click)="setTab('entrenadores')" [class.active]="activeTab === 'entrenadores'"><span class="menu-icon">🏋️</span> Entrenadores</button>
-      <button (click)="setTab('objetivos')" [class.active]="activeTab === 'objetivos'"><span class="menu-icon">🎯</span> Objetivos disponibles</button>
+      <button (click)="setTab('resumen')" [class.active]="activeTab === 'resumen'"><span class="menu-icon icon-dashboard"></span> Resumen</button>
+      <button (click)="setTab('clientes')" [class.active]="activeTab === 'clientes'"><span class="menu-icon icon-users"></span> Clientes</button>
+      <button (click)="setTab('clases')" [class.active]="activeTab === 'clases'"><span class="menu-icon icon-calendar"></span> Clases</button>
+      <button (click)="setTab('entrenadores')" [class.active]="activeTab === 'entrenadores'"><span class="menu-icon icon-trainer"></span> Entrenadores</button>
+      <button (click)="setTab('objetivos')" [class.active]="activeTab === 'objetivos'"><span class="menu-icon icon-goals"></span> Objetivos</button>
     </nav>
     <div class="sidebar-footer">
-      <button class="btn-logout" (click)="logout()"><span class="menu-icon">🚪</span> Salir</button>
+      <button class="btn-logout" (click)="logout()"><span class="menu-icon icon-logout"></span> Salir</button>
     </div>
   </aside>
 
   <main class="dashboard-content" [ngSwitch]="activeTab">
     <header class="content-header">
-      <h1>Bienvenido, <span class="accent">Admin</span></h1>
+      <div>
+        <span class="eyebrow">Panel de control</span>
+        <h1>Bienvenido, <span class="accent">Admin</span></h1>
+      </div>
       <div class="user-info">
-        <span>admin&#64;levelup.com</span>
+        <div class="user-meta">
+          <span>admin&#64;levelup.com</span>
+          <span class="user-role">Administrador</span>
+        </div>
         <div class="avatar">A</div>
       </div>
     </header>
@@ -32,25 +38,60 @@
           <div class="stat-info">
             <span class="label">Ingresos Totales</span>
             <h2 class="value">${{ totalRevenue() | number }}</h2>
-            <span class="trend positive">Actualizado en vivo ⚡</span>
+            <span class="trend positive">Actualizado en vivo</span>
           </div>
-          <div class="stat-icon">💰</div>
+          <div class="stat-icon icon-revenue"></div>
         </div>
         <div class="stat-card">
           <div class="stat-info">
             <span class="label">Clientes Registrados</span>
             <h2 class="value">{{ newMembersCount() }}</h2>
-            <span class="trend positive">Activos en plataforma 👥</span>
+            <span class="trend positive">Activos en plataforma</span>
           </div>
-          <div class="stat-icon">👥</div>
+          <div class="stat-icon icon-users"></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-info">
+            <span class="label">Entrenadores Activos</span>
+            <h2 class="value">{{ trainers().length }}</h2>
+            <span class="trend positive">En nómina</span>
+          </div>
+          <div class="stat-icon icon-trainer"></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-info">
+            <span class="label">Clases Programadas</span>
+            <h2 class="value">{{ classes().length }}</h2>
+            <span class="trend positive">Este mes</span>
+          </div>
+          <div class="stat-icon icon-calendar"></div>
         </div>
         <div class="stat-card">
           <div class="stat-info">
             <span class="label">Objetivos Disponibles</span>
             <h2 class="value">{{ goalTypes().length }}</h2>
-            <span class="trend positive">Catálogo activo 🎯</span>
+            <span class="trend positive">Catálogo activo</span>
           </div>
-          <div class="stat-icon">🎯</div>
+          <div class="stat-icon icon-goals"></div>
+        </div>
+      </div>
+
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h3>Ingresos por Mes</h3>
+          <div class="chart-canvas-wrapper"><canvas #revenueChart></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3>Clientes Nuevos por Mes</h3>
+          <div class="chart-canvas-wrapper"><canvas #newClientsChart></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3>Distribución de Membresías</h3>
+          <div class="chart-canvas-wrapper"><canvas #membershipChart></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3>Ocupación de Clases</h3>
+          <div class="chart-canvas-wrapper"><canvas #occupancyChart></canvas></div>
         </div>
       </div>
     </div>
@@ -75,13 +116,18 @@
             <tbody>
               <tr *ngFor="let client of clients()">
                 <td>#{{ client.idCliente }}</td>
-                <td>{{ client.profile?.nombre }} {{ client.profile?.apellidos }}</td>
+                <td>
+                  <div class="row-person">
+                    <div class="row-avatar">{{ (client.profile?.nombre || '?').charAt(0) }}</div>
+                    <span>{{ client.profile?.nombre }} {{ client.profile?.apellidos }}</span>
+                  </div>
+                </td>
                 <td>{{ client.profile?.tipoDocumento }} {{ client.profile?.numDocumento }}</td>
                 <td>{{ client.profile?.telefono || 'N/A' }}</td>
                 <td><span class="status-badge success">ACTIVO</span></td>
               </tr>
-              <tr *ngIf="clients().length === 0">
-                <td colspan="5" style="text-align: center; color: #666; padding: 2rem;">No hay clientes registrados en el sistema.</td>
+              <tr class="empty-row" *ngIf="clients().length === 0">
+                <td colspan="5">No hay clientes registrados en el sistema.</td>
               </tr>
             </tbody>
           </table>
@@ -103,7 +149,7 @@
                 <th>Clase</th>
                 <th>Fecha / Hora</th>
                 <th>Entrenador</th>
-                <th>Inscritos</th>
+                <th class="num">Inscritos</th>
                 <th>Acciones</th>
               </tr>
             </thead>
@@ -112,13 +158,13 @@
                 <td><strong>{{ clase.nombre }}</strong></td>
                 <td>{{ clase.fecha }} a las {{ clase.hora }}</td>
                 <td>{{ clase.entrenador.nombreCompleto }}</td>
-                <td>{{ clase.inscritos }} / {{ clase.capacidadMaxima }}</td>
+                <td class="num">{{ clase.inscritos }} / {{ clase.capacidadMaxima }}</td>
                 <td>
-                  <button class="btn-cancelar" (click)="deleteClass(clase.idClass)" style="padding: 0.25rem 0.5rem; background: #dc3545; border: none; border-radius: 4px; color: white; cursor: pointer;">Cancelar</button>
+                  <button class="btn-cancelar" (click)="deleteClass(clase.idClass)">Cancelar</button>
                 </td>
               </tr>
-              <tr *ngIf="classes().length === 0">
-                <td colspan="5" style="text-align: center; color: #666; padding: 2rem;">No hay clases programadas.</td>
+              <tr class="empty-row" *ngIf="classes().length === 0">
+                <td colspan="5">No hay clases programadas.</td>
               </tr>
             </tbody>
           </table>
@@ -140,25 +186,30 @@
                 <th>Nombre</th>
                 <th>Especialidad</th>
                 <th>Fecha de Contratación</th>
-                <th>Salario Base</th>
+                <th class="num">Salario Base</th>
                 <th>Descripción</th>
                 <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
               <tr *ngFor="let t of adminTrainers()">
-                <td><strong>{{ t.nombre }} {{ t.apellidos }}</strong></td>
+                <td>
+                  <div class="row-person">
+                    <div class="row-avatar">{{ (t.nombre || '?').charAt(0) }}</div>
+                    <span>{{ t.nombre }} {{ t.apellidos }}</span>
+                  </div>
+                </td>
                 <td>{{ t.especialidad }}</td>
                 <td>{{ t.fechaContratacion || 'N/A' }}</td>
-                <td>${{ t.salarioBase | number:'1.0-0' }}</td>
+                <td class="num">${{ t.salarioBase | number:'1.0-0' }}</td>
                 <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ t.descripcion }}</td>
-                <td>
-                  <button class="btn-text" (click)="openEditTrainerModal(t.idEmpleado)" style="padding: 0.25rem 0.5rem; background: transparent; border: none; color: #00b0ff; cursor: pointer; font-weight: bold; margin-right: 0.5rem;">Editar</button>
-                  <button class="btn-cancelar" (click)="deleteTrainer(t.idEmpleado)" style="padding: 0.25rem 0.5rem; background: #dc3545; border: none; border-radius: 4px; color: white; cursor: pointer; font-weight: bold;">Eliminar</button>
+                <td style="display: flex; gap: 0.5rem;">
+                  <button class="btn-editar" (click)="openEditTrainerModal(t.idEmpleado)">Editar</button>
+                  <button class="btn-cancelar" (click)="deleteTrainer(t.idEmpleado)">Eliminar</button>
                 </td>
               </tr>
-              <tr *ngIf="adminTrainers().length === 0">
-                <td colspan="6" style="text-align: center; color: #666; padding: 2rem;">No hay entrenadores registrados en el sistema.</td>
+              <tr class="empty-row" *ngIf="adminTrainers().length === 0">
+                <td colspan="6">No hay entrenadores registrados en el sistema.</td>
               </tr>
             </tbody>
           </table>
@@ -210,8 +261,8 @@
                   <button class="btn-action btn-delete" (click)="deleteGoalType(gt)">Eliminar</button>
                 </td>
               </tr>
-              <tr *ngIf="goalTypes().length === 0">
-                <td colspan="7" style="text-align: center; color: #666; padding: 2rem;">No hay tipos de objetivo registrados. Crea el primero.</td>
+              <tr class="empty-row" *ngIf="goalTypes().length === 0">
+                <td colspan="7">No hay tipos de objetivo registrados. Crea el primero.</td>
               </tr>
             </tbody>
           </table>
@@ -224,11 +275,11 @@
 
 <!-- Modal Nueva Clase -->
 <div class="modal-overlay fade-in" *ngIf="showNewClassModal()">
-  <div class="modal-card" style="background: #1e1e1e; padding: 2rem; border-radius: 8px; width: 400px; max-width: 90%; margin: 10% auto; position: relative;">
-    <button class="close-btn" (click)="closeNewClassModal()" style="position: absolute; right: 1rem; top: 1rem; background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;">✕</button>
+  <div class="modal-card">
+    <button class="close-btn" (click)="closeNewClassModal()">&times;</button>
     <h2 style="margin-bottom: 1.5rem; color: #fff;">Crear Nueva Clase</h2>
     <form [formGroup]="classForm" (ngSubmit)="createClass()" style="display: flex; flex-direction: column; gap: 1rem;">
-      
+
       <div class="form-field">
         <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">NOMBRE DE LA CLASE (EJ. SPINNING)</label>
         <input type="text" formControlName="nombre" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;" required>
@@ -265,11 +316,11 @@
 
 <!-- Modal Nuevo/Editar Entrenador -->
 <div class="modal-overlay fade-in" *ngIf="showTrainerModal()">
-  <div class="modal-card" style="background: #1e1e1e; padding: 2rem; border-radius: 8px; width: 450px; max-width: 90%; margin: 5% auto; position: relative;">
-    <button class="close-btn" (click)="closeTrainerModal()" style="position: absolute; right: 1rem; top: 1rem; background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;">✕</button>
+  <div class="modal-card" style="width: 450px; max-width: 90%;">
+    <button class="close-btn" (click)="closeTrainerModal()">&times;</button>
     <h2 style="margin-bottom: 1.5rem; color: #fff;">{{ editingTrainerId() ? 'Editar Entrenador' : 'Agregar Entrenador' }}</h2>
     <form [formGroup]="trainerForm" (ngSubmit)="saveTrainer()" style="display: flex; flex-direction: column; gap: 1rem;">
-      
+
       <div style="display: flex; gap: 1rem;">
         <div class="form-field" style="flex: 1;">
           <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">NOMBRE</label>
@@ -331,11 +382,11 @@
 
 <!-- Modal Nuevo/Editar GoalType -->
 <div class="modal-overlay fade-in" *ngIf="showGoalTypeModal()">
-  <div class="modal-card" style="background: #1e1e1e; padding: 2rem; border-radius: 8px; width: 480px; max-width: 90%; margin: 5% auto; position: relative;">
-    <button class="close-btn" (click)="closeGoalTypeModal()" style="position: absolute; right: 1rem; top: 1rem; background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;">✕</button>
+  <div class="modal-card" style="width: 480px; max-width: 90%;">
+    <button class="close-btn" (click)="closeGoalTypeModal()">&times;</button>
     <h2 style="margin-bottom: 1.5rem; color: #fff;">{{ editingGoalTypeId() ? 'Editar Tipo de Objetivo' : 'Nuevo Tipo de Objetivo' }}</h2>
     <form [formGroup]="goalTypeForm" (ngSubmit)="saveGoalType()" style="display: flex; flex-direction: column; gap: 1rem;">
-      
+
       <div class="form-field">
         <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">NOMBRE</label>
         <input type="text" formControlName="nombre" placeholder="Ej: Peso, Cintura, Brazo" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;" required>
