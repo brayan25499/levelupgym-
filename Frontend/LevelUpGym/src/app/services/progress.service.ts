@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface ProgressReport {
   idProgreso: number;
@@ -31,7 +32,7 @@ export interface CreateProgressPayload {
 })
 export class ProgressService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:5143/api/progress';
+  private apiUrl = `${environment.apiUrl}/api/progress`;
 
   getHistory(): Observable<ProgressReport[]> {
     return this.http.get<ProgressReport[]>(this.apiUrl);

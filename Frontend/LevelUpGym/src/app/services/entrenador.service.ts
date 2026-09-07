@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface Entrenador {
   idEmpleado: number;
@@ -47,7 +48,7 @@ export interface UpdateEntrenador {
 })
 export class EntrenadorService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:5143/api/entrenadores';
+  private apiUrl = `${environment.apiUrl}/api/entrenadores`;
 
   getEntrenadores(): Observable<Entrenador[]> {
     return this.http.get<Entrenador[]>(this.apiUrl);

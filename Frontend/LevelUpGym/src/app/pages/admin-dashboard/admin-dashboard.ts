@@ -8,6 +8,7 @@ import { ClassSessionService, ClassSession, CreateClassSession } from '../../ser
 import { EntrenadorService, Entrenador, EntrenadorAdmin } from '../../services/entrenador.service';
 import { GoalTypeAdminService, GoalTypeAdmin } from '../../services/goal-type-admin.service';
 import { AlertService } from '../../services/alert.service';
+import { environment } from '../../../environments/environment';
 import Chart from 'chart.js/auto';
 
 @Component({
@@ -105,7 +106,7 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit, OnDestroy
   }
 
   loadStats() {
-    this.http.get<any[]>('http://localhost:5143/api/clients').subscribe({
+    this.http.get<any[]>(`${environment.apiUrl}/api/clients`).subscribe({
       next: (data) => {
         this.clients.set(data);
         this.newMembersCount.set(data.length);
@@ -353,7 +354,7 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit, OnDestroy
     if (!canvas) return;
     this.revenueChartInstance?.destroy();
 
-    this.http.get<{ month: string; total: number }[]>('http://localhost:5143/api/admin/stats/revenue-by-month').subscribe({
+    this.http.get<{ month: string; total: number }[]>(`${environment.apiUrl}/api/admin/stats/revenue-by-month`).subscribe({
       next: (data) => {
         this.totalRevenue.set(data.reduce((sum, d) => sum + d.total, 0));
         this.buildRevenueChart(canvas, data.map(d => d.month), data.map(d => d.total));

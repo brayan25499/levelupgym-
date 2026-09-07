@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface Membership {
   idMembresia: number;
@@ -50,7 +51,7 @@ export interface PaymentResultResponse {
 })
 export class MembershipService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:5143/api/memberships';
+  private apiUrl = `${environment.apiUrl}/api/memberships`;
 
   getMemberships(): Observable<Membership[]> {
     return this.http.get<Membership[]>(this.apiUrl);

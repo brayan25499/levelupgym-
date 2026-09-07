@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 import { Entrenador } from './entrenador.service';
 
 export interface EntrenadorBasico {
@@ -33,7 +34,7 @@ export interface CreateClassSession {
 })
 export class ClassSessionService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:5143/api/classsessions';
+  private apiUrl = `${environment.apiUrl}/api/classsessions`;
 
   getClasses(): Observable<ClassSession[]> {
     return this.http.get<ClassSession[]>(this.apiUrl);

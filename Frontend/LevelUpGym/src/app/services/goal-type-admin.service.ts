@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface GoalTypeAdmin {
   idTipoObjetivo: number;
@@ -37,7 +38,7 @@ export interface UpdateGoalTypePayload {
 })
 export class GoalTypeAdminService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:5143/api/admin/goaltypes';
+  private apiUrl = `${environment.apiUrl}/api/admin/goaltypes`;
 
   getAll(): Observable<GoalTypeAdmin[]> {
     return this.http.get<GoalTypeAdmin[]>(this.apiUrl);
