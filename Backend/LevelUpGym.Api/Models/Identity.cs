@@ -86,6 +86,7 @@ public class Client : BaseEntity
     public virtual ICollection<Subscription> Subscriptions { get; set; } = new List<Subscription>();
     public virtual ICollection<Progress> ProgressReports { get; set; } = new List<Progress>();
     public virtual ICollection<Goal> Goals { get; set; } = new List<Goal>();
+    public virtual ICollection<Venta> Ventas { get; set; } = new List<Venta>();
 }
 
 public class Employee : BaseEntity

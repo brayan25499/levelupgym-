@@ -8,6 +8,8 @@ import { AlertService } from '../../services/alert.service';
 import { ProgressService, ProgressReport } from '../../services/progress.service';
 import { GoalService, GoalTypeItem, UserGoalDto } from '../../services/goal.service';
 import { MembershipService, Membership, UpgradeCalculation } from '../../services/membership';
+import { PaymentService, PaymentStatusResponse } from '../../services/payment.service';
+import { SIMULATED_BANK_CREDENTIALS, getBankConfig, BankConfig, SIMULATED_CARDS_CONFIG, SimulatedCardConfig, detectCardBrand } from '../../config/simulated-banks.config';
 import * as THREE from 'three';
 
 export interface ExerciseItem {
@@ -89,6 +91,7 @@ export interface BmiEvaluation {
 export class DashboardComponent implements AfterViewInit, OnDestroy {
   authService = inject(AuthService);
   membershipService = inject(MembershipService);
+  private paymentService = inject(PaymentService);
   private classService = inject(ClassSessionService);
   private alertService = inject(AlertService);
   private progressService = inject(ProgressService);
@@ -1071,9 +1074,99 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   checkoutAmount = signal<number>(0);
   isUpgradeFlow = signal<boolean>(false);
 
+  // Async Payment Flow State (PaymentsController)
+  paymentStep = signal<'form' | 'pse_form' | 'card_3ds' | 'processing' | 'polling' | 'result'>('form');
+  paymentReference = signal<string>('');
+  pollingMessage = signal<string>('');
+  paymentResult = signal<PaymentStatusResponse | null>(null);
+
+  // Card Form & 3D Secure Signals
+  simulatedCards = SIMULATED_CARDS_CONFIG;
+  selectedDemoCard = signal<SimulatedCardConfig | null>(null);
+  card3dsAuthCode = signal<string>('');
+  card3dsError = signal<string>('');
+
+  get detectedCardBrandInfo() {
+    return detectCardBrand(this.cardNumber());
+  }
+
+  get cardLast4(): string {
+    const raw = this.cardNumber().replace(/\D/g, '');
+    return raw.length >= 4 ? raw.slice(-4) : '••••';
+  }
+
+  fillDemoCard(card: SimulatedCardConfig) {
+    this.selectedDemoCard.set(card);
+    this.cardNumber.set(card.cardNumber);
+    this.cardHolder.set(card.cardHolder);
+    this.cardExp.set(card.cardExp);
+    this.cardCvv.set(card.cardCvv);
+    this.card3dsAuthCode.set(card.authCode);
+    this.cardNumberError.set('');
+    this.cardHolderError.set('');
+    this.cardExpError.set('');
+    this.cardCvvError.set('');
+    this.card3dsError.set('');
+  }
+
+  // PSE Form Specific Signals
+  pseDocType = signal<string>('CC');
+  pseDocNumber = signal<string>('');
+  pseEmail = signal<string>('');
+  psePhone = signal<string>('');
+  pseHolderName = signal<string>('');
+
+  // Simulated Bank Portal Flow State (Academic demo)
+  bankAuthSubStep = signal<'login' | 'auth_code'>('login');
+  simulatedUser = signal<string>('');
+  simulatedPassword = signal<string>('');
+  simulatedAuthCode = signal<string>('');
+  simulatedLoginError = signal<string>('');
+  simulatedAuthCodeError = signal<string>('');
+
+  /** Configuración dinámica del banco actualmente seleccionado */
+  get currentBankConfig(): BankConfig {
+    return getBankConfig(this.selectedBank());
+  }
+
+  /** Al cambiar de banco, pre-diligenciamos credenciales demo sugeridas y reseteamos a login */
+  onBankChange(newBank: string) {
+    this.selectedBank.set(newBank);
+    this.bankAuthSubStep.set('login');
+    this.simulatedPassword.set('');
+    this.simulatedAuthCode.set('');
+    this.simulatedLoginError.set('');
+    this.simulatedAuthCodeError.set('');
+    
+    // Autocompletar usuario o teléfono demo de la sugerencia
+    const config = getBankConfig(newBank);
+    this.simulatedUser.set(config.credentials.usernameOrPhone);
+  }
+
+  // Validation error signals
+  cardNumberError = signal<string>('');
+  cardExpError = signal<string>('');
+  cardCvvError = signal<string>('');
+  cardHolderError = signal<string>('');
+
+  pseDocNumberError = signal<string>('');
+  pseEmailError = signal<string>('');
+  psePhoneError = signal<string>('');
+  pseHolderNameError = signal<string>('');
+
   buyPlan(id: number) {
     const plan = this.availablePlans().find(p => p.idMembresia === id);
     if (!plan) return;
+
+    this.resetCheckoutForm();
+    const profile = this.profileData();
+    if (profile) {
+      this.pseHolderName.set(`${profile.nombre || ''} ${profile.apellidos || ''}`.trim());
+      this.pseEmail.set(profile.email || '');
+      if (profile.telefono) {
+        this.psePhone.set(profile.telefono);
+      }
+    }
 
     const activeMem = this.getActiveMembership();
     this.targetCheckoutPlan.set(plan);
@@ -1105,52 +1198,424 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     this.alertService.info('Proceso de pago cancelado. Tu membresía no ha sido modificada.');
   }
 
-  submitPaymentCheckout() {
-    const plan = this.targetCheckoutPlan();
-    if (!plan) return;
+  // ── Validaciones de formulario de tarjeta ──
+  private validateCardForm(): boolean {
+    let valid = true;
+    this.cardNumberError.set('');
+    this.cardExpError.set('');
+    this.cardCvvError.set('');
+    this.cardHolderError.set('');
 
-    if (this.selectedPaymentMethod() === 'TARJETA' && !this.cardHolder()) {
-      this.alertService.error('Por favor ingresa el nombre del titular de la tarjeta.');
+    if (this.selectedPaymentMethod() === 'TARJETA') {
+      // Validar titular
+      const holder = this.cardHolder().trim();
+      if (!holder) {
+        this.cardHolderError.set('El nombre del titular es obligatorio.');
+        valid = false;
+      } else if (holder.length < 3) {
+        this.cardHolderError.set('El nombre debe tener al menos 3 caracteres.');
+        valid = false;
+      } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(holder)) {
+        this.cardHolderError.set('El nombre solo puede contener letras y espacios.');
+        valid = false;
+      }
+
+      // Validar número de tarjeta (16 dígitos)
+      const rawNumber = this.cardNumber().replace(/\s/g, '');
+      if (!rawNumber) {
+        this.cardNumberError.set('El número de tarjeta es obligatorio.');
+        valid = false;
+      } else if (!/^\d{13,19}$/.test(rawNumber)) {
+        this.cardNumberError.set('Ingresa un número de tarjeta válido (13-19 dígitos).');
+        valid = false;
+      } else if (!this.luhnCheck(rawNumber)) {
+        this.cardNumberError.set('El número de tarjeta no es válido (verificación Luhn).');
+        valid = false;
+      }
+
+      // Validar fecha de vencimiento (MM/YY)
+      const exp = this.cardExp().trim();
+      if (!exp) {
+        this.cardExpError.set('La fecha de vencimiento es obligatoria.');
+        valid = false;
+      } else if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(exp)) {
+        this.cardExpError.set('Formato inválido. Usa MM/YY.');
+        valid = false;
+      } else {
+        const [mm, yy] = exp.split('/').map(Number);
+        const now = new Date();
+        const expDate = new Date(2000 + yy, mm); // Primer día del mes siguiente
+        if (expDate <= now) {
+          this.cardExpError.set('La tarjeta está vencida.');
+          valid = false;
+        }
+      }
+
+      // Validar CVV (3-4 dígitos)
+      const cvv = this.cardCvv().trim();
+      if (!cvv) {
+        this.cardCvvError.set('El CVV es obligatorio.');
+        valid = false;
+      } else if (!/^\d{3,4}$/.test(cvv)) {
+        this.cardCvvError.set('El CVV debe tener 3 o 4 dígitos.');
+        valid = false;
+      }
+    }
+
+    return valid;
+  }
+
+  /** Validaciones inline del formulario PSE */
+  private validatePseForm(): boolean {
+    let valid = true;
+    this.pseHolderNameError.set('');
+    this.pseDocNumberError.set('');
+    this.pseEmailError.set('');
+    this.psePhoneError.set('');
+
+    const holder = this.pseHolderName().trim();
+    if (!holder) {
+      this.pseHolderNameError.set('El nombre del titular es obligatorio.');
+      valid = false;
+    } else if (holder.length < 3) {
+      this.pseHolderNameError.set('El nombre debe tener al menos 3 caracteres.');
+      valid = false;
+    }
+
+    const docNum = this.pseDocNumber().trim();
+    if (!docNum) {
+      this.pseDocNumberError.set('El número de documento es obligatorio.');
+      valid = false;
+    } else if (!/^[a-zA-Z0-9]{5,15}$/.test(docNum)) {
+      this.pseDocNumberError.set('Ingresa un número de documento válido (5 a 15 caracteres).');
+      valid = false;
+    }
+
+    const email = this.pseEmail().trim();
+    if (!email) {
+      this.pseEmailError.set('El correo electrónico es obligatorio.');
+      valid = false;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      this.pseEmailError.set('Ingresa un correo electrónico válido (ejemplo@dominio.com).');
+      valid = false;
+    }
+
+    const phone = this.psePhone().trim();
+    if (!phone) {
+      this.psePhoneError.set('El celular/teléfono es obligatorio.');
+      valid = false;
+    } else if (!/^\d{7,10}$/.test(phone)) {
+      this.psePhoneError.set('Ingresa un número telefónico válido (7 a 10 dígitos).');
+      valid = false;
+    }
+
+    if (!this.selectedBank()) {
+      this.alertService.error('Debes seleccionar un banco.');
+      valid = false;
+    }
+
+    return valid;
+  }
+
+  /** Algoritmo de Luhn para validar números de tarjeta */
+  private luhnCheck(num: string): boolean {
+    let sum = 0;
+    let alternate = false;
+    for (let i = num.length - 1; i >= 0; i--) {
+      let n = parseInt(num.charAt(i), 10);
+      if (alternate) {
+        n *= 2;
+        if (n > 9) n -= 9;
+      }
+      sum += n;
+      alternate = !alternate;
+    }
+    return sum % 10 === 0;
+  }
+
+  /** Formatea el número de tarjeta agregando espacios cada 4 dígitos */
+  formatCardNumber(value: string) {
+    const cleaned = value.replace(/\D/g, '').slice(0, 19);
+    const formatted = cleaned.replace(/(\d{4})(?=\d)/g, '$1 ');
+    this.cardNumber.set(formatted);
+  }
+
+  /** Formatea la expiración MM/YY */
+  formatCardExp(value: string) {
+    const cleaned = value.replace(/\D/g, '').slice(0, 4);
+    if (cleaned.length >= 3) {
+      this.cardExp.set(cleaned.slice(0, 2) + '/' + cleaned.slice(2));
+    } else {
+      this.cardExp.set(cleaned);
+    }
+  }
+
+  /** Paso 1: Acción al presionar el botón en el menú inicial (NO procesa el pago directamente) */
+  onInitialCheckoutSubmit() {
+    if (this.selectedPaymentMethod() === 'TARJETA') {
+      if (!this.validateCardForm()) return;
+      // Pasa al portal de validación 3D Secure / OTP de la franquicia sin procesar directamente
+      this.card3dsError.set('');
+      if (!this.card3dsAuthCode()) {
+        this.card3dsAuthCode.set(this.selectedDemoCard()?.authCode || '123456');
+      }
+      this.paymentStep.set('card_3ds');
+    } else if (this.selectedPaymentMethod() === 'PSE') {
+      if (!this.selectedBank()) {
+        this.alertService.error('Debes seleccionar un banco para continuar.');
+        return;
+      }
+      // Pasa al formulario de pago PSE del banco seleccionado sin ejecutar la transacción
+      this.onBankChange(this.selectedBank());
+      this.paymentStep.set('pse_form');
+    }
+  }
+
+  /** Sub-Paso 2 de Tarjeta: Validar Código 3D Secure / OTP SMS y procesar el cobro */
+  submitCard3dsAuth() {
+    if (this.isProcessingPayment()) return;
+    this.card3dsError.set('');
+    const code = this.card3dsAuthCode().trim();
+
+    if (!code) {
+      this.card3dsError.set('Ingresa el código de verificación SMS / 3D Secure.');
       return;
     }
 
-    this.isProcessingPayment.set(true);
+    const isDecline = code === '000000' || this.selectedDemoCard()?.type === 'declined';
 
-    const req = {
-      newPlanId: plan.idMembresia,
+    if (code !== '123456' && code !== '000000' && code !== this.selectedDemoCard()?.authCode) {
+      this.card3dsError.set('Código de verificación 3D Secure incorrecto. Utiliza el código demo sugerido: "123456" para aprobar o "000000" para simular rechazo.');
+      return;
+    }
+
+    this.executePaymentTransaction({ isDecline });
+  }
+
+  /** Sub-Paso 1 del Banco: Validar credenciales simuladas (Usuario/Celular + Contraseña) */
+  submitSimulatedBankLogin() {
+    this.simulatedLoginError.set('');
+    const config = this.currentBankConfig;
+    const user = this.simulatedUser().trim();
+    const pass = this.simulatedPassword().trim();
+
+    if (!user) {
+      this.simulatedLoginError.set(`El ${config.labels.userFieldLabel.toLowerCase()} es obligatorio.`);
+      return;
+    }
+    if (!pass) {
+      this.simulatedLoginError.set('La contraseña es obligatoria.');
+      return;
+    }
+
+    // Comprobar credenciales ficticias demo
+    if (user !== config.credentials.usernameOrPhone || pass !== config.credentials.password) {
+      this.simulatedLoginError.set(
+        `Credenciales ficticias incorrectas. Para la simulación demo utiliza ${config.labels.userFieldLabel}: "${config.credentials.usernameOrPhone}" y Contraseña: "${config.credentials.password}".`
+      );
+      return;
+    }
+
+    // Credenciales correctas: Avanzar a clave dinámica / código de autorización
+    this.bankAuthSubStep.set('auth_code');
+  }
+
+  /** Sub-Paso 2 del Banco: Validar Código de Autorización / Clave Dinámica y procesar el pago */
+  submitSimulatedBankAuth() {
+    if (this.isProcessingPayment()) return; // Previene doble envío
+    this.simulatedAuthCodeError.set('');
+    const config = this.currentBankConfig;
+    const code = this.simulatedAuthCode().trim();
+
+    if (!code) {
+      this.simulatedAuthCodeError.set('El código de autorización es obligatorio.');
+      return;
+    }
+
+    if (code !== config.credentials.authCode) {
+      this.simulatedAuthCodeError.set(
+        `Código de autorización ficticio incorrecto. Utiliza el código de prueba: "${config.credentials.authCode}".`
+      );
+      return;
+    }
+
+    // Código válido -> Ejecutar la transacción
+    this.executePaymentTransaction();
+  }
+
+  /** Paso 2: Procesa el pago PSE después de completar el formulario PSE */
+  submitPsePayment() {
+    if (this.isProcessingPayment()) return; // Previene doble envío
+    if (!this.validatePseForm()) return;
+    this.executePaymentTransaction();
+  }
+
+  /** Ejecuta la transacción de pago llamando al backend */
+  private executePaymentTransaction(options?: { isDecline?: boolean }) {
+    const plan = this.targetCheckoutPlan();
+    if (!plan) return;
+
+    this.isProcessingPayment.set(true);
+    this.paymentStep.set('processing');
+    this.pollingMessage.set('Creando sesión de pago segura...');
+
+    // 1. Crear sesión de pago asíncrona via PaymentsController
+    const sessionReq = {
+      planId: plan.idMembresia,
       paymentMethod: this.selectedPaymentMethod(),
       bankName: this.selectedPaymentMethod() === 'PSE' ? this.selectedBank() : undefined,
       personType: this.selectedPaymentMethod() === 'PSE' ? this.selectedPersonType() : undefined,
       cardHolder: this.selectedPaymentMethod() === 'TARJETA' ? this.cardHolder() : undefined,
-      cardLast4: this.selectedPaymentMethod() === 'TARJETA' ? (this.cardNumber().replace(/\s/g, '').slice(-4) || '4242') : undefined,
-      referenceId: `LEVELUP-2026-${Math.floor(100000 + Math.random() * 900000)}`
+      cardNumber: this.selectedPaymentMethod() === 'TARJETA' ? this.cardNumber().replace(/\s/g, '') : undefined,
+      cardExpiry: this.selectedPaymentMethod() === 'TARJETA' ? this.cardExp() : undefined,
+      cardCvv: this.selectedPaymentMethod() === 'TARJETA' ? this.cardCvv() : undefined
     };
 
-    this.membershipService.processPayment(req).subscribe({
-      next: (res) => {
-        this.isProcessingPayment.set(false);
-        this.showPaymentCheckoutModal.set(false);
-        this.fetchProfile();
+    this.paymentService.createPaymentSession(sessionReq).subscribe({
+      next: (session) => {
+        this.paymentReference.set(session.referenceId);
+        const entityName = this.selectedPaymentMethod() === 'PSE' 
+          ? (sessionReq.bankName || 'la entidad bancaria') 
+          : `${this.detectedCardBrandInfo.brand} (•••• ${this.cardLast4})`;
+        this.pollingMessage.set(`Sesión creada. Contactando a ${entityName}...`);
 
-        this.lastReceipt.set({
-          idTransaccion: res.referenceId,
-          fecha: new Date(),
-          nombreCliente: (this.profileData()?.nombre || '') + ' ' + (this.profileData()?.apellidos || ''),
-          planNombre: res.planName,
-          total: res.amountPaid,
-          metodoPago: res.paymentMethod + (res.bankName ? ' (' + res.bankName + ')' : ''),
-          vigencia: 'Válido hasta ' + res.expiresAt
-        });
+        // 2. Simular confirmación via webhook (en producción, esto lo haría la pasarela real)
+        setTimeout(() => {
+          this.pollingMessage.set(options?.isDecline ? 'Verificando fondos y políticas de seguridad...' : 'Contactando entidad emisora para autorización...');
+          const amountInCents = Math.round(session.amount * 100);
 
-        this.showReceiptModal.set(true);
-        this.alertService.success(res.isUpgrade ? '✓ Cambio de plan realizado con éxito' : '✓ Pago realizado correctamente');
-        this.setSection('membresia');
+          const webhookCall = options?.isDecline
+            ? this.paymentService.simulateWebhookDecline(session.referenceId, amountInCents)
+            : this.paymentService.simulateWebhookApproval(session.referenceId, amountInCents);
+
+          webhookCall.subscribe({
+            next: () => {
+              // 3. Iniciar polling del estado
+              this.paymentStep.set('polling');
+              this.pollingMessage.set('Verificando confirmación del pago...');
+              this.startPaymentPolling(session.referenceId);
+            },
+            error: () => {
+              // Si falla el webhook, intentar polling de todas formas
+              this.paymentStep.set('polling');
+              this.pollingMessage.set('Verificando estado del pago...');
+              this.startPaymentPolling(session.referenceId);
+            }
+          });
+        }, 1500); // Simula latencia de red de la pasarela
       },
       error: (err) => {
         this.isProcessingPayment.set(false);
-        this.alertService.error('El pago no pudo ser procesado. Tu membresía no ha sido modificada. Puedes intentar nuevamente con otro método de pago.');
+        this.paymentStep.set(this.selectedPaymentMethod() === 'PSE' ? 'pse_form' : 'card_3ds');
+        const msg = err.error?.message || err.message || 'Error al crear la sesión de pago.';
+        this.alertService.error(msg);
       }
     });
+  }
+
+  submitPaymentCheckout() {
+    this.onInitialCheckoutSubmit();
+  }
+
+  /** Inicia polling del estado del pago via PaymentsController/status/{referenceId} */
+  private startPaymentPolling(referenceId: string) {
+    this.paymentService.pollPaymentStatus(referenceId, 2000, 30).subscribe({
+      next: (statusRes) => {
+        if (statusRes.status === 'PROCESANDO') {
+          this.pollingMessage.set('Esperando confirmación de la entidad bancaria...');
+        } else if (statusRes.status === 'APROBADO') {
+          this.paymentStep.set('result');
+          this.paymentResult.set(statusRes);
+          this.pollingMessage.set('¡Pago aprobado exitosamente!');
+          this.handlePaymentApproved(statusRes);
+        } else {
+          // RECHAZADO, CANCELADO, etc.
+          this.paymentStep.set('result');
+          this.paymentResult.set(statusRes);
+          this.pollingMessage.set(statusRes.message);
+          this.handlePaymentFailed(statusRes);
+        }
+      },
+      error: (err) => {
+        this.isProcessingPayment.set(false);
+        this.paymentStep.set('form');
+        this.alertService.error('Error al verificar el estado del pago. Intenta nuevamente.');
+      }
+    });
+  }
+
+  /** Maneja un pago aprobado: actualiza UI, muestra recibo */
+  private handlePaymentApproved(statusRes: PaymentStatusResponse) {
+    this.isProcessingPayment.set(false);
+
+    // Esperar un momento para mostrar la animación de éxito
+    setTimeout(() => {
+      this.showPaymentCheckoutModal.set(false);
+      this.paymentStep.set('form'); // Reset para la próxima vez
+      this.fetchProfile();
+      this.fetchPlans();
+
+      this.lastReceipt.set({
+        idTransaccion: statusRes.referenceId,
+        fecha: statusRes.paymentDate ? new Date(statusRes.paymentDate) : new Date(),
+        nombreCliente: (this.profileData()?.nombre || '') + ' ' + (this.profileData()?.apellidos || ''),
+        planNombre: statusRes.planName,
+        total: statusRes.amount,
+        metodoPago: statusRes.paymentMethod,
+        vigencia: 'Membresía activa'
+      });
+
+      this.showReceiptModal.set(true);
+      this.alertService.success(this.isUpgradeFlow() ? '✓ Cambio de plan realizado con éxito' : '✓ Pago aprobado y membresía activada');
+      this.setSection('membresia');
+      this.resetCheckoutForm();
+    }, 1500);
+  }
+
+  /** Maneja un pago rechazado/fallido */
+  private handlePaymentFailed(statusRes: PaymentStatusResponse) {
+    this.isProcessingPayment.set(false);
+    setTimeout(() => {
+      this.paymentStep.set('form'); // Permite reintentar
+      this.alertService.error(statusRes.message || 'El pago fue rechazado. Intenta con otro método de pago.');
+    }, 2000);
+  }
+
+  /** Resetea todos los campos del formulario de checkout */
+  private resetCheckoutForm() {
+    this.cardNumber.set('');
+    this.cardHolder.set('');
+    this.cardExp.set('');
+    this.cardCvv.set('');
+    this.cardNumberError.set('');
+    this.cardExpError.set('');
+    this.cardCvvError.set('');
+    this.cardHolderError.set('');
+
+    this.pseDocNumber.set('');
+    this.pseEmail.set('');
+    this.psePhone.set('');
+    this.pseHolderName.set('');
+    this.pseDocNumberError.set('');
+    this.pseEmailError.set('');
+    this.psePhoneError.set('');
+    this.pseHolderNameError.set('');
+
+    this.simulatedUser.set('');
+    this.simulatedPassword.set('');
+    this.simulatedAuthCode.set('');
+    this.simulatedLoginError.set('');
+    this.simulatedAuthCodeError.set('');
+    this.bankAuthSubStep.set('login');
+
+    this.card3dsAuthCode.set('');
+    this.card3dsError.set('');
+    this.selectedDemoCard.set(null);
+
+    this.paymentReference.set('');
+    this.paymentResult.set(null);
+    this.selectedPaymentMethod.set('PSE');
+    this.paymentStep.set('form');
   }
 
   deleteProfileAccount() {

@@ -29,15 +29,6 @@ public class SubscriptionStatus : BaseEntity
     public virtual ICollection<Subscription> Subscriptions { get; set; } = new List<Subscription>();
 }
 
-public class PaymentMethod : BaseEntity
-{
-    [Key]
-    public int IdPago { get; set; }
-    
-    [StringLength(50)]
-    public string? Nombre { get; set; }
-}
-
 public class EmployeePayment : BaseEntity
 {
     [Key]

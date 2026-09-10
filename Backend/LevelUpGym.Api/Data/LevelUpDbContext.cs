@@ -14,7 +14,7 @@ public class LevelUpDbContext : DbContext
     public DbSet<Client> Clients { get; set; }
     public DbSet<Employee> Employees { get; set; }
     public DbSet<Eps> EpsList { get; set; }
-    public DbSet<Item> Items { get; set; }
+
     public DbSet<Membership> Memberships { get; set; }
     public DbSet<Subscription> Subscriptions { get; set; }
     public DbSet<SubscriptionStatus> SubscriptionStatuses { get; set; }
@@ -32,6 +32,10 @@ public class LevelUpDbContext : DbContext
     public DbSet<ClassEnrollment> ClassEnrollments { get; set; }
     public DbSet<GoalType> GoalTypes { get; set; }
     public DbSet<Goal> Goals { get; set; }
+    public DbSet<Venta> Ventas { get; set; }
+    public DbSet<VentaDetalle> VentaDetalles { get; set; }
+    public DbSet<Pago> Pagos { get; set; }
+    public DbSet<CambioSuscripcion> CambiosSuscripcion { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -100,23 +104,12 @@ public class LevelUpDbContext : DbContext
                 .HasForeignKey(d => d.IdEps);
         });
 
-        // Items Table
-        modelBuilder.Entity<Item>(entity =>
-        {
-            entity.ToTable("items");
-            entity.HasKey(e => e.IdItem);
-        });
-
         // Memberships Table
         modelBuilder.Entity<Membership>(entity =>
         {
             entity.ToTable("membresias");
             entity.HasKey(e => e.IdMembresia);
             entity.HasIndex(e => e.Nombre).IsUnique();
-
-            entity.HasOne(d => d.Item)
-                .WithOne(p => p.Membership)
-                .HasForeignKey<Membership>(d => d.IdItem);
         });
 
         // Subscriptions Table
@@ -124,18 +117,38 @@ public class LevelUpDbContext : DbContext
         {
             entity.ToTable("suscripciones");
             entity.HasKey(e => e.IdSuscripcion);
+            entity.Property(e => e.Precio).HasPrecision(18, 2);
 
             entity.HasOne(d => d.Client)
                 .WithMany(p => p.Subscriptions)
-                .HasForeignKey(d => d.IdCliente);
+                .HasForeignKey(d => d.IdCliente)
+                .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne(d => d.Membership)
                 .WithMany(p => p.Subscriptions)
-                .HasForeignKey(d => d.IdMembresia);
+                .HasForeignKey(d => d.IdMembresia)
+                .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne(d => d.Status)
                 .WithMany(p => p.Subscriptions)
-                .HasForeignKey(d => d.IdEstado);
+                .HasForeignKey(d => d.IdEstado)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(d => d.Venta)
+                .WithMany()
+                .HasForeignKey(d => d.IdVenta)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(d => d.SuscripcionAnterior)
+                .WithMany()
+                .HasForeignKey(d => d.IdSuscripcionAnterior)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Índice único filtrado: Un cliente solo puede tener UNA suscripción activa a la vez
+            entity.HasIndex(e => e.IdCliente)
+                .HasDatabaseName("IX_suscripciones_ClienteActiva")
+                .IsUnique()
+                .HasFilter("[IdEstado] = 1 AND [DeletedAt] IS NULL");
         });
 
         modelBuilder.Entity<Employee>()
@@ -252,6 +265,90 @@ public class LevelUpDbContext : DbContext
             entity.HasOne(d => d.GoalType)
                 .WithMany(p => p.Goals)
                 .HasForeignKey(d => d.IdTipoObjetivo)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Ventas Table
+        modelBuilder.Entity<Venta>(entity =>
+        {
+            entity.ToTable("ventas");
+            entity.HasKey(e => e.IdVenta);
+            entity.Property(e => e.Subtotal).HasPrecision(18, 2);
+            entity.Property(e => e.Descuento).HasPrecision(18, 2);
+            entity.Property(e => e.Total).HasPrecision(18, 2);
+
+            entity.HasOne(d => d.Client)
+                .WithMany(p => p.Ventas)
+                .HasForeignKey(d => d.IdCliente)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // VentaDetalles Table
+        modelBuilder.Entity<VentaDetalle>(entity =>
+        {
+            entity.ToTable("venta_detalles");
+            entity.HasKey(e => e.IdVentaDetalle);
+            entity.Property(e => e.PrecioUnitario).HasPrecision(18, 2);
+            entity.Property(e => e.Descuento).HasPrecision(18, 2);
+            entity.Property(e => e.Subtotal).HasPrecision(18, 2);
+
+            entity.HasOne(d => d.Venta)
+                .WithMany(p => p.Detalles)
+                .HasForeignKey(d => d.IdVenta)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(d => d.Membership)
+                .WithMany(p => p.VentaDetalles)
+                .HasForeignKey(d => d.IdMembresia)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Pagos Table
+        modelBuilder.Entity<Pago>(entity =>
+        {
+            entity.ToTable("pagos");
+            entity.HasKey(e => e.IdPago);
+            entity.Property(e => e.Monto).HasPrecision(18, 2);
+
+            entity.HasIndex(e => e.ReferenciaExterna)
+                .IsUnique()
+                .HasFilter("[ReferenciaExterna] IS NOT NULL");
+
+            entity.HasOne(d => d.Venta)
+                .WithMany(p => p.Pagos)
+                .HasForeignKey(d => d.IdVenta)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // CambiosSuscripcion Table
+        modelBuilder.Entity<CambioSuscripcion>(entity =>
+        {
+            entity.ToTable("cambios_suscripcion");
+            entity.HasKey(e => e.IdCambioSuscripcion);
+            entity.Property(e => e.PrecioAnterior).HasPrecision(18, 2);
+            entity.Property(e => e.PrecioNuevo).HasPrecision(18, 2);
+            entity.Property(e => e.CreditoAplicado).HasPrecision(18, 2);
+            entity.Property(e => e.ValorAdicional).HasPrecision(18, 2);
+            entity.Property(e => e.ValorDevuelto).HasPrecision(18, 2);
+
+            entity.HasOne(d => d.Client)
+                .WithMany()
+                .HasForeignKey(d => d.IdCliente)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(d => d.SuscripcionAnterior)
+                .WithMany()
+                .HasForeignKey(d => d.IdSuscripcionAnterior)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(d => d.SuscripcionNueva)
+                .WithMany()
+                .HasForeignKey(d => d.IdSuscripcionNueva)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(d => d.Venta)
+                .WithMany()
+                .HasForeignKey(d => d.IdVenta)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 

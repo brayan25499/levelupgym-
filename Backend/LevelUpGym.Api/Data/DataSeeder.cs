@@ -192,19 +192,13 @@ public static class DataSeeder
             context.SaveChanges();
         }
 
-        // 4. Seed Memberships (requires Items first)
+        // 4. Seed Memberships
         if (!context.Memberships.Any())
         {
-            var item1 = new Item { CreatedAt = DateTime.UtcNow };
-            var item2 = new Item { CreatedAt = DateTime.UtcNow };
-            var item3 = new Item { CreatedAt = DateTime.UtcNow };
-            context.Items.AddRange(item1, item2, item3);
-            context.SaveChanges();
-
             context.Memberships.AddRange(
-                new Membership { Nombre = "Bronce", Descripcion = "Acceso básico a sala de pesas", Precio = 89900, IdItem = item1.IdItem },
-                new Membership { Nombre = "Plata", Descripcion = "Acceso total + Clases grupales", Precio = 159900, IdItem = item2.IdItem },
-                new Membership { Nombre = "Oro", Descripcion = "VIP: Todo incluido + Nutricionista", Precio = 279900, IdItem = item3.IdItem }
+                new Membership { Nombre = "Bronce", Descripcion = "Acceso básico a sala de pesas", Precio = 89900 },
+                new Membership { Nombre = "Plata", Descripcion = "Acceso total + Clases grupales", Precio = 159900 },
+                new Membership { Nombre = "Oro", Descripcion = "VIP: Todo incluido + Nutricionista", Precio = 279900 }
             );
             context.SaveChanges();
         }

@@ -4,6 +4,7 @@ using LevelUpGym.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LevelUpGym.Api.Migrations
 {
     [DbContext(typeof(LevelUpDbContext))]
-    partial class LevelUpDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260909174613_AddVentasPagosYCambiosSuscripcion")]
+    partial class AddVentasPagosYCambiosSuscripcion
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1044,33 +1047,16 @@ namespace LevelUpGym.Api.Migrations
                     b.Property<int>("IdMembresia")
                         .HasColumnType("int");
 
-                    b.Property<int?>("IdSuscripcionAnterior")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("IdVenta")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("Precio")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
                     b.HasKey("IdSuscripcion");
 
-                    b.HasIndex("IdCliente")
-                        .IsUnique()
-                        .HasDatabaseName("IX_suscripciones_ClienteActiva")
-                        .HasFilter("[IdEstado] = 1 AND [DeletedAt] IS NULL");
+                    b.HasIndex("IdCliente");
 
                     b.HasIndex("IdEstado");
 
                     b.HasIndex("IdMembresia");
-
-                    b.HasIndex("IdSuscripcionAnterior");
-
-                    b.HasIndex("IdVenta");
 
                     b.ToTable("suscripciones", (string)null);
                 });
@@ -1438,40 +1424,26 @@ namespace LevelUpGym.Api.Migrations
                     b.HasOne("LevelUpGym.Api.Models.Client", "Client")
                         .WithMany("Subscriptions")
                         .HasForeignKey("IdCliente")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("LevelUpGym.Api.Models.SubscriptionStatus", "Status")
                         .WithMany("Subscriptions")
                         .HasForeignKey("IdEstado")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("LevelUpGym.Api.Models.Membership", "Membership")
                         .WithMany("Subscriptions")
                         .HasForeignKey("IdMembresia")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("LevelUpGym.Api.Models.Subscription", "SuscripcionAnterior")
-                        .WithMany()
-                        .HasForeignKey("IdSuscripcionAnterior")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("LevelUpGym.Api.Models.Venta", "Venta")
-                        .WithMany()
-                        .HasForeignKey("IdVenta")
-                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Client");
 
                     b.Navigation("Membership");
 
                     b.Navigation("Status");
-
-                    b.Navigation("SuscripcionAnterior");
-
-                    b.Navigation("Venta");
                 });
 
             modelBuilder.Entity("LevelUpGym.Api.Models.UserRole", b =>
