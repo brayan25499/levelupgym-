@@ -241,8 +241,9 @@
       <section *ngIf="activeSection === 'musculos'" class="section-container fade-in">
         <div class="section-header-flex">
           <div>
-            <h2 class="section-title">Explora tus Músculos en 3D</h2>
-            <p class="section-desc">Modelo anatómico interactivo. Rota la figura en 3D, haz zoom y selecciona cualquier músculo para ver información y ejercicios recomendados.</p>
+            <span class="section-tag">BIOMECÁNICA INTERACTIVA</span>
+            <h2 class="section-title">EXPLORA TUS MÚSCULOS <span class="accent">EN 3D</span></h2>
+            <p class="section-desc">Maniquí anatómico interactivo. Rota la figura, haz zoom y selecciona cualquier grupo muscular para descubrir rutinas y técnicas de hipertrofia.</p>
           </div>
           <button class="btn-outline-sm" (click)="resetModelRotation()" *ngIf="hasFullAccess()">Restablecer Cámara</button>
         </div>
@@ -258,33 +259,67 @@
         </div>
 
         <!-- UNLOCKED 3D CONTENT (PLATA / ORO) -->
-        <div *ngIf="hasFullAccess()">
-          <div class="disclaimer-alert">
-            <span class="alert-icon">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-            </span>
-            <p>Estos ejercicios son recomendaciones generales. Para realizar correctamente los ejercicios y conocer cuáles son adecuados para ti, consulta con tu entrenador de LevelUpGym.</p>
-          </div>
-
+        <div *ngIf="hasFullAccess()" class="anatomy-master-container">
+          
+          <!-- MAIN 3D EXPLORER & INFO PANEL GRID -->
           <div class="muscle-explorer-layout">
+            
+            <!-- 1. LEFT 3D VIEWER CARD -->
             <div class="canvas-wrapper">
-              <div class="canvas-controls-hint">
-                <span>Arrastra para rotar | Scroll para Zoom | Clic en un músculo</span>
-              </div>
               
-              <div class="canvas-hover-tooltip" *ngIf="hoveredMuscleName()">
+              <!-- Floating Left Tools -->
+              <div class="viewer-left-toolbar">
+                <button class="v-tool-btn active" title="Cuerpo Anatómico">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="2.5"/><path d="M12 7.5v8m-4.5-4l4.5-2 4.5 2m-6.5 6l2 6.5m2.5-6.5l2 6.5"/></svg>
+                </button>
+                <button class="v-tool-btn" title="Restablecer Posición" (click)="resetModelRotation()">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
+                </button>
+                <button class="v-tool-btn" title="Temporizador">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="7"/><path d="M12 9v4l2.5 2.5"/><path d="M10 2h4"/></svg>
+                </button>
+                <button class="v-tool-btn" title="Guardados">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                </button>
+              </div>
+
+              <!-- Top Instruction Pill -->
+              <div class="canvas-top-pill">
+                <span>Haz clic en un músculo para ver su información</span>
+              </div>
+
+              <!-- Hover Tooltip -->
+              <div class="canvas-hover-tooltip" *ngIf="hoveredMuscleName() && !selectedMuscle()">
                 <span>{{ hoveredMuscleName() }}</span>
               </div>
 
-              <canvas #muscleCanvas id="muscle-canvas"></canvas>
-            </div>
+              <!-- Loading Overlay -->
+              <div class="canvas-loader-overlay" *ngIf="isLoading3DModel()">
+                <div class="spinner-glow"></div>
+                <span>Cargando anatomía 3D...</span>
+              </div>
 
-            <div class="muscle-details-panel">
-              <div class="quick-muscle-selector">
-                <span class="selector-title">Selección Rápida:</span>
-                <div class="chips-container">
+              <!-- 3D Canvas -->
+              <canvas #muscleCanvas id="muscle-canvas"></canvas>
+
+              <!-- Floating Dynamic 3D Pin & Label -->
+              <div class="floating-pin-container" *ngIf="pinScreenPos().visible" [style.left.px]="pinScreenPos().x" [style.top.px]="pinScreenPos().y">
+                <div class="pin-dot"></div>
+                <svg class="pin-svg-line" width="60" height="46" viewBox="0 0 60 46">
+                  <path d="M 0 46 L 26 12 L 56 12" fill="none" stroke="#ff1744" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <div class="pin-badge">{{ pinScreenPos().label }}</div>
+              </div>
+
+              <!-- Bottom Muscle Selector Pills -->
+              <div class="viewer-bottom-selector">
+                <div class="selector-header-tag">
+                  <span class="gold-vertical-accent"></span>
+                  <span class="tag-title">Músculos</span>
+                </div>
+                <div class="muscle-pills-row">
                   <button *ngFor="let key of ['pectoral', 'deltoides', 'biceps', 'triceps', 'abs', 'dorsal', 'cuadriceps', 'gluteos']" 
-                          class="chip-btn" 
+                          class="muscle-pill-btn" 
                           [class.active]="selectedMuscle()?.id === key"
                           (click)="selectMuscle(key)">
                     {{ musclesDatabase[key].nombre.split(' ')[0] }}
@@ -292,36 +327,313 @@
                 </div>
               </div>
 
-              <div class="muscle-card-content" *ngIf="selectedMuscle(); else noMuscleSelected">
-                <div class="muscle-header">
-                  <span class="category-badge">{{ selectedMuscle()?.categoria }}</span>
-                  <h3>{{ selectedMuscle()?.nombre }}</h3>
-                </div>
-                <p class="muscle-description">{{ selectedMuscle()?.descripcion }}</p>
+            </div>
 
-                <div class="recommended-exercises">
-                  <h4>Ejercicios Recomendados:</h4>
-                  <ul class="exercises-bullet-list">
-                    <li *ngFor="let exName of selectedMuscle()?.ejercicios">
-                      <span class="check-bullet">
-                        <svg viewBox="0 0 24 24" width="11" height="11" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                      </span>
-                      {{ exName }}
-                    </li>
-                  </ul>
+            <!-- 2. RIGHT SIDE MUSCLE DETAIL PANEL -->
+            <div class="muscle-details-panel">
+              <button class="panel-close-btn" (click)="closeMusclePanel()" title="Cerrar panel">✕</button>
+
+              <div class="muscle-card-content" *ngIf="selectedMuscle() as muscle; else noMuscleSelected">
+                
+                <!-- Muscle Header -->
+                <div class="muscle-header-box">
+                  <div class="muscle-avatar-icon">
+                    <svg viewBox="0 0 64 64" width="46" height="46" fill="none" class="silhouette-svg">
+                      <!-- Stylized anatomical body thumbnail with glowing muscle -->
+                      <path d="M32 6a7 7 0 1 0 0 14 7 7 0 0 0 0-14z" fill="#334155"/>
+                      <path d="M22 24c-2 2-7 14-8 22 2 1 5 0 7-3l3-13 8-2 8 2 3 13c2 3 5 4 7 3-1-8-6-20-8-22l-4-2h-10l-4 2z" fill="#334155"/>
+                      <path d="M24 24c3-1 8-2 8-2s5 1 8 2l-2 16-6 4-6-4-2-16z" fill="#475569"/>
+                      <!-- Highlighted region based on selected muscle -->
+                      <circle cx="18" cy="26" r="4.5" fill="#dc143c" *ngIf="muscle.id === 'deltoides' || muscle.id === 'biceps' || muscle.id === 'triceps'"/>
+                      <circle cx="46" cy="26" r="4.5" fill="#dc143c" *ngIf="muscle.id === 'deltoides' || muscle.id === 'biceps' || muscle.id === 'triceps'"/>
+                      <path d="M25 25h14v8H25z" fill="#dc143c" *ngIf="muscle.id === 'pectoral' || muscle.id === 'abs' || muscle.id === 'dorsal'"/>
+                      <circle cx="26" cy="46" r="4.5" fill="#dc143c" *ngIf="muscle.id === 'cuadriceps' || muscle.id === 'gluteos' || muscle.id === 'isquiotibiales' || muscle.id === 'gemelos'"/>
+                      <circle cx="38" cy="46" r="4.5" fill="#dc143c" *ngIf="muscle.id === 'cuadriceps' || muscle.id === 'gluteos' || muscle.id === 'isquiotibiales' || muscle.id === 'gemelos'"/>
+                    </svg>
+                  </div>
+                  <div class="muscle-title-col">
+                    <h3 class="muscle-name">{{ muscle.nombre }}</h3>
+                    <span class="category-red-pill">{{ muscle.categoria }}</span>
+                  </div>
+                </div>
+
+                <p class="muscle-description">{{ muscle.descripcion }}</p>
+
+                <!-- Ubicación y proporciones -->
+                <div class="proportions-section">
+                  <h4 class="section-subheading">Ubicación y proporciones</h4>
+                  <div class="proportion-items-list">
+                    <div class="proportion-row" *ngFor="let prop of muscle.proporciones">
+                      <div class="prop-icon-circle">
+                        <!-- Body icon -->
+                        <svg *ngIf="prop.icono === 'body'" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#f59e0b" stroke-width="2">
+                          <circle cx="12" cy="5" r="2.5"/><path d="M12 7.5v8m-4.5-4l4.5-2 4.5 2m-6.5 6l2 6.5m2.5-6.5l2 6.5"/>
+                        </svg>
+                        <!-- Chart icon -->
+                        <svg *ngIf="prop.icono === 'chart'" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#f59e0b" stroke-width="2">
+                          <rect x="3" y="12" width="4" height="8" rx="1"/><rect x="10" y="7" width="4" height="13" rx="1"/><rect x="17" y="3" width="4" height="17" rx="1"/>
+                        </svg>
+                        <!-- Joint icon -->
+                        <svg *ngIf="prop.icono === 'joint'" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#f59e0b" stroke-width="2">
+                          <circle cx="7" cy="17" r="3"/><circle cx="17" cy="7" r="3"/><line x1="9.5" y1="14.5" x2="14.5" y2="9.5"/>
+                        </svg>
+                      </div>
+                      <p class="prop-text">{{ prop.texto }}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Ejercicios recomendados -->
+                <div class="exercises-section">
+                  <h4 class="section-subheading">Ejercicios recomendados</h4>
+                  <div class="exercise-cards-list">
+                    <div class="exercise-row-card" *ngFor="let ex of muscle.ejerciciosDetalle" (click)="openRecommendedExerciseModal(ex)" title="Clic para ver técnica y ejecución">
+                      <div class="exercise-thumb-box">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#dc143c" stroke-width="2">
+                          <path d="M6 5v14M18 5v14M2 9v6M22 9v6M6 12h12"/>
+                        </svg>
+                      </div>
+                      <div class="exercise-info-col">
+                        <span class="ex-title">{{ ex.nombre }}</span>
+                        <span class="ex-focus">{{ ex.enfoque }}</span>
+                      </div>
+                      <div class="exercise-action-hint">
+                        <span class="view-pill">VER</span>
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- Default Placeholder State -->
+              <ng-template #noMuscleSelected>
+                <div class="no-selection-placeholder">
+                  <div class="placeholder-icon-ring">
+                    <svg viewBox="0 0 24 24" width="38" height="38" fill="none" stroke="#dc143c" stroke-width="1.8">
+                      <circle cx="12" cy="12" r="9"/>
+                      <circle cx="12" cy="12" r="3"/>
+                      <line x1="12" y1="3" x2="12" y2="7"/><line x1="12" y1="17" x2="12" y2="21"/>
+                      <line x1="3" y1="12" x2="7" y2="12"/><line x1="17" y1="12" x2="21" y2="12"/>
+                    </svg>
+                  </div>
+                  <h3>EXPLORACIÓN ANATÓMICA 3D</h3>
+                  <p>Haz clic sobre cualquier músculo del maniquí interactivo o utiliza los selectores para consultar su biomecánica y ver los ejercicios recomendados.</p>
+                </div>
+              </ng-template>
+
+            </div>
+
+          </div>
+
+          <!-- ================= 3. SECCIÓN DEDICADA: EJERCICIOS RECOMENDADOS ================= -->
+          <div class="recommended-exercises-zone">
+            
+            <div class="rec-header-row">
+              <div class="rec-title-wrap">
+                <span class="section-tag">ZONA DE HIPERTROFIA Y FUERZA</span>
+                <h3 class="rec-main-title">
+                  EJERCICIOS RECOMENDADOS: <span class="accent">{{ activeMuscleTitle | uppercase }}</span>
+                </h3>
+                <p class="rec-subtitle">
+                  Ejercicios seleccionados por el equipo técnico de LevelUpGym para optimizar la hipertrofia muscular, la fuerza y la salud biomecánica.
+                </p>
+              </div>
+
+              <!-- Quick Switch Muscle Chips -->
+              <div class="rec-filter-chips">
+                <span class="chips-label">SELECCIONAR MÚSCULO:</span>
+                <div class="chips-container">
+                  <button *ngFor="let mId of ['deltoides', 'pectoral', 'biceps', 'triceps', 'abs', 'dorsal', 'cuadriceps', 'gluteos', 'isquiotibiales', 'gemelos']"
+                          class="chip-btn"
+                          [class.active]="(selectedMuscle()?.id || 'deltoides') === mId"
+                          (click)="selectMuscle(mId)">
+                    {{ musclesDatabase[mId].nombre.split(' ')[0] }}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Exercises Cards Grid -->
+            <div class="rec-cards-grid">
+              <div class="rec-card" *ngFor="let ex of displayedExercises">
+                
+                <div class="rec-card-top">
+                  <div class="rec-card-badge-row">
+                    <span class="rec-level-pill" [class.advanced]="ex.nivel?.includes('Avanzado')" [class.intermediate]="ex.nivel?.includes('Intermedio')">
+                      {{ ex.nivel || 'Intermedio' }}
+                    </span>
+                    <span class="rec-tempo-pill" *ngIf="ex.tempo">TEMPO: {{ ex.tempo }}</span>
+                  </div>
+                  <div class="rec-card-icon">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M6 5v14M18 5v14M2 9v6M22 9v6M6 12h12"/>
+                    </svg>
+                  </div>
+                </div>
+
+                <div class="rec-card-body">
+                  <h4 class="rec-card-title">{{ ex.nombre }}</h4>
+                  <p class="rec-card-focus">{{ ex.enfoque }}</p>
+
+                  <!-- Prescription Metrics -->
+                  <div class="rec-metrics-strip">
+                    <div class="metric-item">
+                      <span class="metric-label">SERIES</span>
+                      <span class="metric-val">{{ ex.series || '4' }}</span>
+                    </div>
+                    <div class="metric-divider"></div>
+                    <div class="metric-item">
+                      <span class="metric-label">REPETICIONES</span>
+                      <span class="metric-val">{{ ex.repeticiones || '10 - 12' }}</span>
+                    </div>
+                    <div class="metric-divider"></div>
+                    <div class="metric-item">
+                      <span class="metric-label">DESCANSO</span>
+                      <span class="metric-val">{{ ex.descanso || '60 seg' }}</span>
+                    </div>
+                  </div>
+
+                  <!-- Quick Tips Checklist -->
+                  <div class="rec-card-tips" *ngIf="ex.tips?.length">
+                    <div class="rec-tip-line" *ngFor="let tip of ex.tips | slice:0:2">
+                      <svg class="check-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#dc143c" stroke-width="2.5">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      <span>{{ tip }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Action Button -->
+                <div class="rec-card-footer">
+                  <button class="btn-rec-detail" (click)="openRecommendedExerciseModal(ex)">
+                    <span>VER TÉCNICA & EJECUCIÓN</span>
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5">
+                      <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                    </svg>
+                  </button>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- ================= MODAL DETALLE DE TÉCNICA & EJECUCIÓN ================= -->
+        <div class="modal-backdrop-custom" *ngIf="showRecommendedExerciseModal() && activeRecommendedExercise()" (click)="closeRecommendedExerciseModal()">
+          <div class="exercise-detail-modal" (click)="$event.stopPropagation()">
+            
+            <!-- Modal Header -->
+            <div class="ex-modal-header">
+              <div class="ex-modal-title-col">
+                <span class="ex-modal-tag">{{ activeMuscleTitle | uppercase }} • {{ activeRecommendedExercise()?.nivel || 'INTERMEDIO' }}</span>
+                <h2 class="ex-modal-title">{{ activeRecommendedExercise()?.nombre }}</h2>
+                <p class="ex-modal-focus">{{ activeRecommendedExercise()?.enfoque }}</p>
+              </div>
+              <button class="modal-close-icon-btn" (click)="closeRecommendedExerciseModal()" title="Cerrar modal">✕</button>
+            </div>
+
+            <div class="ex-modal-scrollable">
+              
+              <!-- Prescription Cards Strip -->
+              <div class="ex-modal-prescription-grid">
+                <div class="presc-card">
+                  <span class="presc-icon">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#dc143c" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+                  </span>
+                  <div class="presc-info">
+                    <span class="presc-label">SERIES OBJETIVO</span>
+                    <span class="presc-val">{{ activeRecommendedExercise()?.series || '4' }}</span>
+                  </div>
+                </div>
+
+                <div class="presc-card">
+                  <span class="presc-icon">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#ffd700" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12 6 12 12 16 14"/></svg>
+                  </span>
+                  <div class="presc-info">
+                    <span class="presc-label">REPETICIONES</span>
+                    <span class="presc-val">{{ activeRecommendedExercise()?.repeticiones || '8 - 12' }}</span>
+                  </div>
+                </div>
+
+                <div class="presc-card">
+                  <span class="presc-icon">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#22c55e" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                  </span>
+                  <div class="presc-info">
+                    <span class="presc-label">DESCANSO ENTRE SERIES</span>
+                    <span class="presc-val">{{ activeRecommendedExercise()?.descanso || '75 - 90 seg' }}</span>
+                  </div>
+                </div>
+
+                <div class="presc-card" *ngIf="activeRecommendedExercise()?.tempo">
+                  <span class="presc-icon">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#dc143c" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                  </span>
+                  <div class="presc-info">
+                    <span class="presc-label">TEMPO DE EJECUCIÓN</span>
+                    <span class="presc-val">{{ activeRecommendedExercise()?.tempo }}</span>
+                  </div>
                 </div>
               </div>
 
-              <ng-template #noMuscleSelected>
-                <div class="no-selection-placeholder">
-                  <span class="placeholder-icon">
-                    <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="4" r="2"></circle><path d="M12 6v6m0 0l-3 5m3-5l3 5m-6-8h6"></path></svg>
-                  </span>
-                  <p>Haz clic sobre cualquier parte del maniquí 3D o usa los botones superiores para seleccionar un músculo.</p>
+              <!-- Steps of Execution -->
+              <div class="ex-modal-section" *ngIf="activeRecommendedExercise()?.pasos?.length">
+                <h4 class="ex-section-title">
+                  <span class="title-bar"></span> PASO A PASO DE LA TÉCNICA
+                </h4>
+                <div class="steps-container">
+                  <div class="step-card" *ngFor="let paso of activeRecommendedExercise()?.pasos; let sIdx = index">
+                    <div class="step-number">{{ sIdx + 1 }}</div>
+                    <div class="step-content">
+                      <span class="step-phase">{{ sIdx === 0 ? 'Fase Inicial / Posición' : (sIdx === 1 ? 'Fase Concéntrica / Levantamiento' : 'Fase Excéntrica / Retorno Controlado') }}</span>
+                      <p class="step-text">{{ paso }}</p>
+                    </div>
+                  </div>
                 </div>
-              </ng-template>
+              </div>
+
+              <!-- Coaching Tips -->
+              <div class="ex-modal-section" *ngIf="activeRecommendedExercise()?.tips?.length">
+                <h4 class="ex-section-title">
+                  <span class="title-bar gold-bar"></span> CONSEJOS DEL COACH LEVELUP
+                </h4>
+                <div class="tips-grid">
+                  <div class="tip-card" *ngFor="let tip of activeRecommendedExercise()?.tips">
+                    <div class="tip-bullet">★</div>
+                    <p class="tip-body">{{ tip }}</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Common Mistakes -->
+              <div class="ex-modal-section" *ngIf="activeRecommendedExercise()?.erroresComunes?.length">
+                <h4 class="ex-section-title">
+                  <span class="title-bar red-bar"></span> ERRORES FRECUENTES A EVITAR
+                </h4>
+                <div class="mistakes-list">
+                  <div class="mistake-item" *ngFor="let err of activeRecommendedExercise()?.erroresComunes">
+                    <span class="mistake-icon">⚠️</span>
+                    <p class="mistake-text">{{ err }}</p>
+                  </div>
+                </div>
+              </div>
+
             </div>
+
+            <!-- Modal Footer -->
+            <div class="ex-modal-footer">
+              <span class="footer-coach-badge">PROGRAMA DE RUTINAS LEVELUPGYM</span>
+              <button class="btn-primary" (click)="closeRecommendedExerciseModal()">ENTENDIDO / VOLVER</button>
+            </div>
+
           </div>
+
         </div>
       </section>
 

@@ -3718,4 +3718,1217 @@
     width: 100%;
   }
 }
+.canvas-loader-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(9, 12, 18, 0.85);
+  backdrop-filter: blur(6px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  z-index: 10;
+  border-radius: 12px;
+  color: #e2e8f0;
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
 
+.spinner-glow {
+  width: 44px;
+  height: 44px;
+  border: 3px solid rgba(220, 20, 60, 0.2);
+  border-top-color: #dc143c;
+  border-radius: 50%;
+  animation: spinGlow 0.9s linear infinite;
+  box-shadow: 0 0 15px rgba(220, 20, 60, 0.4);
+}
+
+@keyframes spinGlow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ==========================================================================
+/* ==========================================================================
+   ANATOMY 3D EXPLORER & MUSCLE DETAILS PANEL (LEVELUPGYM BRAND DESIGN SYSTEM)
+   ========================================================================== */
+
+.anatomy-master-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  width: 100%;
+}
+
+.muscle-explorer-layout {
+  display: grid;
+  grid-template-columns: 1.45fr 1fr;
+  gap: 1.5rem;
+  width: 100%;
+  min-height: 650px;
+}
+
+@media (max-width: 1200px) {
+  .muscle-explorer-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 1. LEFT 3D VIEWER CARD */
+.canvas-wrapper {
+  position: relative;
+  background: radial-gradient(ellipse at 50% 35%, #0e1526 0%, #080c18 60%, #03050a 100%);
+  border: 1px solid rgba(220, 20, 60, 0.25);
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 720px;
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.8);
+}
+
+#muscle-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Floating Tools on the Left */
+.viewer-left-toolbar {
+  position: absolute;
+  top: 75px;
+  left: 20px;
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.v-tool-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  border: 1px solid rgba(220, 20, 60, 0.2);
+  background: rgba(13, 13, 13, 0.85);
+  backdrop-filter: blur(10px);
+  color: #a0a0a0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.v-tool-btn:hover {
+  background: rgba(220, 20, 60, 0.2);
+  border-color: var(--red);
+  color: #fff;
+  transform: scale(1.05);
+}
+
+.v-tool-btn.active {
+  background: var(--red);
+  border-color: var(--red-bright);
+  color: #fff;
+  box-shadow: 0 0 15px var(--red-glow);
+}
+
+/* Top Instruction Pill - Matching Reference Image */
+.canvas-top-pill {
+  position: absolute;
+  top: 18px;
+  left: 22px;
+  z-index: 15;
+  background: rgba(10, 15, 26, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 24px;
+  padding: 7px 20px;
+  color: #94a3b8;
+  font-family: inherit;
+  font-size: 0.84rem;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  backdrop-filter: blur(12px);
+  pointer-events: none;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+/* Hover Tooltip */
+.canvas-hover-tooltip {
+  position: absolute;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 15;
+  background: rgba(220, 20, 60, 0.9);
+  border: 1px solid var(--red-bright);
+  color: #fff;
+  border-radius: 6px;
+  padding: 5px 16px;
+  font-family: var(--font-heading);
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+  box-shadow: 0 0 16px var(--red-glow);
+  animation: fadeIn 0.2s ease;
+}
+
+/* 3D Floating Dynamic Pin and Badge - Matching Reference Image */
+.floating-pin-container {
+  position: absolute;
+  z-index: 20;
+  pointer-events: none;
+  transform: translate(0, 0);
+  transition: opacity 0.2s ease;
+}
+
+.pin-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid #ff1744;
+  box-shadow: 0 0 12px #ff1744, 0 0 24px rgba(255, 23, 68, 0.9);
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translate(-50%, -50%);
+}
+
+.pin-svg-line {
+  position: absolute;
+  left: 0;
+  top: -34px;
+  overflow: visible;
+  filter: drop-shadow(0 0 6px rgba(255, 23, 68, 0.8));
+}
+
+.pin-badge {
+  position: absolute;
+  left: 56px;
+  top: -46px;
+  background: #ff1744;
+  color: #ffffff;
+  font-family: var(--font-heading, sans-serif);
+  font-size: 0.94rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: capitalize;
+  padding: 6px 16px;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(255, 23, 68, 0.7), 0 0 14px rgba(255, 23, 68, 0.4);
+  white-space: nowrap;
+}
+
+/* Bottom Muscle Selector Bar */
+.viewer-bottom-selector {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  right: 16px;
+  z-index: 15;
+  background: rgba(13, 13, 13, 0.92);
+  border: 1px solid rgba(220, 20, 60, 0.25);
+  border-radius: 10px;
+  padding: 10px 14px;
+  backdrop-filter: blur(14px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.selector-header-tag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gold-vertical-accent {
+  width: 3px;
+  height: 14px;
+  background: var(--red);
+  border-radius: 2px;
+}
+
+.tag-title {
+  font-family: var(--font-heading);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--white);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.muscle-pills-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: thin;
+}
+
+.muscle-pill-btn {
+  padding: 7px 16px;
+  font-family: var(--font-heading);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #161616;
+  color: #ccc;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: var(--transition);
+}
+
+.muscle-pill-btn:hover {
+  border-color: var(--red);
+  color: #fff;
+  background: rgba(220, 20, 60, 0.15);
+}
+
+.muscle-pill-btn.active {
+  background: var(--red);
+  color: #fff;
+  border-color: var(--red-bright);
+  font-weight: 800;
+  box-shadow: 0 0 15px var(--red-glow);
+}
+
+/* 2. RIGHT SIDE MUSCLE DETAIL PANEL */
+.muscle-details-panel {
+  position: relative;
+  background: #0d0d0d;
+  border: 1px solid rgba(220, 20, 60, 0.25);
+  border-radius: 12px;
+  padding: 1.75rem 1.5rem;
+  overflow-y: auto;
+  height: 650px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7);
+}
+
+.panel-close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: #161616;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #999;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+  z-index: 5;
+}
+
+.panel-close-btn:hover {
+  background: var(--red);
+  border-color: var(--red-bright);
+  color: #fff;
+  transform: rotate(90deg);
+}
+
+.muscle-header-box {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 12px;
+  padding-right: 36px;
+}
+
+.muscle-avatar-icon {
+  width: 54px;
+  height: 54px;
+  min-width: 54px;
+  border-radius: 10px;
+  background: #161616;
+  border: 1px solid rgba(220, 20, 60, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.silhouette-svg {
+  filter: drop-shadow(0 0 6px rgba(220, 20, 60, 0.5));
+}
+
+.muscle-title-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.muscle-name {
+  font-family: var(--font-display);
+  font-size: 1.85rem;
+  color: #fff;
+  margin: 0;
+  line-height: 1;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.category-red-pill {
+  background: rgba(220, 20, 60, 0.15);
+  border: 1px solid var(--red);
+  color: var(--red-bright);
+  font-family: var(--font-heading);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  width: fit-content;
+  letter-spacing: 1px;
+}
+
+.muscle-description {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  color: #b0b0b0;
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+}
+
+.section-subheading {
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--white);
+  margin: 0 0 10px 0;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* Proportions */
+.proportions-section {
+  margin-bottom: 1.5rem;
+}
+
+.proportion-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.proportion-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.prop-icon-circle {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  border-radius: 6px;
+  background: rgba(255, 215, 0, 0.1);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.prop-text {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: #ccc;
+  line-height: 1.45;
+  margin: 0;
+  padding-top: 4px;
+}
+
+/* Side Panel Recommended Exercises */
+.exercises-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.exercise-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.exercise-row-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #141414;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.exercise-row-card:hover {
+  background: #1a1a1a;
+  border-color: var(--red);
+  transform: translateX(4px);
+  box-shadow: 0 4px 15px rgba(220, 20, 60, 0.2);
+}
+
+.exercise-thumb-box {
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  border-radius: 6px;
+  background: rgba(220, 20, 60, 0.15);
+  border: 1px solid rgba(220, 20, 60, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.exercise-info-col {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 3px;
+}
+
+.ex-title {
+  font-family: var(--font-heading);
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.5px;
+}
+
+.ex-focus {
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  color: #999;
+}
+
+.exercise-action-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #777;
+  transition: var(--transition);
+}
+
+.view-pill {
+  font-family: var(--font-heading);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--red-bright);
+}
+
+.exercise-row-card:hover .exercise-action-hint {
+  color: var(--red);
+  transform: translateX(3px);
+}
+
+/* No Selection Placeholder */
+.no-selection-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  height: 100%;
+  padding: 2rem;
+  gap: 1rem;
+}
+
+.placeholder-icon-ring {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: rgba(220, 20, 60, 0.12);
+  border: 1px solid rgba(220, 20, 60, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pulseGlow 2.5s infinite ease-in-out;
+}
+
+.no-selection-placeholder h3 {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  color: #fff;
+  letter-spacing: 1.5px;
+  margin: 0;
+}
+
+.no-selection-placeholder p {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  color: #999;
+  line-height: 1.5;
+  max-width: 320px;
+  margin: 0;
+}
+
+/* ==========================================================================
+   3. SECCIÓN DEDICADA: EJERCICIOS RECOMENDADOS (GRID & CARDS)
+   ========================================================================== */
+
+.recommended-exercises-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.rec-header-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  border-bottom: 1px solid rgba(220, 20, 60, 0.2);
+  padding-bottom: 1.5rem;
+}
+
+.rec-title-wrap {
+  display: flex;
+  flex-direction: column;
+  max-width: 650px;
+}
+
+.rec-main-title {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 3.5vw, 2.75rem);
+  line-height: 1;
+  color: #fff;
+  letter-spacing: 1.5px;
+  margin: 0.25rem 0 0.5rem 0;
+}
+
+.rec-subtitle {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: #a0a0a0;
+  margin: 0;
+}
+
+/* Muscle Filter Chips */
+.rec-filter-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chips-label {
+  font-family: var(--font-heading);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--red);
+}
+
+.chips-container {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.chip-btn {
+  padding: 6px 14px;
+  font-family: var(--font-heading);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #111111;
+  color: #bbb;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.chip-btn:hover {
+  border-color: var(--red);
+  color: #fff;
+  background: rgba(220, 20, 60, 0.15);
+}
+
+.chip-btn.active {
+  background: var(--red);
+  border-color: var(--red-bright);
+  color: #fff;
+  box-shadow: 0 0 12px var(--red-glow);
+}
+
+/* Cards Grid */
+.rec-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+  width: 100%;
+}
+
+@media (max-width: 1200px) {
+  .rec-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 650px) {
+  .rec-cards-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Single Exercise Card */
+.rec-card {
+  display: flex;
+  flex-direction: column;
+  background: #0d0d0d;
+  border: 1px solid rgba(220, 20, 60, 0.22);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: var(--transition);
+  position: relative;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+}
+
+.rec-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--red), transparent);
+  transition: var(--transition);
+}
+
+.rec-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--red);
+  box-shadow: 0 14px 35px rgba(220, 20, 60, 0.25);
+}
+
+.rec-card:hover::before {
+  background: linear-gradient(90deg, var(--red), var(--gold));
+}
+
+.rec-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.25rem 0.5rem 1.25rem;
+}
+
+.rec-card-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.rec-level-pill {
+  font-family: var(--font-heading);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(255, 215, 0, 0.15);
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  color: var(--gold);
+}
+
+.rec-level-pill.advanced {
+  background: rgba(220, 20, 60, 0.18);
+  border-color: var(--red);
+  color: var(--red-bright);
+}
+
+.rec-tempo-pill {
+  font-family: var(--font-heading);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: #1a1a1a;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #aaa;
+}
+
+.rec-card-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(220, 20, 60, 0.12);
+  border: 1px solid rgba(220, 20, 60, 0.25);
+  color: var(--red);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rec-card-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 0.75rem 1.25rem 1.25rem 1.25rem;
+}
+
+.rec-card-title {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #fff;
+  margin: 0 0 6px 0;
+  line-height: 1.2;
+}
+
+.rec-card-focus {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: #999;
+  line-height: 1.45;
+  margin: 0 0 1.25rem 0;
+  min-height: 38px;
+}
+
+/* Prescription Metrics Strip */
+.rec-metrics-strip {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr;
+  align-items: center;
+  background: #141414;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 1.25rem;
+}
+
+.metric-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.metric-label {
+  font-family: var(--font-heading);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #777;
+  margin-bottom: 2px;
+}
+
+.metric-val {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #fff;
+  line-height: 1;
+}
+
+.metric-divider {
+  width: 1px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Quick Tips */
+.rec-card-tips {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 0.5rem;
+}
+
+.rec-tip-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  color: #bbb;
+  line-height: 1.35;
+}
+
+.rec-tip-line .check-icon {
+  min-width: 14px;
+  margin-top: 2px;
+}
+
+/* Card Footer CTA */
+.rec-card-footer {
+  padding: 0 1.25rem 1.25rem 1.25rem;
+}
+
+.btn-rec-detail {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0.75rem 1rem;
+  font-family: var(--font-heading);
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  background: #181818;
+  border: 1px solid rgba(220, 20, 60, 0.3);
+  border-radius: 6px;
+  color: #fff;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-rec-detail:hover {
+  background: var(--red);
+  border-color: var(--red-bright);
+  box-shadow: 0 6px 20px var(--red-glow);
+  transform: translateY(-2px);
+}
+
+/* ==========================================================================
+   MODAL DETALLE DE TÉCNICA & EJECUCIÓN (LEVELUPGYM MODAL SYSTEM)
+   ========================================================================== */
+
+.modal-backdrop-custom {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  animation: fadeIn 0.25s ease;
+}
+
+.exercise-detail-modal {
+  background: #0d0d0d;
+  border: 1px solid rgba(220, 20, 60, 0.4);
+  border-radius: 14px;
+  width: 100%;
+  max-width: 780px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 35px rgba(220, 20, 60, 0.25);
+  position: relative;
+  overflow: hidden;
+}
+
+.ex-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 1.75rem 2rem 1.25rem 2rem;
+  border-bottom: 1px solid rgba(220, 20, 60, 0.2);
+  background: #111111;
+}
+
+.ex-modal-title-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ex-modal-tag {
+  font-family: var(--font-heading);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 2.5px;
+  color: var(--red);
+  text-transform: uppercase;
+}
+
+.ex-modal-title {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 3vw, 2.5rem);
+  color: #fff;
+  letter-spacing: 1.5px;
+  margin: 0;
+  line-height: 1.05;
+}
+
+.ex-modal-focus {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: #aaa;
+  margin: 0;
+}
+
+.modal-close-icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: #1c1c1c;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #aaa;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.modal-close-icon-btn:hover {
+  background: var(--red);
+  border-color: var(--red-bright);
+  color: #fff;
+  transform: rotate(90deg);
+}
+
+.ex-modal-scrollable {
+  padding: 1.75rem 2rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+/* Prescription Grid */
+.ex-modal-prescription-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 680px) {
+  .ex-modal-prescription-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.presc-card {
+  background: #141414;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.presc-icon {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: 6px;
+  background: #1a1a1a;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.presc-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.presc-label {
+  font-family: var(--font-heading);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #777;
+}
+
+.presc-val {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.1;
+}
+
+/* Step by Step */
+.ex-modal-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.ex-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: #fff;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.title-bar {
+  width: 4px;
+  height: 15px;
+  background: var(--red);
+  border-radius: 2px;
+}
+
+.title-bar.gold-bar {
+  background: var(--gold);
+}
+
+.title-bar.red-bar {
+  background: #ef4444;
+}
+
+.steps-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.step-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  background: #141414;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+
+.step-number {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border-radius: 50%;
+  background: var(--red);
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+}
+
+.step-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.step-phase {
+  font-family: var(--font-heading);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--red-bright);
+  text-transform: uppercase;
+}
+
+.step-text {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  color: #ccc;
+  line-height: 1.45;
+  margin: 0;
+}
+
+/* Tips Grid */
+.tips-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.tip-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: rgba(255, 215, 0, 0.06);
+  border: 1px solid rgba(255, 215, 0, 0.25);
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+
+.tip-bullet {
+  color: var(--gold);
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.tip-body {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  color: #ddd;
+  line-height: 1.45;
+  margin: 0;
+}
+
+/* Mistakes */
+.mistakes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mistake-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: rgba(239, 68, 68, 0.07);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+.mistake-icon {
+  font-size: 1rem;
+}
+
+.mistake-text {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  color: #fca5a5;
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* Modal Footer */
+.ex-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 2rem;
+  border-top: 1px solid rgba(220, 20, 60, 0.2);
+  background: #111111;
+}
+
+.footer-coach-badge {
+  font-family: var(--font-heading);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #777;
+}

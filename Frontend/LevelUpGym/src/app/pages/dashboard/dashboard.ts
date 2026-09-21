@@ -11,6 +11,7 @@ import { MembershipService, Membership, UpgradeCalculation } from '../../service
 import { PaymentService, PaymentStatusResponse } from '../../services/payment.service';
 import { SIMULATED_BANK_CREDENTIALS, getBankConfig, BankConfig, SIMULATED_CARDS_CONFIG, SimulatedCardConfig, detectCardBrand } from '../../config/simulated-banks.config';
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 export interface ExerciseItem {
   nombre: string;
@@ -34,12 +35,34 @@ export interface WorkoutRoutine {
   ejercicios: ExerciseItem[];
 }
 
+export interface MuscleProportion {
+  icono: 'body' | 'chart' | 'joint';
+  texto: string;
+}
+
+export interface ExerciseDetail {
+  nombre: string;
+  enfoque: string;
+  series?: string;
+  repeticiones?: string;
+  descanso?: string;
+  nivel?: string;
+  tempo?: string;
+  tips?: string[];
+  pasos?: string[];
+  erroresComunes?: string[];
+  imagenUrl?: string;
+}
+
 export interface MuscleInfo {
   id: string;
   nombre: string;
   categoria: string;
   descripcion: string;
+  proporciones: MuscleProportion[];
+  ejerciciosDetalle: ExerciseDetail[];
   ejercicios: string[];
+  anchor3D?: [number, number, number];
 }
 
 export interface UserGoal {
@@ -164,11 +187,34 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   // 3D Muscle Explorer State
   selectedMuscle = signal<MuscleInfo | null>(null);
   hoveredMuscleName = signal<string | null>(null);
+  isLoading3DModel = signal<boolean>(true);
+  pinScreenPos = signal<{ x: number; y: number; visible: boolean; label: string }>({
+    x: 0,
+    y: 0,
+    visible: false,
+    label: ''
+  });
   private threeScene?: THREE.Scene;
   private threeCamera?: THREE.PerspectiveCamera;
   private threeRenderer?: THREE.WebGLRenderer;
   private threeAnimationId?: number;
   private muscleMeshes: THREE.Mesh[] = [];
+  private bodyMeshes: THREE.Mesh[] = [];
+  private meshMuscleVertexIndices = new Map<THREE.Mesh, Map<string, number[]>>();
+  private muscleFilters: Record<string, (p: THREE.Vector3) => boolean> = {
+    deltoides: (p) => p.y >= 2.85 && p.y <= 3.88 && Math.abs(p.x) >= 1.00 && Math.abs(p.x) <= 2.05,
+    pectoral: (p) => p.y >= 2.25 && p.y <= 3.45 && Math.abs(p.x) <= 1.20 && p.z >= 0.05,
+    abs: (p) => p.y >= 0.85 && p.y < 2.25 && Math.abs(p.x) <= 0.90 && p.z >= 0.08,
+    biceps: (p) => p.y >= 1.65 && p.y <= 2.75 && Math.abs(p.x) >= 1.25 && Math.abs(p.x) <= 2.05 && p.z >= -0.40,
+    triceps: (p) => p.y >= 1.65 && p.y <= 2.75 && Math.abs(p.x) >= 1.25 && Math.abs(p.x) <= 2.05 && p.z < -0.40,
+    trapecio: (p) => p.y >= 3.70 && p.y <= 4.40 && Math.abs(p.x) <= 1.15 && p.z <= 0.15,
+    dorsal: (p) => p.y >= 1.55 && p.y <= 2.95 && Math.abs(p.x) >= 0.35 && Math.abs(p.x) <= 1.35 && p.z <= -0.10,
+    lumbares: (p) => p.y >= 0.75 && p.y < 1.55 && Math.abs(p.x) <= 0.70 && p.z <= -0.05,
+    gluteos: (p) => p.y >= -0.05 && p.y < 0.75 && Math.abs(p.x) <= 0.90 && p.z <= -0.05,
+    cuadriceps: (p) => p.y >= -2.00 && p.y < -0.05 && Math.abs(p.x) >= 0.15 && Math.abs(p.x) <= 1.15 && p.z >= -0.05,
+    isquiotibiales: (p) => p.y >= -2.00 && p.y < -0.05 && Math.abs(p.x) >= 0.15 && Math.abs(p.x) <= 1.15 && p.z < -0.05,
+    gemelos: (p) => p.y >= -3.55 && p.y < -2.00 && Math.abs(p.x) >= 0.15 && Math.abs(p.x) <= 1.05 && p.z <= 0.10
+  };
   private raycaster = new THREE.Raycaster();
   private mouse = new THREE.Vector2();
   private hoveredMesh: THREE.Mesh | null = null;
@@ -176,91 +222,1226 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   private previousMousePosition = { x: 0, y: 0 };
   private humanModelGroup?: THREE.Group;
 
+  // Recommended Exercise Detail Modal State (Anatomy 3D Explorer)
+  showRecommendedExerciseModal = signal<boolean>(false);
+  activeRecommendedExercise = signal<ExerciseDetail | null>(null);
+
+  openRecommendedExerciseModal(ex: ExerciseDetail) {
+    this.activeRecommendedExercise.set(ex);
+    this.showRecommendedExerciseModal.set(true);
+  }
+
+  closeRecommendedExerciseModal() {
+    this.showRecommendedExerciseModal.set(false);
+    this.activeRecommendedExercise.set(null);
+  }
+
+  get displayedExercises(): ExerciseDetail[] {
+    const m = this.selectedMuscle();
+    if (m && m.ejerciciosDetalle && m.ejerciciosDetalle.length > 0) {
+      return m.ejerciciosDetalle;
+    }
+    return this.musclesDatabase['deltoides'].ejerciciosDetalle;
+  }
+
+  get activeMuscleTitle(): string {
+    const m = this.selectedMuscle();
+    return m ? m.nombre : 'Deltoides';
+  }
+
   // Muscle Database
   musclesDatabase: Record<string, MuscleInfo> = {
-    pectoral: {
-      id: 'pectoral',
-      nombre: 'Pectoral mayor (Pecho)',
-      categoria: 'Torso Superior',
-      descripcion: 'Músculo principal de la parte frontal del tórax, responsable de la aducción y rotación interna del brazo.',
-      ejercicios: ['Press de banca con barra', 'Press inclinado con mancuernas', 'Aperturas en polea alta (Crossover)', 'Fondos en paralelas para pecho']
-    },
     deltoides: {
       id: 'deltoides',
-      nombre: 'Deltoides (Hombros)',
-      categoria: 'Extremidad Superior',
-      descripcion: 'Músculo de forma triangular que cubre la articulación del hombro, clave para la elevación y estabilidad del brazo.',
-      ejercicios: ['Press militar con barra', 'Elevaciones laterales con mancuernas', 'Pájaros para deltoides posterior en polea', 'Press Arnold']
+      nombre: 'Deltoides',
+      categoria: 'Hombro',
+      descripcion: 'El deltoides es un músculo triangular que forma el contorno del hombro. Se encarga de la abducción del brazo y participa en la flexión y extensión del hombro.',
+      anchor3D: [1.25, 3.32, -0.2],
+      proporciones: [
+        { icono: 'body', texto: 'Se encuentra en el hombro, cubre la articulación glenohumeral y da forma y redondez al brazo.' },
+        { icono: 'chart', texto: 'Representa aproximadamente el 12-15% de la masa muscular del tren superior.' },
+        { icono: 'joint', texto: 'Tiene tres cabezas: anterior (empuje vertical), media (amplitud lateral) y posterior (retracción).' }
+      ],
+      ejerciciosDetalle: [
+        {
+          nombre: 'Press militar con barra',
+          enfoque: 'Constructor masivo de fuerza para la porción anterior y clavicular',
+          series: '4',
+          repeticiones: '6 - 8',
+          descanso: '90 - 120 seg',
+          nivel: 'Intermedio - Avanzado',
+          tempo: '3-0-1-0',
+          tips: [
+            'Contrae glúteos y abdomen para mantener la columna neutra durante el empuje.',
+            'Baja la barra de forma controlada hasta la altura de la clavícula.',
+            'Bloquea los codos arriba con la cabeza levemente proyectada hacia adelante.'
+          ],
+          pasos: [
+            'Toma la barra a la anchura de hombros apoyada sobre el pecho alto.',
+            'Empuja verticalmente en línea recta pasando cerca del rostro.',
+            'Pausa un instante en la cima y desciende en 3 segundos resistiendo la carga.'
+          ],
+          erroresComunes: [
+            'Arquear en exceso la zona lumbar para compensar falta de movilidad de hombro.',
+            'Empujar la barra en diagonal hacia adelante en vez de hacia arriba.'
+          ]
+        },
+        {
+          nombre: 'Elevaciones laterales con mancuernas',
+          enfoque: 'Aislamiento máximo de la cabeza lateral para máxima amplitud',
+          series: '4',
+          repeticiones: '12 - 15',
+          descanso: '60 seg',
+          nivel: 'Principiante - Intermedio',
+          tempo: '2-1-1-1',
+          tips: [
+            'Lidera el movimiento con los codos, nunca con las muñecas.',
+            'Mantén una leve inclinación de 10° hacia adelante en el torso.',
+            'Pausa de 1 segundo en el punto de contracción horizontal.'
+          ],
+          pasos: [
+            'Sostén las mancuernas a los lados con los codos ligeramente flexionados.',
+            'Eleva los brazos hacia los laterales en el plano escapular hasta la altura de hombros.',
+            'Baja lentamente sintiendo la tensión continua sin dejar caer el peso.'
+          ],
+          erroresComunes: [
+            'Usar balanceo de cadera para iniciar el movimiento.',
+            'Elevar las mancuernas por encima del nivel de los hombros activando el trapecio.'
+          ]
+        },
+        {
+          nombre: 'Pájaros para deltoides posterior',
+          enfoque: 'Hipertrofia del deltoides posterior y equilibrio postural',
+          series: '4',
+          repeticiones: '12 - 15',
+          descanso: '60 seg',
+          nivel: 'Intermedio',
+          tempo: '2-1-1-0',
+          tips: [
+            'Mantén el torso inclinado a 45° o paralelo al suelo.',
+            'Abre los brazos como alas de ave sin retraer las escápulas primero.',
+            'Siente el trabajo en la parte posterior del hombro.'
+          ],
+          pasos: [
+            'Inclina la cadera manteniendo la espalda recta y cabeza alineada.',
+            'Abre las mancuernas hacia los lados con ligera flexión de codos.',
+            'Aprieta 1 segundo atrás y desciende de forma controlada.'
+          ],
+          erroresComunes: [
+            'Juntar los omóplatos al inicio transfiriendo la carga a los romboides.',
+            'Mover la espalda baja durante la fase concéntrica.'
+          ]
+        },
+        {
+          nombre: 'Press Arnold con mancuernas',
+          enfoque: 'Reclutamiento tridimensional de las tres cabezas del deltoides',
+          series: '3',
+          repeticiones: '10 - 12',
+          descanso: '75 seg',
+          nivel: 'Intermedio',
+          tempo: '3-0-1-0',
+          tips: [
+            'Inicia con palmas mirando hacia tu pecho.',
+            'Gira suavemente los antebrazos mientras empujas hacia arriba.',
+            'Termina con palmas hacia el frente en la posición final.'
+          ],
+          pasos: [
+            'Siéntate con espalda recta sosteniendo las mancuernas a la altura de la barbilla.',
+            'Abre y rota simultáneamente mientras empujas sobre la cabeza.',
+            'Revierte la rotación en el descenso de forma fluida y controlada.'
+          ],
+          erroresComunes: [
+            'Acelerar el descenso sin controlar la fase de rotación.',
+            'Golpear las mancuernas entre sí en el punto más alto.'
+          ]
+        }
+      ],
+      ejercicios: ['Press militar con barra', 'Elevaciones laterales con mancuernas', 'Pájaros para deltoides posterior', 'Press Arnold']
+    },
+    pectoral: {
+      id: 'pectoral',
+      nombre: 'Pectoral mayor',
+      categoria: 'Pecho',
+      descripcion: 'Músculo principal de la pared torácica anterior. Su función primaria es la aducción, rotación interna y flexión horizontal del brazo.',
+      anchor3D: [0.56, 3.0, 0.45],
+      proporciones: [
+        { icono: 'body', texto: 'Cubre la caja torácica superior y conecta la clavícula y el esternón con el húmero.' },
+        { icono: 'chart', texto: 'Representa entre el 15-20% de la fuerza de empuje del tren superior.' },
+        { icono: 'joint', texto: 'Consta de dos cabezas anatómicas: clavicular (superior) y esternocostal (inferior).' }
+      ],
+      ejerciciosDetalle: [
+        {
+          nombre: 'Press de banca plano con barra',
+          enfoque: 'Fuerza básica y masa total para la porción media e inferior',
+          series: '4',
+          repeticiones: '8 - 10',
+          descanso: '90 - 120 seg',
+          nivel: 'Intermedio',
+          tempo: '3-1-1-0',
+          tips: [
+            'Retrae y deprime los omóplatos firmemente contra el banco.',
+            'Pies bien apoyados en el suelo generando leg drive.',
+            'Baja la barra al esternón medio controlando el trayecto.'
+          ],
+          pasos: [
+            'Acuéstate con los ojos alineados debajo de la barra.',
+            'Desengancha la barra y colócala sobre tu pecho con los codos a 45-70°.',
+            'Desciende hasta tocar suavemente el pecho y empuja con potencia explosiva.'
+          ],
+          erroresComunes: [
+            'Abrir los codos a 90° respecto al torso provocando pinzamiento del hombro.',
+            'Rebotar la barra sobre el pecho en el punto de inversión.'
+          ]
+        },
+        {
+          nombre: 'Press inclinado con mancuernas',
+          enfoque: 'Énfasis directo en el haz clavicular superior para un pecho lleno',
+          series: '4',
+          repeticiones: '10 - 12',
+          descanso: '75 seg',
+          nivel: 'Intermedio',
+          tempo: '3-0-1-0',
+          tips: [
+            'Ajusta el banco entre 30° y 45° para evitar sobrecargar los hombros.',
+            'Junta las mancuernas en la parte superior sin chocarlas.',
+            'Mantén los codos debajo de las muñecas durante toda la serie.'
+          ],
+          pasos: [
+            'Sube las mancuernas con las rodillas y estabilízalas arriba.',
+            'Baja en 3 segundos sintiendo el estiramiento en la porción alta del pectoral.',
+            'Empuja contrayendo activamente el pecho superior.'
+          ],
+          erroresComunes: [
+            'Inclinar el banco a más de 45°, transfiriendo el trabajo al deltoides anterior.',
+            'Bajar los codos excesivamente por debajo del plano del banco.'
+          ]
+        },
+        {
+          nombre: 'Aperturas en polea alta (Crossover)',
+          enfoque: 'Aislamiento máximo en aducción y contracción continua',
+          series: '3',
+          repeticiones: '12 - 15',
+          descanso: '60 seg',
+          nivel: 'Intermedio',
+          tempo: '2-1-1-1',
+          tips: [
+            'Mantén una ligera flexión constante en los codos (abrazo de oso).',
+            'Cruza ligeramente las manos al final para mayor contracción esternal.',
+            'Torso estable con un pie adelante para balance.'
+          ],
+          pasos: [
+            'Colócate en el centro de las poleas con un paso al frente.',
+            'Junta los brazos hacia abajo y adelante contrayendo el pecho.',
+            'Abre controladamente hasta sentir estiramiento antes de volver.'
+          ],
+          erroresComunes: [
+            'Convertir la apertura en un press flexionando y extendiendo los codos.',
+            'Usar peso excesivo que curve los hombros hacia adelante.'
+          ]
+        },
+        {
+          nombre: 'Fondos en paralelas para pecho',
+          enfoque: 'Densidad y potencia en la parte baja del pectoral',
+          series: '3 - 4',
+          repeticiones: '10 - 12',
+          descanso: '90 seg',
+          nivel: 'Avanzado',
+          tempo: '3-0-1-0',
+          tips: [
+            'Inclina el torso 30° hacia adelante para priorizar el pecho sobre el tríceps.',
+            'Codos ligeramente abiertos hacia afuera al descender.',
+            'No desciendas más allá de los 90° de flexión de codo.'
+          ],
+          pasos: [
+            'Súbete a las barras paralelas con brazos extendidos.',
+            'Inclina el torso y flexiona codos descendiendo en 3 segundos.',
+            'Empuja con el pecho hasta la posición inicial sin bloquear codos bruscamente.'
+          ],
+          erroresComunes: [
+            'Mantener el torso totalmente vertical cargando el tríceps.',
+            'Bajar descontroladamente estirando en exceso la cápsula articular.'
+          ]
+        }
+      ],
+      ejercicios: ['Press de banca plano con barra', 'Press inclinado con mancuernas', 'Aperturas en polea alta (Crossover)', 'Fondos en paralelas para pecho']
     },
     biceps: {
       id: 'biceps',
       nombre: 'Bíceps braquial',
-      categoria: 'Brazos - Anterior',
-      descripcion: 'Músculo ubicado en la región anterior del brazo, flexor del codo y supinador del antebrazo.',
-      ejercicios: ['Curl de bíceps con barra Z', 'Curl martillo con mancuernas', 'Curl concentrado en banco Scott', 'Curl en polea baja']
+      categoria: 'Brazo Anterior',
+      descripcion: 'Músculo de dos cabezas ubicado en la región anterior del brazo. Es el flexor del codo más potente en posición de supinación.',
+      anchor3D: [1.35, 2.05, -0.2],
+      proporciones: [
+        { icono: 'body', texto: 'Se ubica en la cara frontal del brazo conectando la escápula con el radio.' },
+        { icono: 'chart', texto: 'Constituye aproximadamente el 35% de la masa muscular total del brazo.' },
+        { icono: 'joint', texto: 'Posee dos cabezas: cabeza larga (pico del bíceps) y cabeza corta (grosor interno).' }
+      ],
+      ejerciciosDetalle: [
+        {
+          nombre: 'Curl con barra Z de pie',
+          enfoque: 'Desarrollo de fuerza general y sobrecarga progresiva',
+          series: '4',
+          repeticiones: '8 - 10',
+          descanso: '75 seg',
+          nivel: 'Principiante - Intermedio',
+          tempo: '3-0-1-0',
+          tips: [
+            'Fija los codos pegados a los costados del torso en todo momento.',
+            'Evita balancear la cadera para subir la barra.',
+            'Aprieta los bíceps 1 segundo en la cima del movimiento.'
+          ],
+          pasos: [
+            'Toma la barra Z con agarre en supinación a la anchura de hombros.',
+            'Flexiona los codos subiendo la barra hasta la altura de los hombros.',
+            'Desciende lentamente en 3 segundos hasta la extensión completa.'
+          ],
+          erroresComunes: [
+            'Mover los codos hacia adelante adelantando el hombro anterior.',
+            'Arquear la espalda lumbar al iniciar la subida.'
+          ]
+        },
+        {
+          nombre: 'Curl martillo con mancuernas',
+          enfoque: 'Trabaja el braquial anterior y braquiorradial para mayor grosor de brazo',
+          series: '4',
+          repeticiones: '10 - 12',
+          descanso: '60 seg',
+          nivel: 'Principiante',
+          tempo: '2-0-1-0',
+          tips: [
+            'Agarre neutro con las palmas mirándose fijamente entre sí.',
+            'Movimiento estricto con el torso erguido.',
+            'Excelente para salud articular de muñeca y codo.'
+          ],
+          pasos: [
+            'Sostén mancuernas a los lados con palmas hacia el cuerpo.',
+            'Sube de manera simultánea o alterna manteniendo el agarre neutro.',
+            'Baja con control resistiendo la gravedad.'
+          ],
+          erroresComunes: [
+            'Girar las muñecas perdiendo la posición neutra.',
+            'Dejar caer el peso en la fase excéntrica.'
+          ]
+        },
+        {
+          nombre: 'Curl en banco Scott (Predicador)',
+          enfoque: 'Aislamiento estricto sin compensación ni inercia del deltoides',
+          series: '3',
+          repeticiones: '10 - 12',
+          descanso: '60 seg',
+          nivel: 'Intermedio',
+          tempo: '3-1-1-0',
+          tips: [
+            'Apoya completamente los brazos sobre la almohadilla inclinada.',
+            'No extiendas el codo al 100% de forma brusca en la base para proteger el tendón.',
+            'Mantén los hombros relajados y la espalda plana.'
+          ],
+          pasos: [
+            'Siéntate y acomoda las axilas sobre el borde del banco.',
+            'Flexiona los codos levantando la barra hacia la frente.',
+            'Desciende con máxima concentración en 3 segundos.'
+          ],
+          erroresComunes: [
+            'Despegar los codos de la almohadilla al levantar peso pesado.',
+            'Bloquear los codos con fuerza abajo arriesgando lesión tendinosa.'
+          ]
+        },
+        {
+          nombre: 'Curl inclinado con mancuernas',
+          enfoque: 'Máximo estiramiento de la cabeza larga en rango profundo',
+          series: '3',
+          repeticiones: '12 - 15',
+          descanso: '60 seg',
+          nivel: 'Intermedio',
+          tempo: '3-1-1-0',
+          tips: [
+            'Banco reclinado a unos 60°.',
+            'Deja que los brazos cuelguen rectos sintiendo el estiramiento en la cabeza larga.',
+            'Supina las muñecas activamente a mitad del recorrido.'
+          ],
+          pasos: [
+            'Acuéstate en el banco inclinado con los brazos extendidos.',
+            'Sube las mancuernas girando las palmas hacia arriba.',
+            'Baja sintiendo la tensión profunda en cada centímetro.'
+          ],
+          erroresComunes: [
+            'Levantar la cabeza y hombros del respaldo para impulsarse.',
+            'Usar un banco demasiado plano tensionando el manguito rotador.'
+          ]
+        }
+      ],
+      ejercicios: ['Curl con barra Z de pie', 'Curl martillo con mancuernas', 'Curl en banco Scott (Predicador)', 'Curl inclinado con mancuernas']
     },
     triceps: {
       id: 'triceps',
       nombre: 'Tríceps braquial',
-      categoria: 'Brazos - Posterior',
-      descripcion: 'Músculo compuesto por tres cabezas en la parte posterior del brazo, responsable de la extensión del codo.',
-      ejercicios: ['Extensiones en polea alta con cuerda', 'Press francés con barra Z', 'Fondos en banco o paralelas', 'Patada de tríceps']
+      categoria: 'Brazo Posterior',
+      descripcion: 'Músculo voluminoso de tres cabezas en la cara posterior del brazo, responsable exclusivo de la extensión del codo.',
+      anchor3D: [1.50, 2.25, -0.65],
+      proporciones: [
+        { icono: 'body', texto: 'Ocupa toda la cara posterior del brazo desde la escápula hasta el olécranon.' },
+        { icono: 'chart', texto: 'Representa más del 60% del volumen y perímetro total del brazo.' },
+        { icono: 'joint', texto: 'Formado por cabeza lateral (herradura), medial y cabeza larga (densidad posterior).' }
+      ],
+      ejerciciosDetalle: [
+        {
+          nombre: 'Extensiones en polea con cuerda',
+          enfoque: 'Apertura final para activar intensamente la cabeza lateral',
+          series: '4',
+          repeticiones: '12 - 15',
+          descanso: '60 seg',
+          nivel: 'Principiante - Intermedio',
+          tempo: '2-1-1-1',
+          tips: [
+            'Separa los extremos de la cuerda hacia los costados en el punto más bajo.',
+            'Mantén los codos pegados a las costillas sin que se abran.',
+            'Sostén 1 segundo la contracción completa antes de subir.'
+          ],
+          pasos: [
+            'Sujeta la cuerda de la polea alta con torso ligeramente inclinado.',
+            'Extiende los codos llevando la cuerda hacia las caderas.',
+            'Abre las puntas y aprieta con fuerza los tríceps.'
+          ],
+          erroresComunes: [
+            'Dejar que los codos se muevan hacia adelante y atrás durante las repeticiones.',
+            'Usar el peso del cuerpo para empujar hacia abajo.'
+          ]
+        },
+        {
+          nombre: 'Press francés con barra Z',
+          enfoque: 'Enfoque biomecánico en la cabeza larga en posición de estiramiento',
+          series: '4',
+          repeticiones: '10 - 12',
+          descanso: '75 seg',
+          nivel: 'Intermedio',
+          tempo: '3-0-1-0',
+          tips: [
+            'Lleva los codos ligeramente inclinados hacia atrás (hacia la coronilla).',
+            'No abras los codos hacia afuera durante el movimiento.',
+            'Baja la barra de forma muy controlada hacia la parte superior de la cabeza.'
+          ],
+          pasos: [
+            'Acuéstate en el banco sosteniendo la barra Z con brazos extendidos hacia arriba.',
+            'Flexiona únicamente los codos bajando la barra detrás de la cabeza.',
+            'Extiende con potencia los codos para volver al inicio.'
+          ],
+          erroresComunes: [
+            'Abrir los codos en abducción provocando sobrecarga en los tendones del codo.',
+            'Mover los hombros convirtiendo el ejercicio en un pullover.'
+          ]
+        },
+        {
+          nombre: 'Fondos en barras paralelas',
+          enfoque: 'Gran sobrecarga compuesta para tríceps y fuerza de empuje',
+          series: '4',
+          repeticiones: '8 - 10',
+          descanso: '90 seg',
+          nivel: 'Avanzado',
+          tempo: '3-0-1-0',
+          tips: [
+            'Mantén el torso lo más vertical posible para enfocar el esfuerzo en el tríceps.',
+            'Codos pegados al cuerpo durante el recorrido.',
+            'Baja hasta que el codo forme aproximadamente un ángulo de 90°.'
+          ],
+          pasos: [
+            'Sostente en las barras con brazos estirados y mirada al frente.',
+            'Desciende con el cuerpo erguido flexionando codos en 3 segundos.',
+            'Empuja hacia abajo con fuerza hasta bloquear los brazos.'
+          ],
+          erroresComunes: [
+            'Inclinarse hacia adelante transfiriendo el trabajo al pectoral.',
+            'Descender por debajo del rango seguro causando dolor en hombro.'
+          ]
+        },
+        {
+          nombre: 'Patada de tríceps en polea',
+          enfoque: 'Pico de contracción isolateral sin balanceo',
+          series: '3',
+          repeticiones: '15',
+          descanso: '45 seg',
+          nivel: 'Intermedio',
+          tempo: '2-1-1-1',
+          tips: [
+            'Brazo superior paralelo al suelo durante toda la ejecución.',
+            'Contrae el tríceps en máxima extensión con pausa de 1 segundo.',
+            'La polea mantiene tensión continua a diferencia de las mancuernas.'
+          ],
+          pasos: [
+            'Inclina el torso con un pie adelante y codo elevado.',
+            'Extiende el antebrazo hacia atrás hasta que el brazo quede recto.',
+            'Regresa en 2 segundos sin mover el codo de su posición fija.'
+          ],
+          erroresComunes: [
+            'Bajar el codo al inicio de cada repetición perdiendo la palanca.',
+            'Hacer movimientos rápidos y espasmódicos sin control.'
+          ]
+        }
+      ],
+      ejercicios: ['Extensiones en polea con cuerda', 'Press francés con barra Z', 'Fondos en barras paralelas', 'Patada de tríceps en polea']
     },
     abs: {
       id: 'abs',
       nombre: 'Abdominales y Core',
-      categoria: 'Zona Media / Core',
-      descripcion: 'Grupo muscular central que estabiliza la columna vertebral, pelvis y mejora la postura corporal.',
-      ejercicios: ['Crunch abdominal en polea alta', 'Plancha isométrica', 'Elevación de piernas colgado en barra', 'Rueda abdominal']
+      categoria: 'Zona Media',
+      descripcion: 'Conjunto muscular que estabiliza el raquis, transmite fuerzas entre tren inferior y superior y protege las vísceras.',
+      anchor3D: [0.0, 1.49, 0.43],
+      proporciones: [
+        { icono: 'body', texto: 'Envuelve la zona central del tronco uniendo la caja torácica con la pelvis.' },
+        { icono: 'chart', texto: 'Eje biomecánico responsable del 100% de la estabilidad lumbo-pélvica.' },
+        { icono: 'joint', texto: 'Integrado por recto abdominal, oblicuos internos/externos y transverso profundo.' }
+      ],
+      ejerciciosDetalle: [
+        {
+          nombre: 'Crunch en polea alta arrodillado',
+          enfoque: 'Flexión espinal con carga progresiva para hipertrofia de los bloques abdominales',
+          series: '4',
+          repeticiones: '12 - 15',
+          descanso: '60 seg',
+          nivel: 'Intermedio',
+          tempo: '2-1-1-1',
+          tips: [
+            'Dobla la columna vertebral (curvando la espalda) en lugar de solo inclinar la cadera.',
+            'Lleva los codos hacia las rodillas mientras exhalas todo el aire.',
+            'Aprieta intensamente 1 segundo abajo sintiendo el recto abdominal.'
+          ],
+          pasos: [
+            'Arrodíllate frente a la polea con cuerda apoyada en la cabeza.',
+            'Flexiona el tronco enrollando la caja torácica hacia la pelvis.',
+            'Regresa estirando el abdomen sin levantarte de las rodillas.'
+          ],
+          erroresComunes: [
+            'Mover las caderas hacia atrás como si fuera una sentadilla.',
+            'Tirar con los brazos en lugar de flexionar con los abdominales.'
+          ]
+        },
+        {
+          nombre: 'Elevaciones de piernas colgado',
+          enfoque: 'Activación intensa de la porción infraumbilical y flexores de cadera',
+          series: '4',
+          repeticiones: '10 - 12',
+          descanso: '60 seg',
+          nivel: 'Avanzado',
+          tempo: '2-0-1-0',
+          tips: [
+            'No solo subas las piernas: flexiona la pelvis hacia el pecho al final.',
+            'Evita usar balanceo pendular del cuerpo para tomar impulso.',
+            'Si es muy difícil, inicia con rodillas flexionadas al pecho.'
+          ],
+          pasos: [
+            'Cuélgate de una barra con agarre firme y core tenso.',
+            'Eleva las piernas rectas o flexionadas curvando la pelvis hacia arriba.',
+            'Baja lentamente controlando el frenado excéntrico.'
+          ],
+          erroresComunes: [
+            'Hacer balanceo usando la inercia del cuerpo entero.',
+            'No bascular la pelvis, activando únicamente el psoas ilíaco.'
+          ]
+        },
+        {
+          nombre: 'Rueda abdominal (Ab Wheel)',
+          enfoque: 'Anti-extensión extrema y máxima tensión en todo el núcleo profundo',
+          series: '3',
+          repeticiones: '8 - 12',
+          descanso: '75 seg',
+          nivel: 'Avanzado',
+          tempo: '3-1-1-0',
+          tips: [
+            'Inicia con la pelvis en retroversión y glúteos contraídos al 100%.',
+            'No dejes que la zona lumbar se arquee o hunda en ningún momento.',
+            'Rueda hacia adelante solo hasta donde puedas mantener el control espinal.'
+          ],
+          pasos: [
+            'Arrodíllate con la rueda apoyada frente a tus rodillas.',
+            'Rueda lentamente hacia el frente estirando el cuerpo.',
+            'Tira desde el abdomen para volver a la posición de partida.'
+          ],
+          erroresComunes: [
+            'Dejar caer la cadera arqueando la espalda baja causando dolor lumbar.',
+            'Doblar los codos en vez de mantener los brazos firmes.'
+          ]
+        },
+        {
+          nombre: 'Plancha isométrica con carga',
+          enfoque: 'Estabilidad y resistencia postural isométrica antirrotatoria',
+          series: '3',
+          repeticiones: '45 - 60 seg',
+          descanso: '60 seg',
+          nivel: 'Intermedio',
+          tempo: 'Isométrico',
+          tips: [
+            'Línea recta perfecta desde la cabeza hasta los talones.',
+            'Empuja el suelo con los antebrazos separando las escápulas.',
+            'Respira de forma controlada manteniendo la pared abdominal activa.'
+          ],
+          pasos: [
+            'Coloca los antebrazos y puntas de pies en el suelo.',
+            'Activa cuádriceps, glúteos y abdomen como si fueras una tabla de madera.',
+            'Sostén el tiempo objetivo con tensión inquebrantable.'
+          ],
+          erroresComunes: [
+            'Dejar que la pelvis caiga hacia el suelo por fatiga.',
+            'Subir la cadera en forma de pirámide relajando el core.'
+          ]
+        }
+      ],
+      ejercicios: ['Crunch en polea alta arrodillado', 'Elevaciones de piernas colgado', 'Rueda abdominal (Ab Wheel)', 'Plancha isométrica con carga']
     },
     dorsal: {
       id: 'dorsal',
-      nombre: 'Dorsal ancho (Espalda)',
-      categoria: 'Espalda Alta y Media',
-      descripcion: 'El músculo más ancho del cuerpo humano, responsable de la tracción y expansión de la espalda.',
-      ejercicios: ['Dominadas pronadas', 'Jalón al pecho con agarre ancho', 'Remo con barra T', 'Remo unilateral con mancuerna']
-    },
-    trapecio: {
-      id: 'trapecio',
-      nombre: 'Trapecio',
-      categoria: 'Espalda Alta y Cuello',
-      descripcion: 'Músculo posterior que va desde el cuello hasta la mitad de la espalda, eleva y estabiliza la escápula.',
-      ejercicios: ['Encogimientos de hombros con mancuernas', 'Paseo del granjero', 'Remo al mentón con barra Z']
-    },
-    lumbares: {
-      id: 'lumbares',
-      nombre: 'Lumbares / Erector de la columna',
-      categoria: 'Espalda Baja',
-      descripcion: 'Músculos de la zona lumbar encargados de la extensión del tronco y la estabilidad espinal.',
-      ejercicios: ['Peso muerto rumano', 'Hiperextensiones en banco a 45°', 'Buenos días con barra']
+      nombre: 'Dorsal ancho',
+      categoria: 'Espalda',
+      descripcion: 'El músculo más amplio del cuerpo humano. Es el motor principal de tracción y aducción escapular, forjando la silueta en V.',
+      anchor3D: [0.94, 2.37, -0.46],
+      proporciones: [
+        { icono: 'body', texto: 'Se extiende desde las vértebras dorsales y lumbares hasta la cresta del húmero.' },
+        { icono: 'chart', texto: 'Aporta más del 40% de la amplitud y área visual del torso superior.' },
+        { icono: 'joint', texto: 'Posee fibras superiores (amplitud alar) y lumbares inferiores (profundidad).' }
+      ],
+      ejerciciosDetalle: [
+        {
+          nombre: 'Dominadas pronadas con lastre',
+          enfoque: 'Patrón de tracción vertical supremo para construir amplitud en V',
+          series: '4',
+          repeticiones: '6 - 8',
+          descanso: '90 - 120 seg',
+          nivel: 'Avanzado',
+          tempo: '3-0-1-0',
+          tips: [
+            'Inicia el movimiento deprimiendo las escápulas antes de flexionar los brazos.',
+            'Lleva el pecho hacia la barra en lugar de solo pasar la barbilla.',
+            'Extiende los brazos completamente al bajar sin relajación de hombros.'
+          ],
+          pasos: [
+            'Cuélgate de la barra con agarre ligeramente superior al ancho de hombros.',
+            'Tira con la espalda dorsal hasta que el mentón pase la barra con facilidad.',
+            'Desciende con control absoluto durante 3 segundos.'
+          ],
+          erroresComunes: [
+            'Usar balanceo o pataleo de piernas (kipping) sin control muscular.',
+            'Hacer solo la mitad del recorrido sin estirar el dorsal abajo.'
+          ]
+        },
+        {
+          nombre: 'Jalón al pecho con agarre neutro',
+          enfoque: 'Rango controlado sin sobrecargar el manguito rotador',
+          series: '4',
+          repeticiones: '10 - 12',
+          descanso: '75 seg',
+          nivel: 'Principiante - Intermedio',
+          tempo: '3-1-1-0',
+          tips: [
+            'Mantén el pecho levantado con leve inclinación de 15° hacia atrás.',
+            'Tira llevando los codos hacia abajo y hacia los bolsillos traseros.',
+            'Pausa de 1 segundo con la barra cerca del esternón.'
+          ],
+          pasos: [
+            'Ajusta el rodillo sobre los muslos para evitar levantarte.',
+            'Tracciona la barra hacia la parte superior del pecho.',
+            'Regresa en 3 segundos estirando las alas dorsales.'
+          ],
+          erroresComunes: [
+            'Inclinarse excesivamente hacia atrás convirtiendo el jalón en un remo.',
+            'Tirar con los bíceps flexionando las muñecas en exceso.'
+          ]
+        },
+        {
+          nombre: 'Remo unilateral con mancuerna',
+          enfoque: 'Recorrido completo pegado a la cadera para máximo grosor dorsal',
+          series: '4',
+          repeticiones: '10 - 12',
+          descanso: '60 seg por lado',
+          nivel: 'Intermedio',
+          tempo: '2-1-1-0',
+          tips: [
+            'Tira la mancuerna en un arco hacia la cadera, no hacia el hombro.',
+            'Espalda plana paralela al suelo con el core activado.',
+            'Siente la contracción profunda en el costado de la espalda.'
+          ],
+          pasos: [
+            'Apoya una mano y rodilla sobre el banco con el torso recto.',
+            'Tracciona la mancuerna llevando el codo pegado al torso hacia la cresta ilíaca.',
+            'Baja estirando el dorsal sin rotar la columna.'
+          ],
+          erroresComunes: [
+            'Rotar violentamente el torso hacia el lado del levantamiento.',
+            'Tirar la mancuerna hacia el pecho cargando el bíceps.'
+          ]
+        },
+        {
+          nombre: 'Pull-over en polea con barra recta',
+          enfoque: 'Aislamiento puro en extensión sin intervención del bíceps',
+          series: '3',
+          repeticiones: '12 - 15',
+          descanso: '60 seg',
+          nivel: 'Intermedio',
+          tempo: '3-1-1-1',
+          tips: [
+            'Brazos prácticamente rectos con ligera flexión fija en los codos.',
+            'Inclina el torso 30° con cadera hacia atrás.',
+            'Lleva la barra hacia los muslos comprimiendo los dorsales.'
+          ],
+          pasos: [
+            'Sujeta la barra en polea alta con agarre pronado.',
+            'Traza un arco amplio hacia abajo hasta rozar los muslos.',
+            'Siente el estiramiento superior en la fase de regreso.'
+          ],
+          erroresComunes: [
+            'Flexionar y extender los codos convirtiéndolo en un ejercicio de tríceps.',
+            'Usar peso excesivo que curve la espalda lumbar.'
+          ]
+        }
+      ],
+      ejercicios: ['Dominadas pronadas con lastre', 'Jalón al pecho con agarre neutro', 'Remo unilateral con mancuerna', 'Pull-over en polea con barra recta']
     },
     cuadriceps: {
       id: 'cuadriceps',
       nombre: 'Cuádriceps femoral',
-      categoria: 'Piernas - Frontal',
-      descripcion: 'Grupo muscular de cuatro cabezas en la cara anterior del muslo, extensor principal de la rodilla.',
-      ejercicios: ['Sentadillas profundas con barra', 'Prensa inclinada a 45°', 'Zancadas caminando con mancuernas', 'Extensiones de cuádriceps en máquina']
+      categoria: 'Pierna Anterior',
+      descripcion: 'El grupo muscular más fuerte y masivo del tren inferior, indispensable para la extensión de rodilla y la potencia atlética.',
+      anchor3D: [0.53, -0.95, 0.25],
+      proporciones: [
+        { icono: 'body', texto: 'Cubre toda la cara frontal y lateral del fémur desde la cadera a la rótula.' },
+        { icono: 'chart', texto: 'Representa aproximadamente el 55% de la masa muscular del muslo.' },
+        { icono: 'joint', texto: 'Compuesto por 4 cabezas: vasto lateral, vasto medial, intermedio y recto femoral.' }
+      ],
+      ejerciciosDetalle: [
+        {
+          nombre: 'Sentadilla trasera con barra',
+          enfoque: 'Fuerza máxima y reclutamiento completo de todo el tren inferior',
+          series: '4',
+          repeticiones: '6 - 8',
+          descanso: '120 seg',
+          nivel: 'Avanzado',
+          tempo: '3-1-1-0',
+          tips: [
+            'Pies a la anchura de hombros con puntas ligeramente hacia afuera (15-30°).',
+            'Inhala profundo hacia el diafragma y fija el core antes de bajar (Maniobra de Valsalva).',
+            'Rompe la paralela (cadera por debajo de rodillas) con rodillas alineadas a los pies.'
+          ],
+          pasos: [
+            'Apoya la barra sobre los trapecios y retírala con paso firme.',
+            'Desciende con control llevando las rodillas hacia adelante y caderas abajo.',
+            'Empuja contra el piso extendiendo rodillas y caderas con potencia.'
+          ],
+          erroresComunes: [
+            'Valgo de rodilla (rodillas colapsando hacia adentro al subir).',
+            'Levantar los talones del suelo durante el descenso.'
+          ]
+        },
+        {
+          nombre: 'Prensa a 45 grados pesada',
+          enfoque: 'Volumen hipertrófico con estabilidad para la columna',
+          series: '4',
+          repeticiones: '10 - 12',
+          descanso: '90 seg',
+          nivel: 'Intermedio',
+          tempo: '3-0-1-0',
+          tips: [
+            'Pies en la parte baja de la plataforma a la anchura de caderas para más cuádriceps.',
+            'Nunca bloquees rígidamente las rodillas en la extensión completa.',
+            'Mantén la pelvis bien pegada al respaldo para cuidar la zona lumbar.'
+          ],
+          pasos: [
+            'Siéntate con espalda y cadera firmemente apoyadas.',
+            'Desciende el trineo flexionando rodillas hasta rozar el pecho con los muslos.',
+            'Empuja desde los talones y la bola del pie sin bloquear articulaciones.'
+          ],
+          erroresComunes: [
+            'Despegar el glúteo del respaldo provocando flexión lumbar bajo carga.',
+            'Hacer repeticiones cortas (rango de movimiento parcial).'
+          ]
+        },
+        {
+          nombre: 'Sentadilla Hack profunda',
+          enfoque: 'Aislamiento con énfasis en el vasto lateral y la lágrima medial',
+          series: '4',
+          repeticiones: '10 - 12',
+          descanso: '90 seg',
+          nivel: 'Intermedio - Avanzado',
+          tempo: '3-1-1-0',
+          tips: [
+            'Espalda fija en el soporte permitiendo un gran avance de rodilla seguro.',
+            'Desciende de forma lenta y pausada para maximizar la tensión mecánica.',
+            'Pausa de medio segundo abajo sin rebotar en los topes.'
+          ],
+          pasos: [
+            'Apoya hombros y espalda en la máquina con pies en la plataforma.',
+            'Baja flexionando rodillas sintiendo toda la carga en los muslos frontales.',
+            'Sube con fuerza constante manteniendo el contacto total del torso.'
+          ],
+          erroresComunes: [
+            'Despegar los talones de la base durante la bajada.',
+            'Subir rápido perdiendo la tensión controlada en el cuádriceps.'
+          ]
+        },
+        {
+          nombre: 'Extensiones de cuádriceps en máquina',
+          enfoque: 'Pico de contracción terminal y aislamiento del recto femoral',
+          series: '3',
+          repeticiones: '15',
+          descanso: '60 seg',
+          nivel: 'Principiante - Intermedio',
+          tempo: '2-1-1-1',
+          tips: [
+            'Ajusta el respaldo para que el eje de rotación coincida con tus rodillas.',
+            'Pausa de 1 segundo apretando las piernas al máximo arriba.',
+            'Resiste el retorno en 2 segundos completos.'
+          ],
+          pasos: [
+            'Siéntate y acomoda el rodillo justo por encima de los tobillos.',
+            'Extiende las rodillas hasta la posición horizontal completa.',
+            'Regresa despacio sintiendo el bombeo sanguíneo en los cuádriceps.'
+          ],
+          erroresComunes: [
+            'Lanzar las piernas con balanceo explosivo.',
+            'Colocar el rodillo demasiado alto sobre las tibias o muy bajo sobre los pies.'
+          ]
+        }
+      ],
+      ejercicios: ['Sentadilla trasera con barra', 'Prensa a 45 grados pesada', 'Sentadilla Hack profunda', 'Extensiones de cuádriceps en máquina']
+    },
+    gluteos: {
+      id: 'gluteos',
+      nombre: 'Glúteos',
+      categoria: 'Cadera',
+      descripcion: 'El complejo muscular con mayor generación de potencia del cuerpo, esencial para la extensión, abducción y estabilización de la pelvis.',
+      anchor3D: [0.45, 0.38, -0.24],
+      proporciones: [
+        { icono: 'body', texto: 'Forma la región glútea dorsal uniendo el ilíaco y sacro con el trocánter mayor.' },
+        { icono: 'chart', texto: 'El músculo individual más grande y potente de toda la anatomía humana.' },
+        { icono: 'joint', texto: 'Comprende el glúteo mayor (extensión) y glúteo medio/menor (abducción y estabilidad).' }
+      ],
+      ejerciciosDetalle: [
+        {
+          nombre: 'Hip Thrust pesado con barra',
+          enfoque: 'Vector de fuerza horizontal óptimo con pico en máxima contracción',
+          series: '4',
+          repeticiones: '8 - 10',
+          descanso: '90 - 120 seg',
+          nivel: 'Intermedio - Avanzado',
+          tempo: '2-2-1-0',
+          tips: [
+            'Mirada hacia adelante fija en todo momento (barbilla al pecho).',
+            'Pies a distancia tal que en la cima las tibias queden perpendiculares al piso (90°).',
+            'Aprieta los glúteos con fuerza durante 2 segundos arriba.'
+          ],
+          pasos: [
+            'Apoya la espalda alta sobre el banco con la barra acolchada en la pelvis.',
+            'Extiende la cadera empujando desde los talones hasta nivelar el cuerpo.',
+            'Desciende controladamente sin relajar la tensión en los glúteos.'
+          ],
+          erroresComunes: [
+            'Arquear la espalda lumbar hacia atrás en la cima en lugar de bascular la pelvis.',
+            'Empujar con las puntas de los pies en vez de los talones.'
+          ]
+        },
+        {
+          nombre: 'Zancadas búlgaras con mancuernas',
+          enfoque: 'Sobrecarga excéntrica unilateral y equilibrio pélvico',
+          series: '3',
+          repeticiones: '10 - 12 por pierna',
+          descanso: '75 seg por lado',
+          nivel: 'Intermedio - Avanzado',
+          tempo: '3-0-1-0',
+          tips: [
+            'Inclina levemente el torso hacia adelante para activar más glúteo que cuádriceps.',
+            'Pie trasero apoyado sobre el banco en empeine o puntera.',
+            'Baja en línea diagonal descendente hasta rozar el suelo con la rodilla trasera.'
+          ],
+          pasos: [
+            'Colócate frente al banco con un pie apoyado atrás.',
+            'Flexiona la pierna delantera bajando en 3 segundos con control.',
+            'Empuja desde el talón delantero para reincorporarte.'
+          ],
+          erroresComunes: [
+            'Colocar el pie delantero demasiado cerca del banco limitando el recorrido.',
+            'Permitir que la rodilla delantera colapse hacia adentro.'
+          ]
+        },
+        {
+          nombre: 'Patada de glúteo en polea baja',
+          enfoque: 'Aislamiento del glúteo mayor en hiperextensión terminal',
+          series: '3',
+          repeticiones: '12 - 15',
+          descanso: '45 seg por lado',
+          nivel: 'Principiante - Intermedio',
+          tempo: '2-1-1-1',
+          tips: [
+            'Tobillera bien ajustada en polea baja.',
+            'Extiende la pierna hacia atrás y ligeramente hacia afuera (ángulo de 30°).',
+            'No arquees la espalda baja: la extensión debe provenir de la cadera.'
+          ],
+          pasos: [
+            'Inclínate 45° sosteniéndote de la torre de poleas.',
+            'Lleva la pierna hacia atrás apretando el glúteo en el punto álgido.',
+            'Regresa en 2 segundos resistiendo el tirón del cable.'
+          ],
+          erroresComunes: [
+            'Mover la columna lumbar para subir más la pierna.',
+            'Usar peso excesivo que impida la contracción máxima.'
+          ]
+        },
+        {
+          nombre: 'Abducciones en máquina sentada',
+          enfoque: 'Enfoque directo en la porción superior y glúteo medio para estabilidad',
+          series: '4',
+          repeticiones: '15 - 20',
+          descanso: '60 seg',
+          nivel: 'Principiante',
+          tempo: '2-1-1-1',
+          tips: [
+            'Inclina el torso ligeramente hacia adelante apoyándote en los mangos.',
+            'Abre las piernas lo máximo posible sintiendo la parte lateral de la cadera.',
+            'Pausa de 1 segundo en apertura total antes de cerrar.'
+          ],
+          pasos: [
+            'Siéntate con las almohadillas apoyadas en la parte externa de las rodillas.',
+            'Abre con fuerza resistiendo los resortes o placas.',
+            'Cierra lentamente sin permitir que los pesos choquen.'
+          ],
+          erroresComunes: [
+            'Cerrar de golpe perdiendo la tensión muscular.',
+            'Empujar con los pies en lugar de empujar con las rodillas.'
+          ]
+        }
+      ],
+      ejercicios: ['Hip Thrust pesado con barra', 'Zancadas búlgaras con mancuernas', 'Patada de glúteo en polea baja', 'Abducciones en máquina sentada']
+    },
+    trapecio: {
+      id: 'trapecio',
+      nombre: 'Trapecio',
+      categoria: 'Espalda Alta',
+      descripcion: 'Músculo superficial que ocupa el centro de la espalda alta y el cuello, permitiendo elevar y retraer las escápulas.',
+      anchor3D: [0.35, 4.01, -0.34],
+      proporciones: [
+        { icono: 'body', texto: 'Va desde la base del cráneo hasta las vértebras dorsales medias.' },
+        { icono: 'chart', texto: 'Aporta densidad al cuello y la parte superior de los hombros.' },
+        { icono: 'joint', texto: 'Dividido en porción superior (elevación), media (retracción) e inferior (depresión).' }
+      ],
+      ejerciciosDetalle: [
+        {
+          nombre: 'Encogimientos con mancuernas',
+          enfoque: 'Elevación pura del trapecio superior con pausa de 2 segundos en la cima',
+          series: '4',
+          repeticiones: '12 - 15',
+          descanso: '60 seg',
+          nivel: 'Principiante - Intermedio',
+          tempo: '2-2-1-0',
+          tips: [
+            'Eleva los hombros en línea recta hacia las orejas.',
+            'No rotes los hombros en círculos para proteger el manguito rotador.',
+            'Sostén 2 segundos arriba en máxima contracción.'
+          ],
+          pasos: [
+            'Toma mancuernas pesadas a los costados con brazos estirados.',
+            'Sube los hombros lo más alto posible contrayendo los trapecios.',
+            'Desciende con control sintiendo el estiramiento en la base del cuello.'
+          ],
+          erroresComunes: [
+            'Rotar los hombros hacia adelante o atrás durante el encogimiento.',
+            'Doblar los codos jalando con los brazos en vez de los trapecios.'
+          ]
+        },
+        {
+          nombre: 'Paseo del granjero (Farmer Walk)',
+          enfoque: 'Tensión isométrica masiva y resistencia brutal de agarre',
+          series: '4',
+          repeticiones: '40 metros',
+          descanso: '90 seg',
+          nivel: 'Intermedio - Avanzado',
+          tempo: 'Paso firme',
+          tips: [
+            'Espalda erguida, hombros atrás y core activo.',
+            'Camina con pasos cortos, estables y deliberados.',
+            'No permitas que las mancuernas se balanceen contra las piernas.'
+          ],
+          pasos: [
+            'Levanta dos mancuernas o barras pesadas desde el suelo con técnica de peso muerto.',
+            'Camina la distancia fijada con postura inquebrantable.',
+            'Desciende el peso de forma segura flexionando caderas y rodillas.'
+          ],
+          erroresComunes: [
+            'Encorvar los hombros hacia adelante bajo el peso.',
+            'Caminar tambaleándose por exceso de carga.'
+          ]
+        },
+        {
+          nombre: 'Face Pull con cuerda en polea',
+          enfoque: 'Activación del trapecio medio e inferior y salud escapular',
+          series: '4',
+          repeticiones: '15',
+          descanso: '60 seg',
+          nivel: 'Principiante - Intermedio',
+          tempo: '2-1-1-1',
+          tips: [
+            'Coloca la polea a la altura de los ojos o frente.',
+            'Tira la cuerda hacia el rostro separando los pulgares hacia atrás.',
+            'Siente cómo se juntan los omóplatos en la espalda media.'
+          ],
+          pasos: [
+            'Sujeta la cuerda con agarre neutro y pulgares apuntando hacia ti.',
+            'Tracciona hacia la cara abriendo los codos hacia los lados.',
+            'Pausa un segundo y regresa despacio manteniendo la tensión.'
+          ],
+          erroresComunes: [
+            'Usar peso excesivo que obligue a balancear el tronco.',
+            'Bajar los codos por debajo de la altura de los hombros.'
+          ]
+        }
+      ],
+      ejercicios: ['Encogimientos con mancuernas', 'Paseo del granjero', 'Face Pull con cuerda']
+    },
+    lumbares: {
+      id: 'lumbares',
+      nombre: 'Lumbares / Erectores espinales',
+      categoria: 'Espalda Baja',
+      descripcion: 'Músculos profundos y paravertebrales fundamentales para la postura erecta, extensión del tronco y protección discal.',
+      anchor3D: [0.0, 1.14, -0.33],
+      proporciones: [
+        { icono: 'body', texto: 'Recorren longitudinalmente la zona baja de la columna vertebral.' },
+        { icono: 'chart', texto: 'Base fundamental de transferencia de carga axial del cuerpo.' },
+        { icono: 'joint', texto: 'Trabajan en conjunto con el glúteo y los isquiotibiales en la cadena posterior.' }
+      ],
+      ejerciciosDetalle: [
+        {
+          nombre: 'Peso muerto rumano con barra',
+          enfoque: 'Bisagra de cadera y tensión estricta en toda la cadena posterior',
+          series: '4',
+          repeticiones: '8 - 10',
+          descanso: '90 seg',
+          nivel: 'Intermedio',
+          tempo: '3-1-1-0',
+          tips: [
+            'Lleva la cadera hacia atrás como si quisieras tocar una pared con los glúteos.',
+            'Barra pegada a los muslos y espinillas durante todo el trayecto.',
+            'Espalda completamente neutra: no curves la zona lumbar.'
+          ],
+          pasos: [
+            'De pie con la barra sostenida a la anchura de hombros.',
+            'Empuja la cadera hacia atrás manteniendo las rodillas con ligera flexión fija.',
+            'Baja hasta sentir el estiramiento y extiende la cadera con potencia.'
+          ],
+          erroresComunes: [
+            'Flexionar la columna vertebral redondeando la espalda baja.',
+            'Doblar las rodillas como si fuera una sentadilla.'
+          ]
+        },
+        {
+          nombre: 'Hiperextensiones a 45 grados',
+          enfoque: 'Fortalecimiento de los erectores espinales sin compresión axial excesiva',
+          series: '3',
+          repeticiones: '12 - 15',
+          descanso: '60 seg',
+          nivel: 'Principiante - Intermedio',
+          tempo: '2-1-1-1',
+          tips: [
+            'Alinea la almohadilla superior justo por debajo de la cresta ilíaca.',
+            'Sube solo hasta que el cuerpo quede en línea recta, no te hiperextiendas.',
+            'Opcional: sostén un disco en el pecho para mayor resistencia.'
+          ],
+          pasos: [
+            'Colócate en el banco de 45° con los tobillos bien asegurados.',
+            'Baja doblando la cadera manteniendo la espalda recta.',
+            'Extiende la cadera contrayendo glúteos y lumbares 1 segundo.'
+          ],
+          erroresComunes: [
+            'Arquear bruscamente la columna hacia atrás en la cima.',
+            'Bajar de forma descontrolada rebotando en el fondo.'
+          ]
+        },
+        {
+          nombre: 'Buenos días con barra',
+          enfoque: 'Patrón de bisagra de cadera con énfasis en la estabilidad paravertebral',
+          series: '3',
+          repeticiones: '10 - 12',
+          descanso: '75 seg',
+          nivel: 'Avanzado',
+          tempo: '3-0-1-0',
+          tips: [
+            'Barra apoyada sobre los trapecios exactamente como en sentadilla.',
+            'Carga moderada con foco prioritario en la técnica perfecta.',
+            'Lleva las caderas hacia atrás con el pecho orgulloso.'
+          ],
+          pasos: [
+            'De pie con los pies a la anchura de caderas y barra en la espalda.',
+            'Inclina el torso hacia adelante empujando los glúteos hacia atrás.',
+            'Regresa a la posición erguida empujando con glúteos y cadena posterior.'
+          ],
+          erroresComunes: [
+            'Cargar peso excesivo que doble la columna dorsal.',
+            'Mover las rodillas hacia adelante en lugar de llevar la cadera atrás.'
+          ]
+        }
+      ],
+      ejercicios: ['Peso muerto rumano', 'Hiperextensiones a 45 grados', 'Buenos días con barra']
     },
     isquiotibiales: {
       id: 'isquiotibiales',
       nombre: 'Isquiotibiales / Femoral',
-      categoria: 'Piernas - Posterior',
-      descripcion: 'Músculos ubicados en la cara posterior del muslo, encargados de la flexión de rodilla y extensión de cadera.',
-      ejercicios: ['Curl femoral tumbado en máquina', 'Peso muerto estilo sumo', 'Peso muerto rumano con mancuernas']
-    },
-    gluteos: {
-      id: 'gluteos',
-      nombre: 'Glúteos (Mayor y Medio)',
-      categoria: 'Cadera y Pelvis',
-      descripcion: 'Músculo más potente del cuerpo, clave para la potencia de cadera, zancada y estabilidad pélvica.',
-      ejercicios: ['Hip Thrust con barra', 'Zancadas búlgaras con mancuernas', 'Patada de glúteo en polea', 'Abducción en máquina']
+      categoria: 'Pierna Posterior',
+      descripcion: 'Grupo muscular de la cara posterior del muslo, clave en la flexión de rodilla, desaceleración y velocidad de zancada.',
+      anchor3D: [0.46, -1.09, -0.2],
+      proporciones: [
+        { icono: 'body', texto: 'Conectan la tuberosidad isquiática de la pelvis con la tibia y peroné.' },
+        { icono: 'chart', texto: 'Representan el 40-45% de la fuerza total del tren inferior.' },
+        { icono: 'joint', texto: 'Compuesto por bíceps femoral (cabeza larga y corta), semitendinoso y semimembranoso.' }
+      ],
+      ejerciciosDetalle: [
+        {
+          nombre: 'Curl femoral tumbado',
+          enfoque: 'Flexión de rodilla en rango acortado con tensión continua',
+          series: '4',
+          repeticiones: '10 - 12',
+          descanso: '75 seg',
+          nivel: 'Principiante - Intermedio',
+          tempo: '3-1-1-0',
+          tips: [
+            'Mantén la pelvis pegada a la máquina en todo momento.',
+            'Flexiona los tobillos (pies en punta o neutros) para evitar calambres en pantorrilla.',
+            'Pausa de 1 segundo en máxima flexión rozando los glúteos con el rodillo.'
+          ],
+          pasos: [
+            'Acuéstate boca abajo con el rodillo detrás de los tobillos.',
+            'Flexiona las rodillas subiendo el peso con control.',
+            'Desciende en 3 segundos resistiendo el retorno.'
+          ],
+          erroresComunes: [
+            'Levantar la cadera del banco para compensar el peso.',
+            'Soltar el peso sin controlar la fase excéntrica.'
+          ]
+        },
+        {
+          nombre: 'Peso muerto rumano con mancuernas',
+          enfoque: 'Estiramiento bajo carga con bisagra de cadera profunda',
+          series: '4',
+          repeticiones: '10 - 12',
+          descanso: '75 seg',
+          nivel: 'Intermedio',
+          tempo: '3-1-1-0',
+          tips: [
+            'Mancuernas deslizándose pegadas a las espinillas.',
+            'Flexión mínima en rodillas (15-20° constantes).',
+            'Siente un estiramiento potente en la parte posterior de los muslos.'
+          ],
+          pasos: [
+            'De pie con mancuernas al frente y hombros encajados.',
+            'Empuja la cadera hacia atrás bajando hasta media espinilla.',
+            'Extiende la cadera contrayendo isquiotibiales y glúteos.'
+          ],
+          erroresComunes: [
+            'Separar las mancuernas del cuerpo cargando la zona lumbar.',
+            'Bajar demasiado flexionando la espalda en vez de la cadera.'
+          ]
+        },
+        {
+          nombre: 'Curl femoral sentado en máquina',
+          enfoque: 'Máximo torque en posición estirada del isquiotibial',
+          series: '4',
+          repeticiones: '12 - 15',
+          descanso: '60 seg',
+          nivel: 'Intermedio',
+          tempo: '3-1-1-0',
+          tips: [
+            'La posición sentada coloca la cadera en flexión estirando el músculo desde su origen.',
+            'Fija bien el soporte sobre los muslos para no deslizarte.',
+            'Baja en 3 segundos sintiendo la tensión profunda.'
+          ],
+          pasos: [
+            'Siéntate con espalda apoyada y rodillo sobre las pantorrillas.',
+            'Empuja el rodillo hacia abajo flexionando las rodillas con fuerza.',
+            'Regresa despacio controlando la apertura articular.'
+          ],
+          erroresComunes: [
+            'No ajustar el rodillo superior, levantando los muslos en cada repetición.',
+            'Hacer repeticiones rápidas y a tirones.'
+          ]
+        }
+      ],
+      ejercicios: ['Curl femoral tumbado', 'Peso muerto rumano con mancuernas', 'Curl femoral sentado']
     },
     gemelos: {
       id: 'gemelos',
-      nombre: 'Gastrocnemio / Gemelos',
+      nombre: 'Gemelos y Sóleo',
       categoria: 'Pantorrillas',
-      descripcion: 'Músculos de la parte posterior de la pierna, responsables de la flexión plantar del pie.',
-      ejercicios: ['Elevación de talones de pie con barra', 'Elevación de talones en prensa', 'Elevación de talones sentado']
+      descripcion: 'Músculos del compartimento posterior de la pierna, responsables de la flexión plantar del pie y el despegue en el salto.',
+      anchor3D: [0.44, -2.57, -0.23],
+      proporciones: [
+        { icono: 'body', texto: 'Se originan en los cóndilos femorales y se insertan en el tendón de Aquiles.' },
+        { icono: 'chart', texto: 'Soportan múltiples veces el peso corporal en cada zancada y salto.' },
+        { icono: 'joint', texto: 'Formado por gastrocnemio (fibras rápidas) y sóleo profundo (fibras lentas).' }
+      ],
+      ejerciciosDetalle: [
+        {
+          nombre: 'Elevación de talones de pie con barra',
+          enfoque: 'Énfasis en el gastrocnemio con rodilla extendida para volumen de pantorrilla',
+          series: '4',
+          repeticiones: '12 - 15',
+          descanso: '60 seg',
+          nivel: 'Principiante - Intermedio',
+          tempo: '2-2-1-1',
+          tips: [
+            'Rodillas completamente extendidas sin balanceo.',
+            'Pausa de 2 segundos en el fondo en máximo estiramiento para eliminar el reflejo miotático.',
+            'Eleva lo más alto posible sobre el dedo gordo del pie.'
+          ],
+          pasos: [
+            'Apoya las bolas de los pies en un escalón con la barra o máquina en los hombros.',
+            'Desciende los talones por debajo del nivel del escalón sintiendo el estiramiento.',
+            'Sube con fuerza y contrae 2 segundos en la cúspide.'
+          ],
+          erroresComunes: [
+            'Rebotar en el fondo usando la elasticidad del tendón de Aquiles en lugar del músculo.',
+            'Doblar las rodillas durante la elevación.'
+          ]
+        },
+        {
+          nombre: 'Elevación de talones sentado en máquina',
+          enfoque: 'Aislamiento selectivo del sóleo con rodilla a 90°',
+          series: '4',
+          repeticiones: '15 - 20',
+          descanso: '45 seg',
+          nivel: 'Principiante',
+          tempo: '2-1-1-1',
+          tips: [
+            'Al estar la rodilla flexionada, el gastrocnemio se desactiva y el sóleo hace todo el trabajo.',
+            'Excelente para ensanchar la pantorrilla en vista frontal y posterior.',
+            'Rango completo de movimiento sin prisa.'
+          ],
+          pasos: [
+            'Siéntate y acomoda las almohadillas sobre los muslos inferiores.',
+            'Desciende los talones profundamente sintiendo estiramiento en la espinilla posterior.',
+            'Sube hasta la máxima extensión y aguanta 1 segundo.'
+          ],
+          erroresComunes: [
+            'Usar peso excesivo que acorte el recorrido a unos pocos centímetros.',
+            'Hacer repeticiones a ritmo acelerado.'
+          ]
+        },
+        {
+          nombre: 'Elevación de talones en prensa',
+          enfoque: 'Rango profundo de dorsiflexión y contracción pico con gran carga',
+          series: '4',
+          repeticiones: '12 - 15',
+          descanso: '60 seg',
+          nivel: 'Intermedio',
+          tempo: '2-2-1-1',
+          tips: [
+            'Solo las puntas de los pies en el borde inferior de la plataforma de la prensa.',
+            'Mantén las rodillas con un microdesbloqueo de seguridad.',
+            'Pausa profunda de 2 segundos abajo para máximo reclutamiento de fibras.'
+          ],
+          pasos: [
+            'Coloca los metatarsos en el borde de la plataforma.',
+            'Deja caer los talones estirando las pantorrillas.',
+            'Empuja la plataforma con las puntas de los pies extendiendo los tobillos.'
+          ],
+          erroresComunes: [
+            'Pies resbalando del borde por mala colocación.',
+            'Bloquear hiper-extendiendo las rodillas.'
+          ]
+        }
+      ],
+      ejercicios: ['Elevación de talones de pie con barra', 'Elevación de talones sentado', 'Elevación de talones en prensa']
     }
   };
 
@@ -1653,7 +2834,7 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     // 1. ESCENA
     // ============================================================
     this.threeScene = new THREE.Scene();
-    this.threeScene.background = new THREE.Color(0x090c12);
+    this.threeScene.background = null;
 
     this.threeCamera = new THREE.PerspectiveCamera(
       38,
@@ -1662,7 +2843,8 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
       1000
     );
 
-    this.threeCamera.position.set(0, 0.15, 17.2);
+    this.threeCamera.position.set(0, 0.70, 18.0);
+    this.threeCamera.lookAt(0, 0.70, 0);
 
     // ============================================================
     // 2. RENDERER
@@ -1681,533 +2863,134 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     // ============================================================
     // 3. ILUMINACIÓN DE ESTUDIO
     // ============================================================
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
     this.threeScene.add(ambientLight);
 
-    const keyLight = new THREE.DirectionalLight(0xffffff, 2.2);
-    keyLight.position.set(5, 10, 10);
+    // Luz frontal principal para resaltar la anatomía y definición muscular
+    const frontKey = new THREE.DirectionalLight(0xffffff, 2.8);
+    frontKey.position.set(0, 2, 14);
+    this.threeScene.add(frontKey);
+
+    const keyLight = new THREE.DirectionalLight(0xffffff, 2.0);
+    keyLight.position.set(4, 10, 10);
     this.threeScene.add(keyLight);
 
-    const fillLight = new THREE.DirectionalLight(0xaab4c4, 1.0);
-    fillLight.position.set(-7, 7, 8);
+    const fillLight = new THREE.DirectionalLight(0xa5c4e8, 1.2);
+    fillLight.position.set(-8, 6, 8);
     this.threeScene.add(fillLight);
 
-    const rimLightCrimson = new THREE.DirectionalLight(0xdc143c, 1.8);
-    rimLightCrimson.position.set(-7, 3, -8);
-    this.threeScene.add(rimLightCrimson);
+    const rimBackLeft = new THREE.DirectionalLight(0x4a90e2, 1.1);
+    rimBackLeft.position.set(-6, 3, -10);
+    this.threeScene.add(rimBackLeft);
 
-    const rimLightGold = new THREE.PointLight(0xffd700, 0.7, 18);
-    rimLightGold.position.set(5, 1, -5);
-    this.threeScene.add(rimLightGold);
+    const rimBackRight = new THREE.DirectionalLight(0xdc143c, 1.5);
+    rimBackRight.position.set(6, 4, -10);
+    this.threeScene.add(rimBackRight);
 
     // ============================================================
-    // 4. GRUPO PRINCIPAL DEL CUERPO
+    // 4. CARGA DEL MODELO ANATÓMICO 3D (anatomia.glb)
     // ============================================================
     this.humanModelGroup = new THREE.Group();
-    this.muscleMeshes = [];
-
-    // Material negro metálico brillante, similar al maniquí de referencia.
-    const createMannequinMaterial = (color = 0x171a20) => {
-      return new THREE.MeshStandardMaterial({
-        color,
-        roughness: 0.16,
-        metalness: 0.78,
-        emissive: 0x000000
-      });
-    };
-
-    const bodyBaseMat = createMannequinMaterial(0x15181e);
-    const muscleBaseColor = 0x1b2028;
-
-    // ============================================================
-    // HELPERS PARA LA SILUETA BASE
-    // ============================================================
-    const addBodyPart = (
-      geometry: THREE.BufferGeometry,
-      position: [number, number, number],
-      scale: [number, number, number] = [1, 1, 1],
-      rotation: [number, number, number] = [0, 0, 0]
-    ) => {
-      const mesh = new THREE.Mesh(geometry, bodyBaseMat);
-      mesh.position.set(...position);
-      mesh.scale.set(...scale);
-      mesh.rotation.set(...rotation);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      this.humanModelGroup?.add(mesh);
-      return mesh;
-    };
-
-    // ============================================================
-    // 5. CABEZA
-    // ============================================================
-    addBodyPart(
-      new THREE.SphereGeometry(0.82, 48, 48),
-      [0, 5.65, 0],
-      [0.78, 1.12, 0.82]
-    );
-
-    // ============================================================
-    // 6. CUELLO
-    // ============================================================
-    addBodyPart(
-      new THREE.CapsuleGeometry(0.40, 0.48, 12, 32),
-      [0, 4.82, 0],
-      [1, 1, 0.9]
-    );
-
-    // ============================================================
-    // 7. TORSO ATLÉTICO
-    // ============================================================
-    // Parte alta del torso: más ancha para formar la V de hombros.
-    addBodyPart(
-      new THREE.SphereGeometry(1, 48, 48),
-      [0, 3.75, 0],
-      [1.65, 1.25, 0.72]
-    );
-
-    // Torso central.
-    addBodyPart(
-      new THREE.CapsuleGeometry(0.95, 2.15, 12, 40),
-      [0, 3.0, 0],
-      [1.15, 1.0, 0.72]
-    );
-
-    // Cintura estrecha.
-    addBodyPart(
-      new THREE.SphereGeometry(1, 48, 48),
-      [0, 1.85, 0],
-      [0.82, 0.85, 0.63]
-    );
-
-    // Pelvis / cadera.
-    addBodyPart(
-      new THREE.SphereGeometry(1, 48, 48),
-      [0, 0.95, 0],
-      [1.05, 0.72, 0.70]
-    );
-
-    // ============================================================
-    // 8. HOMBROS
-    // ============================================================
-    const shoulderGeometry = new THREE.SphereGeometry(0.65, 40, 40);
-
-    addBodyPart(
-      shoulderGeometry,
-      [-1.38, 3.72, 0],
-      [1.15, 1.0, 0.9]
-    );
-
-    addBodyPart(
-      shoulderGeometry,
-      [1.38, 3.72, 0],
-      [1.15, 1.0, 0.9]
-    );
-
-    // ============================================================
-    // 9. BRAZOS SUPERIORES
-    // ============================================================
-    const upperArmGeometry = new THREE.CapsuleGeometry(0.40, 1.25, 12, 32);
-
-    addBodyPart(
-      upperArmGeometry,
-      [-1.65, 2.65, 0],
-      [1.12, 1.05, 0.95],
-      [0, 0, -0.04]
-    );
-
-    addBodyPart(
-      upperArmGeometry,
-      [1.65, 2.65, 0],
-      [1.12, 1.05, 0.95],
-      [0, 0, 0.04]
-    );
-
-    // ============================================================
-    // 10. CODOS
-    // ============================================================
-    const elbowGeometry = new THREE.SphereGeometry(0.38, 32, 32);
-
-    addBodyPart(
-      elbowGeometry,
-      [-1.70, 1.75, 0],
-      [1, 1.1, 0.9]
-    );
-
-    addBodyPart(
-      elbowGeometry,
-      [1.70, 1.75, 0],
-      [1, 1.1, 0.9]
-    );
-
-    // ============================================================
-    // 11. ANTEBRAZOS
-    // ============================================================
-    const forearmGeometry = new THREE.CapsuleGeometry(0.31, 1.30, 12, 32);
-
-    addBodyPart(
-      forearmGeometry,
-      [-1.70, 0.95, 0.02],
-      [1.08, 1.05, 0.92],
-      [0, 0, -0.03]
-    );
-
-    addBodyPart(
-      forearmGeometry,
-      [1.70, 0.95, 0.02],
-      [1.08, 1.05, 0.92],
-      [0, 0, 0.03]
-    );
-
-    // ============================================================
-    // 12. MANOS
-    // ============================================================
-    const handGeometry = new THREE.SphereGeometry(0.34, 32, 32);
-
-    addBodyPart(
-      handGeometry,
-      [-1.70, 0.05, 0.02],
-      [0.75, 1.15, 0.58]
-    );
-
-    addBodyPart(
-      handGeometry,
-      [1.70, 0.05, 0.02],
-      [0.75, 1.15, 0.58]
-    );
-
-    // ============================================================
-    // 13. GLÚTEOS / TRANSICIÓN DE CADERA
-    // ============================================================
-    const gluteBaseGeometry = new THREE.SphereGeometry(0.72, 40, 40);
-
-    addBodyPart(
-      gluteBaseGeometry,
-      [-0.52, 0.65, -0.30],
-      [1.05, 1.0, 0.75]
-    );
-
-    addBodyPart(
-      gluteBaseGeometry,
-      [0.52, 0.65, -0.30],
-      [1.05, 1.0, 0.75]
-    );
-
-    // ============================================================
-    // 14. MUSLOS
-    // ============================================================
-    const thighGeometry = new THREE.CapsuleGeometry(0.56, 1.85, 12, 36);
-
-    addBodyPart(
-      thighGeometry,
-      [-0.64, -0.55, 0],
-      [1.10, 1.10, 0.92]
-    );
-
-    addBodyPart(
-      thighGeometry,
-      [0.64, -0.55, 0],
-      [1.10, 1.10, 0.92]
-    );
-
-    // ============================================================
-    // 15. RODILLAS
-    // ============================================================
-    const kneeGeometry = new THREE.SphereGeometry(0.50, 36, 36);
-
-    addBodyPart(
-      kneeGeometry,
-      [-0.64, -1.75, 0.04],
-      [0.95, 0.85, 0.82]
-    );
-
-    addBodyPart(
-      kneeGeometry,
-      [0.64, -1.75, 0.04],
-      [0.95, 0.85, 0.82]
-    );
-
-    // ============================================================
-    // 16. PANTORRILLAS
-    // ============================================================
-    const calfGeometry = new THREE.CapsuleGeometry(0.42, 1.65, 12, 32);
-
-    addBodyPart(
-      calfGeometry,
-      [-0.64, -3.15, 0],
-      [1.0, 1.08, 0.90]
-    );
-
-    addBodyPart(
-      calfGeometry,
-      [0.64, -3.15, 0],
-      [1.0, 1.08, 0.90]
-    );
-
-    // ============================================================
-    // 17. TOBILLOS
-    // ============================================================
-    const ankleGeometry = new THREE.SphereGeometry(0.28, 28, 28);
-
-    addBodyPart(
-      ankleGeometry,
-      [-0.64, -4.15, 0],
-      [1, 1.2, 0.9]
-    );
-
-    addBodyPart(
-      ankleGeometry,
-      [0.64, -4.15, 0],
-      [1, 1.2, 0.9]
-    );
-
-    // ============================================================
-    // 18. PIES
-    // ============================================================
-    const footGeometry = new THREE.SphereGeometry(0.48, 36, 36);
-
-    addBodyPart(
-      footGeometry,
-      [-0.64, -4.55, 0.28],
-      [0.95, 0.55, 1.65]
-    );
-
-    addBodyPart(
-      footGeometry,
-      [0.64, -4.55, 0.28],
-      [0.95, 0.55, 1.65]
-    );
-
-    // ============================================================
-    // 19. MÚSCULOS SELECCIONABLES
-    // ============================================================
-    const createMuscleMesh = (
-      geometry: THREE.BufferGeometry,
-      muscleId: string,
-      position: [number, number, number],
-      scale: [number, number, number] = [1, 1, 1],
-      rotation: [number, number, number] = [0, 0, 0]
-    ) => {
-      const mat = createMannequinMaterial(muscleBaseColor);
-      const mesh = new THREE.Mesh(geometry, mat);
-
-      mesh.position.set(...position);
-      mesh.scale.set(...scale);
-      mesh.rotation.set(...rotation);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-
-      mesh.userData = {
-        muscleId,
-        ...(this.musclesDatabase[muscleId] || {})
-      };
-
-      this.humanModelGroup?.add(mesh);
-      this.muscleMeshes.push(mesh);
-
-      return mesh;
-    };
-
-    // ------------------------------------------------------------
-    // TRAPECIO
-    // ------------------------------------------------------------
-    createMuscleMesh(
-      new THREE.ConeGeometry(1.35, 1.0, 48),
-      'trapecio',
-      [0, 4.15, -0.02],
-      [1.2, 1, 0.65]
-    );
-
-    // ------------------------------------------------------------
-    // PECTORALES
-    // ------------------------------------------------------------
-    const chestGeometry = new THREE.SphereGeometry(0.70, 40, 40);
-
-    createMuscleMesh(
-      chestGeometry,
-      'pectoral',
-      [-0.55, 3.48, 0.52],
-      [1.30, 0.78, 0.55],
-      [0, 0, -0.08]
-    );
-
-    createMuscleMesh(
-      chestGeometry,
-      'pectoral',
-      [0.55, 3.48, 0.52],
-      [1.30, 0.78, 0.55],
-      [0, 0, 0.08]
-    );
-
-    // ------------------------------------------------------------
-    // DELTOIDES
-    // ------------------------------------------------------------
-    const deltoidGeometry = new THREE.SphereGeometry(0.58, 36, 36);
-
-    createMuscleMesh(
-      deltoidGeometry,
-      'deltoides',
-      [-1.38, 3.72, 0.22],
-      [1.12, 1.0, 0.9]
-    );
-
-    createMuscleMesh(
-      deltoidGeometry,
-      'deltoides',
-      [1.38, 3.72, 0.22],
-      [1.12, 1.0, 0.9]
-    );
-
-    // ------------------------------------------------------------
-    // BÍCEPS
-    // ------------------------------------------------------------
-    const bicepsGeometry = new THREE.CapsuleGeometry(0.34, 0.90, 10, 28);
-
-    createMuscleMesh(
-      bicepsGeometry,
-      'biceps',
-      [-1.66, 2.62, 0.30],
-      [1.05, 1.05, 0.90]
-    );
-
-    createMuscleMesh(
-      bicepsGeometry,
-      'biceps',
-      [1.66, 2.62, 0.30],
-      [1.05, 1.05, 0.90]
-    );
-
-    // ------------------------------------------------------------
-    // TRÍCEPS
-    // ------------------------------------------------------------
-    const tricepsGeometry = new THREE.CapsuleGeometry(0.34, 0.90, 10, 28);
-
-    createMuscleMesh(
-      tricepsGeometry,
-      'triceps',
-      [-1.66, 2.62, -0.28],
-      [1.05, 1.05, 0.88]
-    );
-
-    createMuscleMesh(
-      tricepsGeometry,
-      'triceps',
-      [1.66, 2.62, -0.28],
-      [1.05, 1.05, 0.88]
-    );
-
-    // ------------------------------------------------------------
-    // ABDOMINALES
-    // ------------------------------------------------------------
-    createMuscleMesh(
-      new THREE.SphereGeometry(0.82, 40, 40),
-      'abs',
-      [0, 2.28, 0.54],
-      [0.78, 1.20, 0.42]
-    );
-
-    // ------------------------------------------------------------
-    // DORSAL
-    // ------------------------------------------------------------
-    createMuscleMesh(
-      new THREE.SphereGeometry(1.05, 40, 40),
-      'dorsal',
-      [0, 3.10, -0.48],
-      [1.25, 1.0, 0.34]
-    );
-
-    // ------------------------------------------------------------
-    // LUMBARES
-    // ------------------------------------------------------------
-    createMuscleMesh(
-      new THREE.SphereGeometry(0.68, 36, 36),
-      'lumbares',
-      [0, 1.55, -0.45],
-      [1.0, 0.72, 0.38]
-    );
-
-    // ------------------------------------------------------------
-    // GLÚTEOS
-    // ------------------------------------------------------------
-    const gluteGeometry = new THREE.SphereGeometry(0.72, 40, 40);
-
-    createMuscleMesh(
-      gluteGeometry,
-      'gluteos',
-      [-0.55, 0.55, -0.55],
-      [1.05, 1.0, 0.70]
-    );
-
-    createMuscleMesh(
-      gluteGeometry,
-      'gluteos',
-      [0.55, 0.55, -0.55],
-      [1.05, 1.0, 0.70]
-    );
-
-    // ------------------------------------------------------------
-    // CUÁDRICEPS
-    // ------------------------------------------------------------
-    const quadGeometry = new THREE.CapsuleGeometry(0.57, 1.75, 10, 32);
-
-    createMuscleMesh(
-      quadGeometry,
-      'cuadriceps',
-      [-0.64, -0.62, 0.36],
-      [1.05, 1.05, 0.72]
-    );
-
-    createMuscleMesh(
-      quadGeometry,
-      'cuadriceps',
-      [0.64, -0.62, 0.36],
-      [1.05, 1.05, 0.72]
-    );
-
-    // ------------------------------------------------------------
-    // ISQUIOTIBIALES
-    // ------------------------------------------------------------
-    const hamstringGeometry = new THREE.CapsuleGeometry(0.52, 1.75, 10, 32);
-
-    createMuscleMesh(
-      hamstringGeometry,
-      'isquiotibiales',
-      [-0.64, -0.62, -0.35],
-      [1.0, 1.05, 0.72]
-    );
-
-    createMuscleMesh(
-      hamstringGeometry,
-      'isquiotibiales',
-      [0.64, -0.62, -0.35],
-      [1.0, 1.05, 0.72]
-    );
-
-    // ------------------------------------------------------------
-    // GEMELOS
-    // ------------------------------------------------------------
-    const calfMuscleGeometry = new THREE.CapsuleGeometry(0.40, 1.40, 10, 28);
-
-    createMuscleMesh(
-      calfMuscleGeometry,
-      'gemelos',
-      [-0.64, -3.12, -0.18],
-      [1.0, 1.05, 0.75]
-    );
-
-    createMuscleMesh(
-      calfMuscleGeometry,
-      'gemelos',
-      [0.64, -3.12, -0.18],
-      [1.0, 1.05, 0.75]
-    );
-
-    // ============================================================
-    // 20. POSICIÓN FINAL DEL MODELO
-    // ============================================================
-    this.humanModelGroup.position.set(0, -0.35, 0);
-    this.humanModelGroup.scale.set(1, 1, 1);
+    this.humanModelGroup.position.set(0, 0.70, 0);
     this.threeScene.add(this.humanModelGroup);
+    this.muscleMeshes = [];
+    this.bodyMeshes = [];
+    this.meshMuscleVertexIndices.clear();
+
+    this.isLoading3DModel.set(true);
+
+    const gltfLoader = new GLTFLoader();
+    gltfLoader.load(
+      'models/anatomia.glb',
+      (gltf) => {
+        const model = gltf.scene;
+
+        // Centrado y escala normalizada para encuadre óptimo de cuerpo entero
+        const box = new THREE.Box3().setFromObject(model);
+        const size = new THREE.Vector3();
+        const center = new THREE.Vector3();
+        box.getSize(size);
+        box.getCenter(center);
+
+        const targetHeight = 9.2;
+        const scaleFactor = targetHeight / (size.y || 1.8);
+        model.scale.setScalar(scaleFactor);
+        model.position.set(
+          -center.x * scaleFactor,
+          -center.y * scaleFactor,
+          -center.z * scaleFactor
+        );
+
+        const modelWrapper = new THREE.Group();
+        modelWrapper.add(model);
+        // Vista frontal directa hacia la cámara (pecho, abdomen, piernas y deltoides al frente)
+        modelWrapper.rotation.y = 0;
+
+        this.humanModelGroup?.add(modelWrapper);
+        this.humanModelGroup?.updateMatrixWorld(true);
+
+        const baseR = 0.08, baseG = 0.10, baseB = 0.13;
+        const p = new THREE.Vector3();
+
+        model.traverse((child) => {
+          if ((child as THREE.Mesh).isMesh) {
+            const mesh = child as THREE.Mesh;
+            const geo = mesh.geometry;
+            const pos = geo.attributes['position'];
+            const count = pos.count;
+
+            const colors = new Float32Array(count * 3);
+            for (let i = 0; i < count; i++) {
+              colors[i * 3] = baseR;
+              colors[i * 3 + 1] = baseG;
+              colors[i * 3 + 2] = baseB;
+            }
+            geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+            mesh.material = new THREE.MeshStandardMaterial({
+              color: 0xffffff,
+              vertexColors: true,
+              roughness: 0.30,
+              metalness: 0.72,
+              envMapIntensity: 1.0
+            });
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            this.bodyMeshes.push(mesh);
+
+            // Preclasificar índices de vértices por grupo muscular en espacio de mundo
+            const muscleMap = new Map<string, number[]>();
+            for (let i = 0; i < count; i++) {
+              p.fromBufferAttribute(pos, i);
+              mesh.localToWorld(p);
+
+              for (const [mId, filterFn] of Object.entries(this.muscleFilters)) {
+                if (filterFn(p)) {
+                  let list = muscleMap.get(mId);
+                  if (!list) {
+                    list = [];
+                    muscleMap.set(mId, list);
+                  }
+                  list.push(i);
+                }
+              }
+            }
+            this.meshMuscleVertexIndices.set(mesh, muscleMap);
+          }
+        });
+
+        this.createMuscleColliders();
+        this.isLoading3DModel.set(false);
+
+        // Seleccionar Deltoides por defecto para coincidir exactamente con la imagen de referencia
+        this.selectMuscle('deltoides');
+      },
+      undefined,
+      (error) => {
+        console.error('Error al cargar models/anatomia.glb:', error);
+        this.isLoading3DModel.set(false);
+      }
+    );
 
     // ============================================================
     // 21. INTERACCIÓN CON MOUSE / RAYCASTING
@@ -2220,7 +3003,7 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
       this.mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       this.mouse.y = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
 
-      // Rotación manual.
+      // Rotación manual por arrastre
       if (this.isDragging3D && this.humanModelGroup) {
         const deltaX = e.clientX - this.previousMousePosition.x;
         const deltaY = e.clientY - this.previousMousePosition.y;
@@ -2238,7 +3021,7 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
         y: e.clientY
       };
 
-      // Hover de músculos.
+      // Detección de músculo bajo el cursor
       if (this.threeCamera) {
         this.raycaster.setFromCamera(this.mouse, this.threeCamera);
 
@@ -2249,25 +3032,13 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
 
         if (intersects.length > 0) {
           const hitMesh = intersects[0].object as THREE.Mesh;
-
           domElement.style.cursor = 'pointer';
-
           this.hoveredMuscleName.set(
             hitMesh.userData['nombre'] || 'Músculo'
           );
-
-          if (this.hoveredMesh !== hitMesh) {
-            this.resetHoveredMesh();
-            this.hoveredMesh = hitMesh;
-
-            const mat = hitMesh.material as THREE.MeshStandardMaterial;
-            mat.emissive.setHex(0xdc143c);
-            mat.emissiveIntensity = 0.95;
-          }
         } else {
           domElement.style.cursor = this.isDragging3D ? 'grabbing' : 'grab';
           this.hoveredMuscleName.set(null);
-          this.resetHoveredMesh();
         }
       }
     };
@@ -2339,8 +3110,8 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     const animate = () => {
       this.threeAnimationId = requestAnimationFrame(animate);
 
-      if (!this.isDragging3D && this.humanModelGroup) {
-        this.humanModelGroup.rotation.y += 0.002;
+      if (this.selectedMuscle()) {
+        this.updatePinPosition();
       }
 
       if (this.threeRenderer && this.threeScene && this.threeCamera) {
@@ -2354,18 +3125,171 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     animate();
   }
 
-  private resetHoveredMesh() {
-    if (this.hoveredMesh) {
-      const mat = this.hoveredMesh.material as THREE.MeshStandardMaterial;
-      mat.emissive.setHex(0x000000);
-      mat.emissiveIntensity = 0;
-      this.hoveredMesh = null;
+  highlightMuscleOnModel(muscleId: string | null) {
+    const baseR = 0.08, baseG = 0.10, baseB = 0.13;
+    const glowR = 1.0, glowG = 0.08, glowB = 0.24;
+
+    for (const mesh of this.bodyMeshes) {
+      const colorAttr = mesh.geometry.attributes['color'] as THREE.BufferAttribute;
+      if (!colorAttr) continue;
+      const arr = colorAttr.array as Float32Array;
+      const count = colorAttr.count;
+
+      for (let i = 0; i < count; i++) {
+        arr[i * 3] = baseR;
+        arr[i * 3 + 1] = baseG;
+        arr[i * 3 + 2] = baseB;
+      }
+
+      if (muscleId) {
+        const map = this.meshMuscleVertexIndices.get(mesh);
+        const indices = map?.get(muscleId);
+        if (indices) {
+          for (let j = 0; j < indices.length; j++) {
+            const idx = indices[j];
+            arr[idx * 3] = glowR;
+            arr[idx * 3 + 1] = glowG;
+            arr[idx * 3 + 2] = glowB;
+          }
+        }
+      }
+
+      colorAttr.needsUpdate = true;
     }
+  }
+
+  private updatePinPosition() {
+    const selected = this.selectedMuscle();
+    const canvas = this.muscleCanvasRef?.nativeElement;
+    if (!selected || !selected.anchor3D || !this.threeCamera || !canvas || !this.humanModelGroup) {
+      this.pinScreenPos.set({ x: 0, y: 0, visible: false, label: '' });
+      return;
+    }
+
+    const [ax, ay, az] = selected.anchor3D;
+    const v = new THREE.Vector3(ax, ay, az);
+    v.applyMatrix4(this.humanModelGroup.matrixWorld);
+    v.project(this.threeCamera);
+
+    const width = canvas.clientWidth;
+    const height = canvas.clientHeight;
+
+    if (v.z > 1) {
+      this.pinScreenPos.set({ x: 0, y: 0, visible: false, label: selected.nombre.split(' ')[0] });
+      return;
+    }
+
+    const screenX = ((v.x + 1) * width) / 2;
+    const screenY = ((-v.y + 1) * height) / 2;
+
+    this.pinScreenPos.set({
+      x: Math.round(screenX),
+      y: Math.round(screenY),
+      visible: true,
+      label: selected.nombre.split(' ')[0]
+    });
+  }
+
+  closeMusclePanel() {
+    this.selectedMuscle.set(null);
+    this.pinScreenPos.set({ x: 0, y: 0, visible: false, label: '' });
+    this.highlightMuscleOnModel(null);
+  }
+
+  private createMuscleColliders() {
+    if (!this.humanModelGroup) return;
+
+    const addCollider = (
+      geometry: THREE.BufferGeometry,
+      muscleId: string,
+      pos: [number, number, number],
+      scale: [number, number, number] = [1, 1, 1],
+      rot: [number, number, number] = [0, 0, 0]
+    ) => {
+      // Colisionadores estrictamente invisibles para raycasting sin renderizado geométrico
+      const mat = new THREE.MeshBasicMaterial({
+        transparent: true,
+        opacity: 0,
+        depthWrite: false
+      });
+
+      const mesh = new THREE.Mesh(geometry, mat);
+      mesh.position.set(...pos);
+      mesh.scale.set(...scale);
+      mesh.rotation.set(...rot);
+
+      mesh.userData = {
+        muscleId,
+        ...(this.musclesDatabase[muscleId] || {})
+      };
+
+      this.humanModelGroup?.add(mesh);
+      this.muscleMeshes.push(mesh);
+      return mesh;
+    };
+
+    // Trapecio
+    addCollider(new THREE.ConeGeometry(1.4, 1.2, 32), 'trapecio', [0, 4.01, -0.34], [1.2, 1, 0.7]);
+
+    // Pectorales
+    const chestGeo = new THREE.SphereGeometry(0.75, 32, 32);
+    addCollider(chestGeo, 'pectoral', [-0.56, 3.0, 0.45]);
+    addCollider(chestGeo, 'pectoral', [0.56, 3.0, 0.45]);
+
+    // Deltoides
+    const deltGeo = new THREE.SphereGeometry(0.75, 32, 32);
+    addCollider(deltGeo, 'deltoides', [-1.25, 3.32, -0.2]);
+    addCollider(deltGeo, 'deltoides', [1.25, 3.32, -0.2]);
+
+    // Bíceps
+    const armGeo = new THREE.CapsuleGeometry(0.38, 0.9, 8, 24);
+    addCollider(armGeo, 'biceps', [-1.35, 2.05, -0.2]);
+    addCollider(armGeo, 'biceps', [1.35, 2.05, -0.2]);
+
+    // Tríceps
+    addCollider(armGeo, 'triceps', [-1.50, 2.25, -0.65]);
+    addCollider(armGeo, 'triceps', [1.50, 2.25, -0.65]);
+
+    // Abdominales / Core
+    addCollider(new THREE.BoxGeometry(1.4, 1.5, 0.6), 'abs', [0, 1.49, 0.43]);
+
+    // Dorsales
+    const latGeo = new THREE.BoxGeometry(1.0, 1.5, 0.5);
+    addCollider(latGeo, 'dorsal', [-0.94, 2.37, -0.46]);
+    addCollider(latGeo, 'dorsal', [0.94, 2.37, -0.46]);
+
+    // Lumbares
+    addCollider(new THREE.SphereGeometry(0.75, 24, 24), 'lumbares', [0, 1.14, -0.33]);
+
+    // Glúteos
+    const gluteGeo = new THREE.SphereGeometry(0.75, 32, 32);
+    addCollider(gluteGeo, 'gluteos', [-0.45, 0.38, -0.24]);
+    addCollider(gluteGeo, 'gluteos', [0.45, 0.38, -0.24]);
+
+    // Cuádriceps
+    const quadGeo = new THREE.CapsuleGeometry(0.55, 1.8, 8, 24);
+    addCollider(quadGeo, 'cuadriceps', [-0.53, -0.95, 0.25]);
+    addCollider(quadGeo, 'cuadriceps', [0.53, -0.95, 0.25]);
+
+    // Isquiotibiales
+    addCollider(quadGeo, 'isquiotibiales', [-0.46, -1.09, -0.2]);
+    addCollider(quadGeo, 'isquiotibiales', [0.46, -1.09, -0.2]);
+
+    // Gemelos
+    const calfGeo = new THREE.CapsuleGeometry(0.45, 1.5, 8, 24);
+    addCollider(calfGeo, 'gemelos', [-0.44, -2.57, -0.23]);
+    addCollider(calfGeo, 'gemelos', [0.44, -2.57, -0.23]);
+  }
+
+  private resetHoveredMesh() {
+    this.hoveredMesh = null;
   }
 
   selectMuscle(muscleId: string) {
     if (this.musclesDatabase[muscleId]) {
       this.selectedMuscle.set(this.musclesDatabase[muscleId]);
+      this.highlightMuscleOnModel(muscleId);
+      this.updatePinPosition();
     }
   }
 
@@ -2374,8 +3298,10 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
       this.humanModelGroup.rotation.set(0, 0, 0);
     }
     if (this.threeCamera) {
-      this.threeCamera.position.set(0, 0.2, 18.5);
+      this.threeCamera.position.set(0, 0.70, 18.0);
+      this.threeCamera.lookAt(0, 0.70, 0);
     }
+    this.updatePinPosition();
   }
 
   private destroy3DScene() {
