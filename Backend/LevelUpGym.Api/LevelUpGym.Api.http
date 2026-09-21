@@ -1,0 +1,6 @@
+@LevelUpGym.Api_HostAddress = http://localhost:5143
+
+GET {{LevelUpGym.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

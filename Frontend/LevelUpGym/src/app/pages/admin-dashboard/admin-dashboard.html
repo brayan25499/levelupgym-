@@ -1,0 +1,443 @@
+<div class="admin-dashboard">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <span class="brand-level">LEVEL</span><span class="brand-up">UP</span><span class="brand-gym">GYM</span>
+      <p class="role-badge">ADMIN PANEL</p>
+    </div>
+    <nav class="sidebar-nav">
+      <button (click)="setTab('resumen')" [class.active]="activeTab === 'resumen'"><span class="menu-icon icon-dashboard"></span> Resumen</button>
+      <button (click)="setTab('clientes')" [class.active]="activeTab === 'clientes'"><span class="menu-icon icon-users"></span> Clientes</button>
+      <button (click)="setTab('clases')" [class.active]="activeTab === 'clases'"><span class="menu-icon icon-calendar"></span> Clases</button>
+      <button (click)="setTab('entrenadores')" [class.active]="activeTab === 'entrenadores'"><span class="menu-icon icon-trainer"></span> Entrenadores</button>
+      <button (click)="setTab('objetivos')" [class.active]="activeTab === 'objetivos'"><span class="menu-icon icon-goals"></span> Objetivos</button>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="btn-logout" (click)="logout()"><span class="menu-icon icon-logout"></span> Salir</button>
+    </div>
+  </aside>
+
+  <main class="dashboard-content" [ngSwitch]="activeTab">
+    <header class="content-header">
+      <div>
+        <span class="eyebrow">Panel de control</span>
+        <h1>Bienvenido, <span class="accent">Admin</span></h1>
+      </div>
+      <div class="user-info">
+        <div class="user-meta">
+          <span>admin&#64;levelup.com</span>
+          <span class="user-role">Administrador</span>
+        </div>
+        <div class="avatar">A</div>
+      </div>
+    </header>
+
+    <!-- RESUMEN TAB -->
+    <div *ngSwitchCase="'resumen'" class="tab-content fade-in">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-info">
+            <span class="label">Ingresos Totales</span>
+            <h2 class="value">${{ totalRevenue() | number }}</h2>
+            <span class="trend positive">Actualizado en vivo</span>
+          </div>
+          <div class="stat-icon icon-revenue"></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-info">
+            <span class="label">Clientes Registrados</span>
+            <h2 class="value">{{ newMembersCount() }}</h2>
+            <span class="trend positive">Activos en plataforma</span>
+          </div>
+          <div class="stat-icon icon-users"></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-info">
+            <span class="label">Entrenadores Activos</span>
+            <h2 class="value">{{ trainers().length }}</h2>
+            <span class="trend positive">En nómina</span>
+          </div>
+          <div class="stat-icon icon-trainer"></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-info">
+            <span class="label">Clases Programadas</span>
+            <h2 class="value">{{ classes().length }}</h2>
+            <span class="trend positive">Este mes</span>
+          </div>
+          <div class="stat-icon icon-calendar"></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-info">
+            <span class="label">Objetivos Disponibles</span>
+            <h2 class="value">{{ goalTypes().length }}</h2>
+            <span class="trend positive">Catálogo activo</span>
+          </div>
+          <div class="stat-icon icon-goals"></div>
+        </div>
+      </div>
+
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h3>Ingresos por Mes</h3>
+          <div class="chart-canvas-wrapper"><canvas #revenueChart></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3>Clientes Nuevos por Mes</h3>
+          <div class="chart-canvas-wrapper"><canvas #newClientsChart></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3>Distribución de Membresías</h3>
+          <div class="chart-canvas-wrapper"><canvas #membershipChart></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3>Ocupación de Clases</h3>
+          <div class="chart-canvas-wrapper"><canvas #occupancyChart></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CLIENTES TAB -->
+    <div *ngSwitchCase="'clientes'" class="tab-content fade-in">
+      <section class="recent-activity">
+        <div class="card-header">
+          <h2>Clientes Registrados</h2>
+        </div>
+        <div class="activity-table-wrapper">
+          <table class="activity-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nombre Completo</th>
+                <th>Documento</th>
+                <th>Teléfono</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let client of clients()">
+                <td>#{{ client.idCliente }}</td>
+                <td>
+                  <div class="row-person">
+                    <div class="row-avatar">{{ (client.profile?.nombre || '?').charAt(0) }}</div>
+                    <span>{{ client.profile?.nombre }} {{ client.profile?.apellidos }}</span>
+                  </div>
+                </td>
+                <td>{{ client.profile?.tipoDocumento }} {{ client.profile?.numDocumento }}</td>
+                <td>{{ client.profile?.telefono || 'N/A' }}</td>
+                <td><span class="status-badge success">ACTIVO</span></td>
+              </tr>
+              <tr class="empty-row" *ngIf="clients().length === 0">
+                <td colspan="5">No hay clientes registrados en el sistema.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- CLASES TAB -->
+    <div *ngSwitchCase="'clases'" class="tab-content fade-in">
+      <section class="recent-activity">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+          <h2>Gestión de Clases</h2>
+          <button class="btn-primary-glow" (click)="openNewClassModal()">+ Nueva Clase</button>
+        </div>
+        <div class="activity-table-wrapper">
+          <table class="activity-table">
+            <thead>
+              <tr>
+                <th>Clase</th>
+                <th>Fecha / Hora</th>
+                <th>Entrenador</th>
+                <th class="num">Inscritos</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let clase of classes()">
+                <td><strong>{{ clase.nombre }}</strong></td>
+                <td>{{ clase.fecha }} a las {{ clase.hora }}</td>
+                <td>{{ clase.entrenador.nombreCompleto }}</td>
+                <td class="num">{{ clase.inscritos }} / {{ clase.capacidadMaxima }}</td>
+                <td>
+                  <button class="btn-cancelar" (click)="deleteClass(clase.idClass)">Cancelar</button>
+                </td>
+              </tr>
+              <tr class="empty-row" *ngIf="classes().length === 0">
+                <td colspan="5">No hay clases programadas.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- ENTRENADORES TAB -->
+    <div *ngSwitchCase="'entrenadores'" class="tab-content fade-in">
+      <section class="recent-activity">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+          <h2>Gestión de Entrenadores</h2>
+          <button class="btn-primary-glow" (click)="openNewTrainerModal()">+ Agregar Entrenador</button>
+        </div>
+        <div class="activity-table-wrapper">
+          <table class="activity-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Especialidad</th>
+                <th>Fecha de Contratación</th>
+                <th class="num">Salario Base</th>
+                <th>Descripción</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let t of adminTrainers()">
+                <td>
+                  <div class="row-person">
+                    <div class="row-avatar">{{ (t.nombre || '?').charAt(0) }}</div>
+                    <span>{{ t.nombre }} {{ t.apellidos }}</span>
+                  </div>
+                </td>
+                <td>{{ t.especialidad }}</td>
+                <td>{{ t.fechaContratacion || 'N/A' }}</td>
+                <td class="num">${{ t.salarioBase | number:'1.0-0' }}</td>
+                <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ t.descripcion }}</td>
+                <td style="display: flex; gap: 0.5rem;">
+                  <button class="btn-editar" (click)="openEditTrainerModal(t.idEmpleado)">Editar</button>
+                  <button class="btn-cancelar" (click)="deleteTrainer(t.idEmpleado)">Eliminar</button>
+                </td>
+              </tr>
+              <tr class="empty-row" *ngIf="adminTrainers().length === 0">
+                <td colspan="6">No hay entrenadores registrados en el sistema.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- OBJETIVOS DISPONIBLES TAB -->
+    <div *ngSwitchCase="'objetivos'" class="tab-content fade-in">
+      <section class="recent-activity">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+          <h2>Catálogo de Objetivos Disponibles</h2>
+          <button class="btn-primary-glow" (click)="openNewGoalTypeModal()">+ Nuevo Tipo de Objetivo</button>
+        </div>
+        <div class="activity-table-wrapper">
+          <table class="activity-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Descripción</th>
+                <th>Unidad</th>
+                <th>Tipo de dato</th>
+                <th>Dirección</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let gt of goalTypes()">
+                <td><strong>{{ gt.nombre }}</strong></td>
+                <td style="max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ gt.descripcion || '—' }}</td>
+                <td>{{ gt.unidad }}</td>
+                <td><span class="tipo-dato-badge">{{ gt.tipoDato }}</span></td>
+                <td>
+                  <span class="direccion-badge" [class.menor]="gt.direccion === 'MENOR'" [class.mayor]="gt.direccion === 'MAYOR'">
+                    {{ gt.direccion === 'MENOR' ? '↓ Reducir' : '↑ Aumentar' }}
+                  </span>
+                </td>
+                <td>
+                  <span class="status-badge" [class.success]="gt.activo" [class.pending]="!gt.activo">
+                    {{ gt.activo ? 'ACTIVO' : 'INACTIVO' }}
+                  </span>
+                </td>
+                <td class="actions-cell">
+                  <button class="btn-action btn-edit" (click)="openEditGoalTypeModal(gt)">Editar</button>
+                  <button class="btn-action btn-toggle" [class.btn-deactivate]="gt.activo" [class.btn-activate]="!gt.activo" (click)="toggleGoalTypeActive(gt)">
+                    {{ gt.activo ? 'Desactivar' : 'Activar' }}
+                  </button>
+                  <button class="btn-action btn-delete" (click)="deleteGoalType(gt)">Eliminar</button>
+                </td>
+              </tr>
+              <tr class="empty-row" *ngIf="goalTypes().length === 0">
+                <td colspan="7">No hay tipos de objetivo registrados. Crea el primero.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+  </main>
+</div>
+
+<!-- Modal Nueva Clase -->
+<div class="modal-overlay fade-in" *ngIf="showNewClassModal()">
+  <div class="modal-card">
+    <button class="close-btn" (click)="closeNewClassModal()">&times;</button>
+    <h2 style="margin-bottom: 1.5rem; color: #fff;">Crear Nueva Clase</h2>
+    <form [formGroup]="classForm" (ngSubmit)="createClass()" style="display: flex; flex-direction: column; gap: 1rem;">
+
+      <div class="form-field">
+        <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">NOMBRE DE LA CLASE (EJ. SPINNING)</label>
+        <input type="text" formControlName="nombre" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;" required>
+      </div>
+
+      <div class="form-field">
+        <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">ENTRENADOR</label>
+        <select formControlName="idEntrenador" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;" required>
+          <option value="" disabled>Seleccione un entrenador...</option>
+          <option *ngFor="let t of trainers()" [value]="t.idEmpleado">{{ t.nombre }} {{ t.apellidos }}</option>
+        </select>
+      </div>
+
+      <div style="display: flex; gap: 1rem;">
+        <div class="form-field" style="flex: 1;">
+          <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">FECHA</label>
+          <input type="date" formControlName="fecha" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;" required>
+        </div>
+        <div class="form-field" style="flex: 1;">
+          <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">HORA INICIO</label>
+          <input type="time" formControlName="horaInicio" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;" required>
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">CAPACIDAD MÁXIMA</label>
+        <input type="number" formControlName="capacidadMaxima" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;" min="1" required>
+      </div>
+
+      <button type="submit" [disabled]="classForm.invalid" style="margin-top: 1rem; padding: 0.75rem; background: #DC143C; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; transition: 0.3s;" [style.opacity]="classForm.invalid ? '0.5' : '1'">GUARDAR CLASE</button>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Nuevo/Editar Entrenador -->
+<div class="modal-overlay fade-in" *ngIf="showTrainerModal()">
+  <div class="modal-card" style="width: 450px; max-width: 90%;">
+    <button class="close-btn" (click)="closeTrainerModal()">&times;</button>
+    <h2 style="margin-bottom: 1.5rem; color: #fff;">{{ editingTrainerId() ? 'Editar Entrenador' : 'Agregar Entrenador' }}</h2>
+    <form [formGroup]="trainerForm" (ngSubmit)="saveTrainer()" style="display: flex; flex-direction: column; gap: 1rem;">
+
+      <div style="display: flex; gap: 1rem;">
+        <div class="form-field" style="flex: 1;">
+          <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">NOMBRE</label>
+          <input type="text" formControlName="nombre" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;" required>
+          <div *ngIf="trainerForm.get('nombre')?.touched && trainerForm.get('nombre')?.errors?.['required']" style="color: #ff4d4d; font-size: 0.75rem; margin-top: 0.25rem;">
+            El nombre es obligatorio.
+          </div>
+        </div>
+        <div class="form-field" style="flex: 1;">
+          <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">APELLIDOS</label>
+          <input type="text" formControlName="apellidos" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;" required>
+          <div *ngIf="trainerForm.get('apellidos')?.touched && trainerForm.get('apellidos')?.errors?.['required']" style="color: #ff4d4d; font-size: 0.75rem; margin-top: 0.25rem;">
+            Los apellidos son obligatorios.
+          </div>
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">ESPECIALIDAD</label>
+        <input type="text" formControlName="especialidad" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;" placeholder="Ej: Powerlifting, CrossFit, HIIT" required>
+        <div *ngIf="trainerForm.get('especialidad')?.touched && trainerForm.get('especialidad')?.errors?.['required']" style="color: #ff4d4d; font-size: 0.75rem; margin-top: 0.25rem;">
+          La especialidad es obligatoria.
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 1rem;">
+        <div class="form-field" style="flex: 1;">
+          <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">FECHA DE CONTRATACIÓN</label>
+          <input type="date" formControlName="fechaContratacion" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;">
+        </div>
+        <div class="form-field" style="flex: 1;">
+          <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">SALARIO BASE</label>
+          <input type="number" formControlName="salarioBase" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;" min="0" required>
+          <div *ngIf="trainerForm.get('salarioBase')?.touched && trainerForm.get('salarioBase')?.errors?.['min']" style="color: #ff4d4d; font-size: 0.75rem; margin-top: 0.25rem;">
+            El salario no puede ser negativo.
+          </div>
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">DESCRIPCIÓN</label>
+        <textarea formControlName="descripcion" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white; resize: vertical;" rows="3"></textarea>
+      </div>
+
+      <div class="form-field" *ngIf="editingTrainerId()">
+        <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">ESTADO</label>
+        <select formControlName="estado" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;">
+          <option value="Activo">Activo</option>
+          <option value="Inactivo">Inactivo</option>
+        </select>
+      </div>
+
+      <button type="submit" [disabled]="trainerForm.invalid" style="margin-top: 1rem; padding: 0.75rem; background: #DC143C; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; transition: 0.3s;" [style.opacity]="trainerForm.invalid ? '0.5' : '1'">
+        {{ editingTrainerId() ? 'GUARDAR CAMBIOS' : 'AGREGAR ENTRENADOR' }}
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Nuevo/Editar GoalType -->
+<div class="modal-overlay fade-in" *ngIf="showGoalTypeModal()">
+  <div class="modal-card" style="width: 480px; max-width: 90%;">
+    <button class="close-btn" (click)="closeGoalTypeModal()">&times;</button>
+    <h2 style="margin-bottom: 1.5rem; color: #fff;">{{ editingGoalTypeId() ? 'Editar Tipo de Objetivo' : 'Nuevo Tipo de Objetivo' }}</h2>
+    <form [formGroup]="goalTypeForm" (ngSubmit)="saveGoalType()" style="display: flex; flex-direction: column; gap: 1rem;">
+
+      <div class="form-field">
+        <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">NOMBRE</label>
+        <input type="text" formControlName="nombre" placeholder="Ej: Peso, Cintura, Brazo" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;" required>
+        <div *ngIf="goalTypeForm.get('nombre')?.touched && goalTypeForm.get('nombre')?.errors?.['required']" style="color: #ff4d4d; font-size: 0.75rem; margin-top: 0.25rem;">
+          El nombre es obligatorio.
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">DESCRIPCIÓN</label>
+        <textarea formControlName="descripcion" placeholder="Ej: Alcanzar un peso corporal determinado." style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white; resize: vertical;" rows="2"></textarea>
+      </div>
+
+      <div style="display: flex; gap: 1rem;">
+        <div class="form-field" style="flex: 1;">
+          <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">UNIDAD</label>
+          <input type="text" formControlName="unidad" placeholder="Ej: kg, cm, -" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;" required>
+          <div *ngIf="goalTypeForm.get('unidad')?.touched && goalTypeForm.get('unidad')?.errors?.['required']" style="color: #ff4d4d; font-size: 0.75rem; margin-top: 0.25rem;">
+            La unidad es obligatoria.
+          </div>
+        </div>
+        <div class="form-field" style="flex: 1;">
+          <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">TIPO DE DATO</label>
+          <select formControlName="tipoDato" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;">
+            <option value="DECIMAL">DECIMAL</option>
+            <option value="INTEGER">INTEGER</option>
+            <option value="STRING">STRING</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 1rem;">
+        <div class="form-field" style="flex: 1;">
+          <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">DIRECCIÓN DEL OBJETIVO</label>
+          <select formControlName="direccion" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;">
+            <option value="MENOR">↓ MENOR (Reducir)</option>
+            <option value="MAYOR">↑ MAYOR (Aumentar)</option>
+          </select>
+        </div>
+        <div class="form-field" style="flex: 1;">
+          <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">ESTADO</label>
+          <select formControlName="activo" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;">
+            <option [ngValue]="true">Activo</option>
+            <option [ngValue]="false">Inactivo</option>
+          </select>
+        </div>
+      </div>
+
+      <button type="submit" [disabled]="goalTypeForm.invalid" style="margin-top: 1rem; padding: 0.75rem; background: #DC143C; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; transition: 0.3s;" [style.opacity]="goalTypeForm.invalid ? '0.5' : '1'">
+        {{ editingGoalTypeId() ? 'GUARDAR CAMBIOS' : 'CREAR TIPO DE OBJETIVO' }}
+      </button>
+    </form>
+  </div>
+</div>

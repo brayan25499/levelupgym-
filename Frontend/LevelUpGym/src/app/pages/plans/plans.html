@@ -1,0 +1,50 @@
+<div id="page-plans" class="page">
+  <section class="page-hero">
+    <div class="page-hero-bg"></div>
+    <div class="page-hero-content">
+      <div class="section-tag">MEMBRESIAS</div>
+      <h1 class="page-title">ELIGE TU <span class="accent">PLAN</span></h1>
+    </div>
+  </section>
+
+  <section class="plans-section">
+    <div class="container">
+      <div class="toggle-billing" (click)="toggleBilling()">
+        <span class="toggle-opt" [class.active]="!isAnnual()" id="toggle-monthly">MENSUAL</span>
+        <div class="toggle-switch">
+          <div class="toggle-thumb" [class.annual]="isAnnual()" id="toggle-thumb"></div>
+        </div>
+        <span class="toggle-opt" [class.active]="isAnnual()" id="toggle-annual">ANUAL <span class="save-badge">AHORRA 20%</span></span>
+      </div>
+
+      <div class="plans-grid">
+        <div class="plan-card" *ngFor="let plan of plans()" [ngClass]="'tier-' + plan.tier">
+          <div class="popular-badge" *ngIf="plan.badge" [class.badge-gold]="plan.tier === 'oro'">
+            {{ plan.badge }}
+          </div>
+          <div class="plan-header">
+            <div class="plan-icon">
+              <img [src]="plan.icon" [alt]="plan.nombre + ' Crown'" class="crown-img" (error)="onImgError($event)">
+            </div>
+            <h3 class="plan-name">{{ plan.nombre }}</h3>
+            <p class="plan-desc">{{ plan.descripcion }}</p>
+          </div>
+          <div class="plan-price">
+            <span class="currency">$</span>
+            <span class="amount">{{ (isAnnual() ? plan.precio * 0.8 : plan.precio) | number:'1.0-0' }}</span>
+            <span class="period">{{ isAnnual() ? '/mes (facturado anual)' : '/mes' }}</span>
+          </div>
+          <ul class="plan-features">
+            <li class="included" *ngFor="let benefit of plan.beneficios">
+              <span class="check-icon">✓</span> {{ benefit }}
+            </li>
+          </ul>
+          <button class="plan-btn" [ngClass]="'btn-tier-' + plan.tier" (click)="buyPlan(plan.idMembresia)">
+            ELEGIR PLAN
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+</div>

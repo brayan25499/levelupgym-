@@ -1,0 +1,1912 @@
+<div class="dashboard-container" [class.light-theme]="themeMode === 'light'">
+  <!-- Mobile Header Bar -->
+  <div class="mobile-top-bar">
+    <div class="brand">
+      <span class="brand-level">LEVEL</span><span class="brand-up">UP</span><span class="brand-sub">GYM</span>
+    </div>
+    <button class="mobile-menu-toggle" (click)="toggleMobileSidebar()" aria-label="Abrir menú">
+      <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"></line><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="18" x2="20" y2="18"></line></svg>
+    </button>
+  </div>
+
+  <!-- Sidebar Navigation -->
+  <aside class="dashboard-sidebar" [class.mobile-open]="sidebarMobileOpen()">
+    <div class="sidebar-header">
+      <div class="sidebar-brand">
+        <span class="brand-level">LEVEL</span><span class="brand-up">UP</span><span class="brand-sub">GYM</span>
+        <p class="role-badge">MI PANEL</p>
+      </div>
+      <button class="close-sidebar-btn" (click)="toggleMobileSidebar()" aria-label="Cerrar menú">
+        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+
+    <!-- User Avatar & Status Brief -->
+    <div class="user-profile-brief" *ngIf="profileData()">
+      <div class="avatar-container">
+        <img [src]="'https://ui-avatars.com/api/?name=' + profileData().nombre + '+' + profileData().apellidos + '&background=DC143C&color=fff&font-size=0.4'" alt="User Avatar">
+      </div>
+      <div class="user-meta">
+        <h3 class="user-name">{{ profileData().nombre }} {{ profileData().apellidos }}</h3>
+        <span class="membership-pill" [class.pill-active]="profileData().activeMembership" [class.pill-gold]="hasFullAccess()">
+          {{ profileData().activeMembership ? (profileData().activeMembership.nombre | uppercase) : 'SIN MEMBRESÍA' }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Menu Items with Modern SVG Icons -->
+    <nav class="sidebar-menu">
+      <button (click)="setSection('inicio')" [class.active]="activeSection === 'inicio'">
+        <span class="menu-icon">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+        </span> 
+        <span class="menu-label">Inicio</span>
+      </button>
+
+      <button (click)="setSection('musculos')" [class.active]="activeSection === 'musculos'">
+        <span class="menu-icon">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4" r="2"></circle><path d="M12 6v6m0 0l-3 5m3-5l3 5m-6-8h6"></path></svg>
+        </span> 
+        <span class="menu-label">Explorar músculos</span>
+        <span class="lock-icon-sm" *ngIf="!hasFullAccess()">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        </span>
+      </button>
+
+      <button (click)="setSection('progreso')" [class.active]="activeSection === 'progreso'">
+        <span class="menu-icon">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+        </span> 
+        <span class="menu-label">Mi progreso & IMC</span>
+      </button>
+
+      <button (click)="setSection('objetivos')" [class.active]="activeSection === 'objetivos'">
+        <span class="menu-icon">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.45 1-1 1H7v4h10v-4h-2c-.55 0-1-.45-1-1v-2.34"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"></path></svg>
+        </span> 
+        <span class="menu-label">Mis objetivos</span>
+      </button>
+
+      <button (click)="setSection('membresia')" [class.active]="activeSection === 'membresia'">
+        <span class="menu-icon">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+        </span> 
+        <span class="menu-label">Mi membresía</span>
+      </button>
+
+      <button (click)="setSection('sesiones')" [class.active]="activeSection === 'sesiones'">
+        <span class="menu-icon">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+        </span> 
+        <span class="menu-label">Mis sesiones</span>
+        <span class="lock-icon-sm" *ngIf="!hasFullAccess()">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        </span>
+      </button>
+
+      <div class="menu-divider"></div>
+
+      <button (click)="setSection('perfil')" [class.active]="activeSection === 'perfil'">
+        <span class="menu-icon">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+        </span> 
+        <span class="menu-label">Mi perfil</span>
+      </button>
+
+      <button (click)="setSection('configuracion')" [class.active]="activeSection === 'configuracion'">
+        <span class="menu-icon">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        </span> 
+        <span class="menu-label">Configuración</span>
+      </button>
+
+      <div class="menu-divider"></div>
+
+      <button class="logout-btn" (click)="logout()">
+        <span class="menu-icon">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+        </span> 
+        <span class="menu-label">Cerrar sesión</span>
+      </button>
+    </nav>
+  </aside>
+
+  <!-- Backdrop overlay for mobile sidebar -->
+  <div class="sidebar-backdrop" *ngIf="sidebarMobileOpen()" (click)="toggleMobileSidebar()"></div>
+
+  <!-- Main Content View -->
+  <main class="dashboard-main">
+    <!-- Top Greeting Banner -->
+    <header class="top-header">
+      <div class="header-greeting">
+        <span class="eyebrow">PANEL DE USUARIO</span>
+        <h1 class="welcome-heading">Hola, <span class="accent-text">{{ (profileData()?.nombre ? (profileData()?.nombre + (profileData()?.apellidos ? ' ' + profileData()?.apellidos : '')) : (user()?.email?.split('@')?.[0] || 'Atleta')) }}</span></h1>
+        <p class="sub-greeting">¡Listo para continuar con tu entrenamiento!</p>
+      </div>
+      <div class="header-right">
+        <span class="date-badge">{{ today | date:'mediumDate' }}</span>
+      </div>
+    </header>
+
+    <div class="main-scroll-area">
+
+      <!-- ================= 1. INICIO SECTION ================= -->
+      <section *ngIf="activeSection === 'inicio'" class="section-container fade-in">
+        <div class="section-header-block">
+          <span class="eyebrow">RESUMEN GENERAL</span>
+          <h2 class="section-title">Resumen de tu Actividad</h2>
+          <p class="section-desc">Monitorea el estado de tu suscripción, sesiones y hábitos diarios.</p>
+        </div>
+        
+        <!-- Summary Cards Grid -->
+        <div class="summary-cards-grid">
+          <!-- Mi Membresía Summary Card -->
+          <div class="summary-card card-clickable" (click)="setSection('membresia')">
+            <div class="card-header-row">
+              <span class="card-icon-box">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+              </span>
+              <span class="badge-status" [class.badge-active]="profileData()?.activeMembership">
+                {{ profileData()?.activeMembership ? 'ACTIVA' : 'INACTIVA' }}
+              </span>
+            </div>
+            <h3 class="card-heading">Mi Membresía</h3>
+            <div class="card-body-data">
+              <span class="highlight-val">{{ profileData()?.activeMembership?.nombre || 'Sin Plan' }}</span>
+              <p class="card-sub-info" *ngIf="profileData()?.activeMembership">
+                Vence: <strong>{{ profileData()?.activeMembership?.fechaFin | date:'shortDate' }}</strong>
+              </p>
+              <p class="card-sub-info" *ngIf="!profileData()?.activeMembership">
+                Elige un plan para entrenar hoy
+              </p>
+            </div>
+            <div class="card-footer-link">Ver membresía →</div>
+          </div>
+
+          <!-- Próximo Entrenamiento Summary Card -->
+          <div class="summary-card card-clickable" (click)="setSection('sesiones')">
+            <div class="card-header-row">
+              <span class="card-icon-box">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5h11M6.5 17.5h11M3 10v4M21 10v4M4.5 8v8M19.5 8v8"></path></svg>
+              </span>
+              <span class="badge-tag" [class.badge-lock]="!hasFullAccess()">
+                {{ hasFullAccess() ? 'ACCESIBLE' : 'PLAN PLATA/ORO' }}
+              </span>
+            </div>
+            <h3 class="card-heading">Próximo Entrenamiento</h3>
+            <div class="card-body-data">
+              <span class="highlight-val">{{ hasFullAccess() ? 'Torso & Hipertrofia' : 'Acceso Estándar' }}</span>
+              <p class="card-sub-info">{{ hasFullAccess() ? 'Rutina Guiada • 60 Minutos' : 'Entrenamiento Libre en Sala' }}</p>
+            </div>
+            <div class="card-footer-link">{{ hasFullAccess() ? 'Ver rutinas →' : 'Desbloquear rutinas →' }}</div>
+          </div>
+
+          <!-- TARJETA IMC EN EL INICIO -->
+          <div class="summary-card card-clickable" (click)="setSection('progreso')">
+            <div class="card-header-row">
+              <span class="card-icon-box">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+              </span>
+              <span class="badge-tag gold">{{ getBmiEvaluation() ? (getBmiEvaluation()?.imc + ' IMC') : 'SIN DATOS' }}</span>
+            </div>
+            <h3 class="card-heading">Mi IMC</h3>
+            <div class="card-body-data">
+              <span class="highlight-val">{{ getBmiEvaluation() ? ('IMC: ' + getBmiEvaluation()?.imc) : 'IMC: --' }}</span>
+              <p class="card-sub-info">{{ getBmiEvaluation() ? getBmiEvaluation()?.categoria : 'Calcula tu índice corporal' }}</p>
+            </div>
+            <button class="btn-card-shortcut" (click)="$event.stopPropagation(); setSection('progreso')">Ver mi IMC →</button>
+          </div>
+
+          <!-- Próxima Sesión Summary Card -->
+          <div class="summary-card card-clickable" (click)="setSection('sesiones')">
+            <div class="card-header-row">
+              <span class="card-icon-box">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+              </span>
+              <span class="badge-tag" [class.badge-lock]="!hasFullAccess()">
+                {{ hasFullAccess() ? '14 AGO' : 'PLAN PLATA/ORO' }}
+              </span>
+            </div>
+            <h3 class="card-heading">Próxima Sesión</h3>
+            <div class="card-body-data">
+              <span class="highlight-val">{{ hasFullAccess() ? '09:00 AM' : 'Sin Sesión' }}</span>
+              <p class="card-sub-info">{{ hasFullAccess() ? 'Coach Carlos Ruiz • Evaluaciones' : 'Requiere Plan Plata u Oro' }}</p>
+            </div>
+            <div class="card-footer-link">{{ hasFullAccess() ? 'Ver sesiones →' : 'Agendar sesión →' }}</div>
+          </div>
+        </div>
+
+        <!-- Upgrade Tier Banner (if Bronce or No Plan) -->
+        <div class="banner-quick-access" *ngIf="!hasFullAccess()">
+          <div class="banner-text">
+            <h3>Desbloquea la Experiencia Completa con Plan PLATA u ORO</h3>
+            <p>Tu plan actual <strong>{{ getMembershipName() ? (getMembershipName() | uppercase) : 'BRONCE' }}</strong> incluye acceso básico a sala de pesas. Actualiza a Plata u Oro para desbloquear las rutinas de entrenamiento guiadas, el modelo anatómico 3D interactivo y las sesiones con entrenador.</p>
+          </div>
+          <button class="btn-primary-glow" (click)="setSection('membresia')">MEJORAR MI PLAN</button>
+        </div>
+
+        <!-- 3D Banner (if Full Access) -->
+        <div class="banner-quick-access" *ngIf="hasFullAccess()">
+          <div class="banner-text">
+            <h3>Explora la Anatomía Humana en 3D</h3>
+            <p>Selecciona tus grupos musculares en el maniquí pulido y descubre los mejores ejercicios recomendados para ti.</p>
+          </div>
+          <button class="btn-primary-glow" (click)="setSection('musculos')">PROBAR MODELO 3D</button>
+        </div>
+      </section>
+
+
+
+      <!-- ================= 3. EXPLORAR MÚSCULOS 3D SECTION ================= -->
+      <section *ngIf="activeSection === 'musculos'" class="section-container fade-in">
+        <div class="section-header-flex">
+          <div>
+            <h2 class="section-title">Explora tus Músculos en 3D</h2>
+            <p class="section-desc">Modelo anatómico interactivo. Rota la figura en 3D, haz zoom y selecciona cualquier músculo para ver información y ejercicios recomendados.</p>
+          </div>
+          <button class="btn-outline-sm" (click)="resetModelRotation()" *ngIf="hasFullAccess()">Restablecer Cámara</button>
+        </div>
+
+        <!-- LOCKED FEATURE BANNER FOR BRONCE / NO PLAN -->
+        <div class="locked-feature-banner" *ngIf="!hasFullAccess()">
+          <div class="lock-icon-huge">
+            <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          </div>
+          <h3>Modelo Anatómico 3D Interactivo Exclusivo para Plan PLATA y ORO</h3>
+          <p>La exploración muscular interactiva en 3D y la consulta de ejercicios por grupo muscular son funciones premium disponibles únicamente para los suscriptores de los planes <strong>PLATA</strong> u <strong>ORO</strong>.</p>
+          <button class="btn-primary-glow" (click)="setSection('membresia')">DESBLOQUEAR MODELO 3D</button>
+        </div>
+
+        <!-- UNLOCKED 3D CONTENT (PLATA / ORO) -->
+        <div *ngIf="hasFullAccess()">
+          <div class="disclaimer-alert">
+            <span class="alert-icon">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            </span>
+            <p>Estos ejercicios son recomendaciones generales. Para realizar correctamente los ejercicios y conocer cuáles son adecuados para ti, consulta con tu entrenador de LevelUpGym.</p>
+          </div>
+
+          <div class="muscle-explorer-layout">
+            <div class="canvas-wrapper">
+              <div class="canvas-controls-hint">
+                <span>Arrastra para rotar | Scroll para Zoom | Clic en un músculo</span>
+              </div>
+              
+              <div class="canvas-hover-tooltip" *ngIf="hoveredMuscleName()">
+                <span>{{ hoveredMuscleName() }}</span>
+              </div>
+
+              <canvas #muscleCanvas id="muscle-canvas"></canvas>
+            </div>
+
+            <div class="muscle-details-panel">
+              <div class="quick-muscle-selector">
+                <span class="selector-title">Selección Rápida:</span>
+                <div class="chips-container">
+                  <button *ngFor="let key of ['pectoral', 'deltoides', 'biceps', 'triceps', 'abs', 'dorsal', 'cuadriceps', 'gluteos']" 
+                          class="chip-btn" 
+                          [class.active]="selectedMuscle()?.id === key"
+                          (click)="selectMuscle(key)">
+                    {{ musclesDatabase[key].nombre.split(' ')[0] }}
+                  </button>
+                </div>
+              </div>
+
+              <div class="muscle-card-content" *ngIf="selectedMuscle(); else noMuscleSelected">
+                <div class="muscle-header">
+                  <span class="category-badge">{{ selectedMuscle()?.categoria }}</span>
+                  <h3>{{ selectedMuscle()?.nombre }}</h3>
+                </div>
+                <p class="muscle-description">{{ selectedMuscle()?.descripcion }}</p>
+
+                <div class="recommended-exercises">
+                  <h4>Ejercicios Recomendados:</h4>
+                  <ul class="exercises-bullet-list">
+                    <li *ngFor="let exName of selectedMuscle()?.ejercicios">
+                      <span class="check-bullet">
+                        <svg viewBox="0 0 24 24" width="11" height="11" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                      </span>
+                      {{ exName }}
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              <ng-template #noMuscleSelected>
+                <div class="no-selection-placeholder">
+                  <span class="placeholder-icon">
+                    <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="4" r="2"></circle><path d="M12 6v6m0 0l-3 5m3-5l3 5m-6-8h6"></path></svg>
+                  </span>
+                  <p>Haz clic sobre cualquier parte del maniquí 3D o usa los botones superiores para seleccionar un músculo.</p>
+                </div>
+              </ng-template>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 4. MI PROGRESO & SECCIÓN "MI IMC" ORGANIZADA ================= -->
+      <section *ngIf="activeSection === 'progreso'" class="section-container fade-in">
+        <div class="section-header-block sub-header-flex">
+          <div>
+            <span class="eyebrow">EVOLUCIÓN & SALUD</span>
+            <h2 class="section-title">Mi Progreso & Mediciones Corporales</h2>
+            <p class="section-desc">Monitorea la evolución de tus medidas físicas, índice de masa corporal (IMC) e historial de entrenamiento.</p>
+          </div>
+          <button class="btn-primary-glow btn-header-action" (click)="openBmiModal()">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px; vertical-align: middle;"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+            Actualizar mediciones
+          </button>
+        </div>
+
+        <!-- 1. BLOQUE RESUMEN DE MEDICIONES ACTUALES DEL PERFIL -->
+        <div class="sub-block-wrapper">
+          <div class="sub-header-flex">
+            <h3 class="sub-block-title">
+              <span class="title-icon-wrapper">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10"></path><path d="M12 20V4"></path><path d="M6 20v-6"></path></svg>
+              </span>
+              Mediciones Actuales del Perfil
+            </h3>
+            <span class="measurement-date-tag">Última actualización: {{ fechaUltimaMedicionStr }}</span>
+          </div>
+
+          <div class="measurements-current-grid">
+            <div class="measurement-card-item highlight-accent">
+              <span class="m-card-label">PESO ACTUAL</span>
+              <span class="m-card-value">{{ pesoActualVal !== null ? pesoActualVal + ' kg' : '--' }}</span>
+              <span class="m-card-sub" *ngIf="diferenciaPesoVal !== null" [style.color]="diferenciaPesoVal < 0 ? '#22c55e' : (diferenciaPesoVal > 0 ? '#ef4444' : '#ffffff')">
+                {{ diferenciaPesoVal > 0 ? '+' + diferenciaPesoVal : diferenciaPesoVal }} kg vs inicial
+              </span>
+              <span class="m-card-sub" *ngIf="diferenciaPesoVal === null">Sin referencia previa</span>
+            </div>
+
+            <div class="measurement-card-item">
+              <span class="m-card-label">ESTATURA</span>
+              <span class="m-card-value">{{ estaturaActualVal !== null ? estaturaActualVal + ' m' : '--' }}</span>
+              <span class="m-card-sub">Altura corporal</span>
+            </div>
+
+            <div class="measurement-card-item highlight-gold">
+              <span class="m-card-label">IMC ACTUAL</span>
+              <span class="m-card-value gold">{{ imcActualVal !== null ? imcActualVal : '--' }}</span>
+              <span class="m-card-sub" *ngIf="getBmiEvaluation() as bmi" [ngClass]="bmi.badgeClass">{{ bmi.categoria }}</span>
+              <span class="m-card-sub" *ngIf="!getBmiEvaluation()">kg/m²</span>
+            </div>
+
+            <div class="measurement-card-item">
+              <span class="m-card-label">CINTURA</span>
+              <span class="m-card-value">{{ cinturaActualVal !== null ? cinturaActualVal + ' cm' : '--' }}</span>
+              <span class="m-card-sub">Zona media / abdomen</span>
+            </div>
+
+            <div class="measurement-card-item">
+              <span class="m-card-label">PECHO</span>
+              <span class="m-card-value">{{ pechoActualVal !== null ? pechoActualVal + ' cm' : '--' }}</span>
+              <span class="m-card-sub">Torso superior</span>
+            </div>
+
+            <div class="measurement-card-item">
+              <span class="m-card-label">BRAZO</span>
+              <span class="m-card-value">{{ brazoActualVal !== null ? brazoActualVal + ' cm' : '--' }}</span>
+              <span class="m-card-sub">Bíceps / perímetro</span>
+            </div>
+
+            <div class="measurement-card-item">
+              <span class="m-card-label">PIERNA</span>
+              <span class="m-card-value">{{ piernaActualVal !== null ? piernaActualVal + ' cm' : '--' }}</span>
+              <span class="m-card-sub">Muslo / cuádriceps</span>
+            </div>
+          </div>
+
+          <div class="update-measurements-banner">
+            <div class="banner-text-block">
+              <h4>¿Quieres registrar tus medidas corporales?</h4>
+              <p>Mantén tus registros físicos al día para calcular tu IMC automáticamente y hacer seguimiento exacto de tu progreso.</p>
+            </div>
+            <button class="btn-primary-glow btn-banner-action" (click)="openBmiModal()">
+              Actualizar mediciones
+            </button>
+          </div>
+        </div>
+
+        <!-- 2. BLOQUE TARJETA "DIAGNÓSTICO Y RECOMENDACIONES DE IMC" -->
+        <div class="sub-block-wrapper">
+          <h3 class="sub-block-title">Diagnóstico & Recomendaciones de IMC</h3>
+
+          <div class="bmi-evaluation-card" *ngIf="getBmiEvaluation() as bmi; else noBmiDataCard">
+            <div class="bmi-top-row">
+              <div class="bmi-badge-box">
+                <span class="bmi-small-label">Diagnóstico Físico:</span>
+                <span class="bmi-status-pill" [ngClass]="bmi.badgeClass">
+                  {{ bmi.categoria | uppercase }}
+                </span>
+              </div>
+              <div class="bmi-score-box">
+                <span class="bmi-unit-label">IMC:</span>
+                <span class="bmi-score-number">{{ bmi.imc }}</span>
+              </div>
+            </div>
+
+            <!-- Datos Exactos del IMC -->
+            <div class="bmi-metrics-row">
+              <div class="m-box">
+                <span class="m-lbl">Peso:</span>
+                <span class="m-val">{{ bmi.pesoKg }} kg</span>
+              </div>
+              <div class="m-box">
+                <span class="m-lbl">Estatura:</span>
+                <span class="m-val">{{ bmi.estaturaM }} m</span>
+              </div>
+              <div class="m-box highlight">
+                <span class="m-lbl">IMC:</span>
+                <span class="m-val gold">{{ bmi.imc }}</span>
+              </div>
+              <div class="m-box">
+                <span class="m-lbl">Última actualización:</span>
+                <span class="m-val">{{ bmi.fechaActualizacion }}</span>
+              </div>
+            </div>
+
+            <p class="bmi-diagnostic-msg">{{ bmi.mensaje }}</p>
+
+            <div class="bmi-specs-grid">
+              <div class="spec-col">
+                <span class="col-title">Objetivo Sugerido</span>
+                <p class="col-text">{{ bmi.objetivoSugerido }}</p>
+              </div>
+              <div class="spec-col">
+                <span class="col-title">Frecuencia Semanal</span>
+                <p class="col-text">{{ bmi.frecuenciaSugerida }}</p>
+              </div>
+            </div>
+
+            <!-- Avisos e Información Responsable Médica Requeridos -->
+            <div class="responsible-health-notices">
+              <div class="notice-row">
+                <span class="notice-icon"></span>
+                <p>El IMC es un indicador general y no representa por sí solo el estado de salud o la composición corporal.</p>
+              </div>
+              <div class="notice-row">
+                <span class="notice-icon"></span>
+                <p>Para interpretar correctamente este dato según tu edad y características personales, consulta con un profesional de la salud.</p>
+              </div>
+            </div>
+          </div>
+
+          <ng-template #noBmiDataCard>
+            <div class="bmi-missing-card">
+              <div class="missing-info">
+                <h3>Completa tus datos para calcular tu IMC</h3>
+                <p>Registra tu peso en kilogramos y estatura en metros para obtener tu IMC, evolución y recomendaciones de salud.</p>
+              </div>
+              <button class="btn-primary-glow" (click)="openBmiModal()">Registrar mediciones</button>
+            </div>
+          </ng-template>
+        </div>
+
+        <!-- 3. BLOQUE EVOLUCIÓN E HISTORIAL DE MEDICIONES -->
+        <div class="sub-block-wrapper">
+          <h3 class="sub-block-title">
+            <span class="title-icon-wrapper">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>
+            </span>
+            Evolución e Historial de Mediciones
+          </h3>
+          
+          <div class="evolution-grid">
+            <!-- Gráfica Sencilla de Evolución SVG -->
+            <div class="chart-card">
+              <h4>Evolución del IMC (Gráfica de Tendencia)</h4>
+              <div class="svg-chart-container" *ngIf="progressReports().length > 0; else noChartData">
+                <svg viewBox="0 0 400 160" class="imc-trend-svg">
+                  <line x1="40" y1="130" x2="380" y2="130" stroke="rgba(255,255,255,0.1)" stroke-width="1" />
+                  <line x1="40" y1="80" x2="380" y2="80" stroke="rgba(255,255,255,0.1)" stroke-width="1" stroke-dasharray="4" />
+                  <line x1="40" y1="30" x2="380" y2="30" stroke="rgba(255,255,255,0.1)" stroke-width="1" stroke-dasharray="4" />
+                  
+                  <polyline fill="none" stroke="#dc143c" stroke-width="3" 
+                            [attr.points]="dynamicSvgPoints" />
+                  
+                  <circle *ngFor="let circle of dynamicSvgCircles" [attr.cx]="circle.cx" [attr.cy]="circle.cy" r="5" fill="#ffd700">
+                    <title>IMC: {{ circle.imc }} ({{ circle.fecha }})</title>
+                  </circle>
+
+                  <text *ngFor="let circle of dynamicSvgCircles" [attr.x]="circle.cx - 15" y="150" fill="#94a3b8" font-size="10">
+                    {{ circle.fecha }}
+                  </text>
+                </svg>
+              </div>
+              <ng-template #noChartData>
+                <div class="no-data-sub">Registra mediciones para ver la gráfica de tendencia.</div>
+              </ng-template>
+            </div>
+
+            <!-- Tabla de Historial de Mediciones Completa -->
+            <div class="history-table-card">
+              <h4>Historial de Mediciones Corporales</h4>
+              <div class="table-responsive">
+                <table class="imc-history-table">
+                  <thead>
+                    <tr>
+                      <th>Fecha</th>
+                      <th class="text-right">Peso</th>
+                      <th class="text-right">Estatura</th>
+                      <th class="text-right">IMC</th>
+                      <th class="text-right">Cintura</th>
+                      <th class="text-right">Pecho</th>
+                      <th class="text-right">Brazo</th>
+                      <th class="text-right">Pierna</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let rec of progressReports()">
+                      <td>{{ rec.fechaMedicion ? (rec.fechaMedicion | date:'dd/MM/yyyy') : (rec.createdAt | date:'dd/MM/yyyy') }}</td>
+                      <td class="text-right">{{ rec.peso }} kg</td>
+                      <td class="text-right">{{ rec.altura }} m</td>
+                      <td class="text-right bold-gold">{{ rec.imc }}</td>
+                      <td class="text-right">{{ rec.cintura ? rec.cintura + ' cm' : '--' }}</td>
+                      <td class="text-right">{{ rec.pecho ? rec.pecho + ' cm' : '--' }}</td>
+                      <td class="text-right">{{ rec.brazo ? rec.brazo + ' cm' : '--' }}</td>
+                      <td class="text-right">{{ rec.pierna ? rec.pierna + ' cm' : '--' }}</td>
+                    </tr>
+                    <tr *ngIf="progressReports().length === 0">
+                      <td colspan="8" class="text-center">Sin mediciones registradas.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. BLOQUE MIS LOGROS OBETNIDOS -->
+        <div class="sub-block-wrapper">
+          <h3 class="sub-block-title">
+            <span class="title-icon-wrapper title-icon-gold">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.45 1-1 1H7v4h10v-4h-2c-.55 0-1-.45-1-1v-2.34"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"></path></svg>
+            </span>
+            Mis Logros
+          </h3>
+          <div class="achievements-flex">
+            <div class="achievement-badge">
+              <span class="badge-icon badge-icon--fire">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg>
+              </span>
+              <div class="badge-text">
+                <strong>Constancia de Asistencia</strong>
+                <span>18 Días seguidos entrenando</span>
+              </div>
+            </div>
+            <div class="achievement-badge">
+              <span class="badge-icon badge-icon--gold">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>
+              </span>
+              <div class="badge-text">
+                <strong>Evaluación IMC Realizada</strong>
+                <span>Monitoreo de métricas físicas activo</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 5. MIS OBJETIVOS SECTION ================= -->
+      <section *ngIf="activeSection === 'objetivos'" class="section-container fade-in">
+        <div class="section-header-block sub-header-flex">
+          <div>
+            <span class="eyebrow">METAS & RENDIMIENTO</span>
+            <h2 class="section-title">Mis Objetivos</h2>
+            <p class="section-desc">Haz seguimiento visual a tus metas de entrenamiento y rendimiento físico.</p>
+          </div>
+          <button class="btn-primary-glow" (click)="openNewGoalModal()">+ Nuevo Objetivo</button>
+        </div>
+
+        <div class="goals-list-grid" *ngIf="userGoals().length > 0; else noGoalsBlock">
+          <div class="goal-card" *ngFor="let goal of userGoals()">
+            <div class="goal-header">
+              <h3 class="goal-item-title">
+                <span class="goal-target-icon">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>
+                </span>
+                {{ goal.nombreTipoObjetivo }}: {{ goal.valorMeta }} {{ goal.unidad }}
+              </h3>
+              <span class="status-badge" 
+                    [class.badge-completed]="goal.estado === 'COMPLETADO'"
+                    [class.badge-in-progress]="goal.estado === 'EN_PROGRESO'">
+                <span class="status-dot"></span>
+                {{ goal.estado === 'COMPLETADO' ? 'Completado' : 'En progreso' }}
+              </span>
+            </div>
+            <p class="goal-desc">{{ goal.descripcion || 'Objetivo de entrenamiento y control físico.' }}</p>
+
+            <div class="goal-metrics-row">
+              <div class="g-metric">
+                <span class="lbl">Actual:</span>
+                <span class="val">{{ goal.valorActual !== null ? goal.valorActual + ' ' + goal.unidad : '--' }}</span>
+              </div>
+              <div class="g-metric highlight">
+                <span class="lbl">Meta:</span>
+                <span class="val gold">{{ goal.valorMeta }} {{ goal.unidad }}</span>
+              </div>
+              <div class="g-metric">
+                <span class="lbl">Inicial:</span>
+                <span class="val">{{ goal.valorInicial !== null ? goal.valorInicial + ' ' + goal.unidad : '--' }}</span>
+              </div>
+            </div>
+
+            <div class="goal-progress-box">
+              <div class="progress-label-row">
+                <span>Progreso</span>
+                <span class="percent-val">{{ goal.porcentajeProgreso }}%</span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-fill" [style.width.%]="goal.porcentajeProgreso"></div>
+              </div>
+            </div>
+
+            <div class="goal-footer">
+              <span>Inicio: {{ goal.fechaInicio | date:'dd/MM/yyyy' }}</span>
+              <span *ngIf="goal.fechaLimite">Fecha límite: {{ goal.fechaLimite | date:'dd/MM/yyyy' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <ng-template #noGoalsBlock>
+          <div class="no-goals-card">
+            <h3>Aún no has creado objetivos de entrenamiento</h3>
+            <p>Define tus metas de peso, IMC o masa muscular para monitorear tu avance automático.</p>
+            <button class="btn-primary-glow" (click)="openNewGoalModal()">Crear mi primer objetivo</button>
+          </div>
+        </ng-template>
+      </section>
+
+      <!-- ================= 6. MI MEMBRESÍA SECTION ================= -->
+      <section *ngIf="activeSection === 'membresia'" class="section-container fade-in">
+        <div class="section-header-block">
+          <span class="eyebrow">SUSCRIPCIÓN & ACCESO</span>
+          <h2 class="section-title">Mi Membresía</h2>
+          <p class="section-desc">Información exclusiva sobre tu suscripción y plan activo en LevelUpGym.</p>
+        </div>
+
+        <div class="membership-status" *ngIf="profileData()?.activeMembership; else noMembershipView">
+          <div class="membership-card-premium" [ngClass]="profileData().activeMembership.nombre.toLowerCase()">
+            <div class="active-crown-badge">
+              <img [src]="getCrownImgUrl(profileData().activeMembership.nombre)" [alt]="profileData().activeMembership.nombre + ' Crown'" class="active-crown-img">
+            </div>
+            <div class="card-brand">LEVELUP <span class="tier-accent">{{ profileData().activeMembership.nombre | uppercase }}</span></div>
+            <p class="card-desc">{{ profileData().activeMembership.descripcion }}</p>
+            
+            <div class="membership-details-row">
+              <div class="detail-box">
+                <span class="label">Estado</span>
+                <span class="val active-status">
+                  ACTIVA
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -1px; margin-left: 3px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </span>
+              </div>
+              <div class="detail-box">
+                <span class="label">Precio Mensual</span>
+                <span class="val font-bold gold-text">${{ profileData().activeMembership.precio | number:'1.0-0' }} COP</span>
+              </div>
+              <div class="detail-box">
+                <span class="label">Sesiones Dirigidas</span>
+                <span class="val font-bold">{{ profileData().activeMembership.sesionesIncluidas ? profileData().activeMembership.sesionesIncluidas + ' / mes' : 'Acceso Libre' }}</span>
+              </div>
+              <div class="detail-box">
+                <span class="label">Fecha de Vencimiento</span>
+                <span class="val">{{ profileData().activeMembership.fechaFin | date:'longDate' | uppercase }}</span>
+              </div>
+            </div>
+
+            <div class="benefits-included">
+              <h4>Beneficios del Plan {{ profileData().activeMembership.nombre }}:</h4>
+              <div class="benefits-chips">
+                <ng-container *ngIf="profileData().activeMembership.beneficios?.length; else fallbackBenefits">
+                  <span class="benefit-chip" *ngFor="let b of profileData().activeMembership.beneficios">
+                    <svg class="chip-svg" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    {{ b }}
+                  </span>
+                </ng-container>
+                <ng-template #fallbackBenefits>
+                  <span class="benefit-chip">
+                    <svg class="chip-svg" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    Acceso Libre a Gimnasio
+                  </span>
+                  <span class="benefit-chip">
+                    <svg class="chip-svg" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    Vestidores y Duchas
+                  </span>
+                  <span class="benefit-chip" *ngIf="hasFullAccess()">
+                    <svg class="chip-svg" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    Rutinas Guiadas y Modelo 3D
+                  </span>
+                  <span class="benefit-chip" *ngIf="hasFullAccess()">
+                    <svg class="chip-svg" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    Clases Grupales y Coach
+                  </span>
+                </ng-template>
+              </div>
+
+              <h4 class="mt-3" *ngIf="profileData().activeMembership.serviciosIncluidos?.length">Servicios Incluidos:</h4>
+              <div class="benefits-chips" *ngIf="profileData().activeMembership.serviciosIncluidos?.length">
+                <span class="benefit-chip service-accent" *ngFor="let s of profileData().activeMembership.serviciosIncluidos">
+                  <svg class="chip-svg service-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                  {{ s }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="membership-actions-row">
+            <button class="btn-outline-lg" (click)="showReceiptModal.set(true)" *ngIf="lastReceipt()">VER ÚLTIMO RECIBO</button>
+          </div>
+        </div>
+
+        <ng-template #noMembershipView>
+          <div class="no-membership-box">
+            <h3>No tienes una membresía activa</h3>
+            <p>Selecciona uno de los siguientes planes para activar tu suscripción ahora mismo.</p>
+          </div>
+        </ng-template>
+
+        <!-- Plans Selection / Upgrade Section -->
+        <div class="plans-upgrade-container">
+          <h3 class="upgrade-title">Planes Disponibles en LevelUpGym</h3>
+          <div class="plans-cards-flex">
+            <div class="plan-card-item" *ngFor="let plan of availablePlans()" [ngClass]="plan.nombre.toLowerCase()">
+              <div class="dash-crown-box">
+                <img [src]="getCrownImgUrl(plan.nombre)" [alt]="plan.nombre + ' Crown'" class="dash-crown-img">
+              </div>
+              <div class="tier-tag" *ngIf="plan.nombre.toLowerCase() === 'plata' || plan.nombre.toLowerCase() === 'oro'">
+                INCLUYE 3D Y RUTINAS
+              </div>
+              <h4>PLAN {{ plan.nombre | uppercase }}</h4>
+              <div class="price-row">
+                <span class="amount">${{ plan.precio | number:'1.0-0' }}</span>
+                <span class="period">/mes</span>
+              </div>
+              <p class="plan-desc-text">{{ plan.descripcion }}</p>
+              <button class="btn-primary-action" (click)="buyPlan(plan.idMembresia)">
+                {{ (profileData()?.activeMembership?.nombre?.toLowerCase() === plan.nombre.toLowerCase()) ? 'PLAN ACTUAL' : 'ADQUIRIR / MEJORAR PLAN' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 7. MIS SESIONES SECTION ================= -->
+      <section *ngIf="activeSection === 'sesiones'" class="section-container fade-in">
+        <div class="section-header-block">
+          <span class="eyebrow">CLASES & AGENDAMIENTO</span>
+          <h2 class="section-title">Clases y Sesiones Dirigidas</h2>
+          <p class="section-desc">Inscríbete en las clases disponibles con nuestros entrenadores y gestiona tus reservas de entrenamiento.</p>
+        </div>
+
+        <!-- LOCKED FEATURE BANNER FOR BRONCE / NO PLAN -->
+        <div class="locked-feature-banner" *ngIf="!hasFullAccess()">
+          <div class="lock-icon-huge">
+            <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          </div>
+          <h3>Inscripción a Clases Exclusiva para Plan PLATA y ORO</h3>
+          <p>La asistencia a clases grupales y sesiones dirigidas está disponible únicamente para miembros de los planes <strong>PLATA</strong> u <strong>ORO</strong>.</p>
+          <button class="btn-primary-glow" (click)="setSection('membresia')">MEJORAR PLAN</button>
+        </div>
+
+        <!-- UNLOCKED SESSIONS CONTENT (PLATA / ORO) -->
+        <div *ngIf="hasFullAccess()">
+          
+          <!-- 1. MIS RESERVAS -->
+          <div class="sub-block-wrapper">
+            <div class="sub-header-flex">
+              <h3 class="sub-block-title">
+                <span class="title-icon-wrapper">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                </span>
+                Mis Reservas Confirmadas
+              </h3>
+              <span class="badge-count-tag" *ngIf="myClasses().length > 0">{{ myClasses().length }} {{ myClasses().length === 1 ? 'Sesión' : 'Sesiones' }}</span>
+            </div>
+
+            <div class="sessions-cards-grid" *ngIf="myClasses().length > 0; else noReservationsBlock">
+              <div class="session-card-item is-reserved" *ngFor="let clase of myClasses()">
+                <div class="session-time-box">
+                  <span class="date-lbl">{{ clase.fecha }}</span>
+                  <span class="hour-lbl">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: -2px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    {{ clase.hora }}
+                  </span>
+                </div>
+                <div class="session-info-box">
+                  <span class="session-type-tag">CLASE RESERVADA</span>
+                  <h4 class="session-name">{{ clase.nombre }}</h4>
+                  <div class="session-meta">
+                    <span class="meta-item">
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: -2px;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                      Entrenador: <strong>{{ clase.entrenador.nombreCompleto }}</strong>
+                    </span>
+                  </div>
+                </div>
+                <div class="session-action-box">
+                  <span class="sess-badge status-prog">
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -1px; margin-right: 4px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    {{ clase.estado || 'CONFIRMADA' }}
+                  </span>
+                  <button class="btn-cancel-slanted" (click)="unenrollClass(clase.idClass)">
+                    CANCELAR RESERVA
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <ng-template #noReservationsBlock>
+              <div class="no-data-card-box">
+                <div class="no-data-icon">
+                  <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                </div>
+                <h4>No tienes reservas activas</h4>
+                <p>Explora la lista de clases disponibles a continuación y reserva tu cupo.</p>
+              </div>
+            </ng-template>
+          </div>
+
+          <!-- 2. CLASES DISPONIBLES -->
+          <div class="sub-block-wrapper" style="margin-top: 2.5rem;">
+            <div class="sub-header-flex">
+              <h3 class="sub-block-title">
+                <span class="title-icon-wrapper title-icon-fire">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg>
+                </span>
+                Clases Disponibles para Agendar
+              </h3>
+              <span class="badge-count-tag gold-accent" *ngIf="availableClasses().length > 0">{{ availableClasses().length }} Disponibles</span>
+            </div>
+
+            <div class="sessions-cards-grid" *ngIf="availableClasses().length > 0; else noAvailableBlock">
+              <div class="session-card-item" *ngFor="let clase of availableClasses()" [class.is-full]="clase.inscritos >= clase.capacidadMaxima">
+                <div class="session-time-box">
+                  <span class="date-lbl">{{ clase.fecha }}</span>
+                  <span class="hour-lbl">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: -2px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    {{ clase.hora }}
+                  </span>
+                </div>
+                <div class="session-info-box">
+                  <div class="session-spots-row">
+                    <span class="session-type-tag">CLASE GRUPAL</span>
+                    <span class="spots-badge" [class.spots-empty]="clase.inscritos >= clase.capacidadMaxima">
+                      <span class="spot-indicator-dot" [class.dot-full]="clase.inscritos >= clase.capacidadMaxima"></span>
+                      {{ clase.inscritos >= clase.capacidadMaxima ? 'AGOTADO' : ((clase.capacidadMaxima - clase.inscritos) + ' Cupos libres') }}
+                    </span>
+                  </div>
+                  <h4 class="session-name">{{ clase.nombre }}</h4>
+                  <div class="session-meta">
+                    <span class="meta-item">
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: -2px;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                      Coach: <strong>{{ clase.entrenador.nombreCompleto }}</strong>
+                    </span>
+                    <span class="meta-item cap-info">
+                      Capacidad: {{ clase.inscritos }}/{{ clase.capacidadMaxima }}
+                    </span>
+                  </div>
+                </div>
+                <div class="session-action-box">
+                  <button class="btn-enroll-slanted" 
+                          (click)="enrollInClass(clase.idClass)" 
+                          [disabled]="clase.inscritos >= clase.capacidadMaxima"
+                          [class.disabled-btn]="clase.inscritos >= clase.capacidadMaxima">
+                    {{ clase.inscritos >= clase.capacidadMaxima ? 'CUPOS AGOTADOS' : 'INSCRIBIRSE AHORA' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <ng-template #noAvailableBlock>
+              <div class="no-data-card-box">
+                <div class="no-data-icon">
+                  <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5h11M6.5 17.5h11M3 10v4M21 10v4M4.5 8v8M19.5 8v8"></path></svg>
+                </div>
+                <h4>No hay clases disponibles en este momento</h4>
+                <p>Nuestros entrenadores publicarán nuevos horarios pronto. Vuelve a consultar más tarde.</p>
+              </div>
+            </ng-template>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ================= 8. MI PERFIL SECTION ================= -->
+      <section *ngIf="activeSection === 'perfil'" class="section-container fade-in">
+        <div class="section-header-block">
+          <span class="eyebrow">DATOS DE USUARIO</span>
+          <h2 class="section-title">Mi Perfil Personal</h2>
+          <p class="section-desc">Administra y actualiza tus datos personales y métricas corporales en LevelUpGym.</p>
+        </div>
+
+        <div class="profile-card-box" *ngIf="profileData()">
+          <div class="profile-avatar-row">
+            <div class="avatar-wrapper">
+              <img [src]="'https://ui-avatars.com/api/?name=' + profileData().nombre + '+' + profileData().apellidos + '&background=DC143C&color=fff&size=128'" alt="Profile Photo" class="big-avatar">
+            </div>
+            <div class="avatar-info">
+              <div class="avatar-badges-top">
+                <span class="profile-tier-badge" *ngIf="profileData()?.activeMembership">
+                  PLAN {{ profileData().activeMembership.nombre | uppercase }}
+                </span>
+                <span class="profile-bmi-tag" *ngIf="getBmiEvaluation() as bmi" [ngClass]="bmi.badgeClass">
+                  IMC: {{ bmi.imc }} kg/m² • {{ bmi.categoria }}
+                </span>
+              </div>
+              <h3>{{ profileData().nombre }} {{ profileData().apellidos }}</h3>
+              <p class="avatar-email">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px; vertical-align: -2px;"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                {{ profileData().email }}
+              </p>
+            </div>
+          </div>
+
+          <form (ngSubmit)="updateProfile()" class="profile-form">
+            <!-- 1. Información Personal -->
+            <div class="form-section-header">
+              <span class="section-tag-dot"></span>
+              <h4>Información Personal y de Contacto</h4>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-field">
+                <label>Nombre(s)</label>
+                <input type="text" [(ngModel)]="profileData().nombre" name="nombre" class="form-ctrl" required placeholder="Tu nombre">
+              </div>
+              <div class="form-field">
+                <label>Apellidos</label>
+                <input type="text" [(ngModel)]="profileData().apellidos" name="apellidos" class="form-ctrl" required placeholder="Tus apellidos">
+              </div>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-field">
+                <label>Teléfono de Contacto</label>
+                <input type="text" [(ngModel)]="profileData().telefono" name="telefono" class="form-ctrl" placeholder="3001234567" maxlength="10">
+              </div>
+              <div class="form-field">
+                <label>Correo Electrónico (Solo Lectura)</label>
+                <input type="email" [value]="profileData().email" class="form-ctrl readonly" readonly>
+              </div>
+            </div>
+
+            <!-- 2. Documento de Identificación -->
+            <div class="form-section-header">
+              <span class="section-tag-dot"></span>
+              <h4>Identificación Oficial</h4>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-field">
+                <label>Tipo de Documento</label>
+                <input type="text" [value]="profileData().tipoDocumento || 'CC'" class="form-ctrl readonly" readonly>
+              </div>
+              <div class="form-field">
+                <label>Número de Documento</label>
+                <input type="text" [value]="profileData().numDocumento || 'Sin registrar'" class="form-ctrl readonly" readonly>
+              </div>
+            </div>
+
+            <!-- 3. Parámetros Físicos para IMC -->
+            <div class="form-section-header">
+              <span class="section-tag-dot"></span>
+              <h4>Parámetros Antropométricos (Para Cálculo de IMC)</h4>
+            </div>
+
+            <div class="form-grid-3">
+              <div class="form-field">
+                <label>Sexo Biológico</label>
+                <select [(ngModel)]="profileData().sexo" name="sexo" class="form-ctrl">
+                  <option value="Masculino">Masculino</option>
+                  <option value="Femenino">Femenino</option>
+                </select>
+              </div>
+              <div class="form-field">
+                <label>Peso Corporal (kg)</label>
+                <input type="number" [(ngModel)]="profileData().peso" name="peso" class="form-ctrl" placeholder="70" step="0.1">
+              </div>
+              <div class="form-field">
+                <label>Estatura (cm)</label>
+                <input type="number" [(ngModel)]="profileData().estatura" name="estatura" class="form-ctrl" placeholder="175" step="1">
+              </div>
+            </div>
+
+            <div class="form-btn-row">
+              <button type="submit" class="btn-primary-save">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px; vertical-align: -3px;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                GUARDAR DATOS & RECALCULAR IMC
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- ================= 9. CONFIGURACIÓN SECTION ================= -->
+      <section *ngIf="activeSection === 'configuracion'" class="section-container fade-in">
+        <!-- Section Header - Admin Style -->
+        <div class="cfg-header">
+          <div class="cfg-header-text">
+            <span class="cfg-eyebrow">AJUSTES DE CUENTA</span>
+            <h2 class="cfg-title">Configuración</h2>
+          </div>
+          <p class="cfg-subtitle">Gestiona tu seguridad, notificaciones y preferencias de interfaz.</p>
+        </div>
+
+        <div class="cfg-grid">
+          <!-- Card: Cuenta y Seguridad -->
+          <div class="cfg-card">
+            <div class="cfg-card-corner"></div>
+            <div class="cfg-card-header">
+              <div class="cfg-card-icon">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+              </div>
+              <div>
+                <h3 class="cfg-card-title">Cuenta y Seguridad</h3>
+                <p class="cfg-card-desc">Gestiona tus datos personales y credenciales de acceso.</p>
+              </div>
+            </div>
+            <div class="cfg-card-body">
+              <button class="cfg-action-btn" (click)="setSection('perfil')">
+                <span class="cfg-action-icon">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                </span>
+                <span class="cfg-action-text">
+                  <span class="cfg-action-label">Editar información personal</span>
+                  <span class="cfg-action-hint">Nombre, apellidos, correo y datos de contacto</span>
+                </span>
+                <span class="cfg-action-arrow">→</span>
+              </button>
+              <button class="cfg-action-btn" (click)="showPasswordModal.set(true)">
+                <span class="cfg-action-icon">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
+                </span>
+                <span class="cfg-action-text">
+                  <span class="cfg-action-label">Cambiar contraseña</span>
+                  <span class="cfg-action-hint">Actualiza tu contraseña de acceso a la plataforma</span>
+                </span>
+                <span class="cfg-action-arrow">→</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Card: Notificaciones -->
+          <div class="cfg-card">
+            <div class="cfg-card-corner"></div>
+            <div class="cfg-card-header">
+              <div class="cfg-card-icon cfg-card-icon--gold">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+              </div>
+              <div>
+                <h3 class="cfg-card-title">Notificaciones</h3>
+                <p class="cfg-card-desc">Controla qué alertas y comunicaciones deseas recibir.</p>
+              </div>
+            </div>
+            <div class="cfg-card-body">
+              <label class="cfg-toggle-row">
+                <div class="cfg-toggle-info">
+                  <span class="cfg-toggle-label">Alertas por correo electrónico</span>
+                  <span class="cfg-toggle-hint">Recibe notificaciones importantes en tu bandeja</span>
+                </div>
+                <div class="cfg-switch">
+                  <input type="checkbox" [(ngModel)]="notificationsSettings.emailAlerts">
+                  <span class="cfg-switch-slider"></span>
+                </div>
+              </label>
+              <label class="cfg-toggle-row">
+                <div class="cfg-toggle-info">
+                  <span class="cfg-toggle-label">Recordatorios de entrenamientos</span>
+                  <span class="cfg-toggle-hint">Avisos antes de tus sesiones programadas</span>
+                </div>
+                <div class="cfg-switch">
+                  <input type="checkbox" [(ngModel)]="notificationsSettings.sessionReminders">
+                  <span class="cfg-switch-slider"></span>
+                </div>
+              </label>
+              <label class="cfg-toggle-row">
+                <div class="cfg-toggle-info">
+                  <span class="cfg-toggle-label">Novedades y promociones</span>
+                  <span class="cfg-toggle-hint">Ofertas especiales y actualizaciones del gimnasio</span>
+                </div>
+                <div class="cfg-switch">
+                  <input type="checkbox" [(ngModel)]="notificationsSettings.promotions">
+                  <span class="cfg-switch-slider"></span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Card: Preferencias de Interfaz -->
+          <div class="cfg-card">
+            <div class="cfg-card-corner"></div>
+            <div class="cfg-card-header">
+              <div class="cfg-card-icon cfg-card-icon--cyan">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+              </div>
+              <div>
+                <h3 class="cfg-card-title">Preferencias de Interfaz</h3>
+                <p class="cfg-card-desc">Personaliza la apariencia visual de tu panel.</p>
+              </div>
+            </div>
+            <div class="cfg-card-body">
+              <div class="cfg-theme-selector">
+                <span class="cfg-theme-label">TEMA DE PANTALLA</span>
+                <div class="cfg-theme-options">
+                  <button class="cfg-theme-option" [class.active]="themeMode === 'dark'" (click)="themeMode = 'dark'">
+                    <span class="cfg-theme-icon">
+                      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                    </span>
+                    <span class="cfg-theme-name">Oscuro</span>
+                    <span class="cfg-theme-tag">Predeterminado</span>
+                  </button>
+                  <button class="cfg-theme-option" [class.active]="themeMode === 'light'" (click)="themeMode = 'light'">
+                    <span class="cfg-theme-icon">
+                      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                    </span>
+                    <span class="cfg-theme-name">Claro</span>
+                    <span class="cfg-theme-tag">Modo día</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card: Zona de Peligro -->
+          <div class="cfg-card cfg-card--danger">
+            <div class="cfg-card-corner cfg-card-corner--danger"></div>
+            <div class="cfg-card-header">
+              <div class="cfg-card-icon cfg-card-icon--danger">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+              </div>
+              <div>
+                <h3 class="cfg-card-title">Zona de Peligro</h3>
+                <p class="cfg-card-desc">Acciones irreversibles sobre tu sesión y cuenta.</p>
+              </div>
+            </div>
+            <div class="cfg-card-body cfg-danger-actions">
+              <button class="cfg-btn-logout" (click)="logout()">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                Cerrar sesión
+              </button>
+              <button class="cfg-btn-delete" (click)="showDeleteConfirmModal = true">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                Eliminar cuenta de usuario
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- ================= MODALS ================= -->
+
+  <!-- MODAL CREACIÓN DE NUEVO OBJETIVO -->
+  <div class="modal-overlay fade-in" *ngIf="showNewGoalModal()">
+    <div class="modal-card">
+      <button class="close-btn" (click)="closeNewGoalModal()" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+      <h2>Crear Nuevo Objetivo Físico</h2>
+      <p class="modal-sub-desc">Establece tu meta. El sistema calculará tu progreso automáticamente con cada medición que registres.</p>
+
+      <form [formGroup]="goalForm" (ngSubmit)="createGoal()" class="modal-form">
+        <div class="form-field">
+          <label>TIPO DE OBJETIVO *</label>
+          <select formControlName="idTipoObjetivo" class="form-ctrl">
+            <option [ngValue]="null" disabled>-- Selecciona un tipo de objetivo --</option>
+            <option *ngFor="let type of availableGoalTypes()" [value]="type.idTipoObjetivo">
+              {{ type.nombre }} ({{ type.unidad }}) - Meta {{ type.direccion === 'MENOR' ? 'Disminución' : 'Aumento' }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label>VALOR META {{ selectedGoalTypeUnit ? '(' + selectedGoalTypeUnit + ')' : '' }} *</label>
+          <input type="number" formControlName="valorMeta" class="form-ctrl" placeholder="Ej: 75.0" step="0.1">
+          <span class="field-hint">Meta numérica que deseas alcanzar</span>
+        </div>
+
+        <div class="form-field">
+          <label>FECHA LÍMITE (OPCIONAL)</label>
+          <input type="date" formControlName="fechaLimite" class="form-ctrl">
+        </div>
+
+        <div class="form-field">
+          <label>DESCRIPCIÓN / MOTIVACIÓN (OPCIONAL)</label>
+          <textarea formControlName="descripcion" class="form-ctrl" rows="3" placeholder="Ej: Reducir masa grasa para el verano..."></textarea>
+        </div>
+
+        <button type="submit" class="btn-primary-glow w-100">ESTABLECER OBJETIVO</button>
+      </form>
+    </div>
+  </div>
+  <!-- MODAL PROCESO Y PASARELA DE PAGO DE MEMBRESÍA (COMPRA Y CAMBIO DE PLAN) -->
+  <div class="modal-overlay fade-in" *ngIf="showPaymentCheckoutModal() && targetCheckoutPlan()">
+    <div class="modal-card modal-medium" style="max-width: 540px; width: 100%;">
+      <button class="close-btn" (click)="cancelPaymentCheckout()" *ngIf="paymentStep() === 'form'" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+      
+      <!-- ═══════ PASO 1: FORMULARIO DE PAGO ═══════ -->
+      <ng-container *ngIf="paymentStep() === 'form'">
+        <div class="modal-header">
+          <span class="modal-tag">{{ isUpgradeFlow() ? 'CAMBIO DE PLAN' : 'NUEVA SUSCRIPCIÓN' }}</span>
+          <h2 style="margin-top: 0.25rem;">Proceso de Pago Seguro</h2>
+        </div>
+
+        <!-- RESUMEN DE COMPRA / CAMBIO -->
+        <div class="upgrade-summary-box" style="margin-top: 1rem;">
+          <div class="upgrade-summary-row" *ngIf="isUpgradeFlow() && upgradeCalc()">
+            <span class="lbl">Plan actual:</span>
+            <span class="val font-semibold">{{ upgradeCalc()!.nombrePlanActual }} (${{ upgradeCalc()!.valorPlanActual | number:'1.0-0' }} COP)</span>
+          </div>
+          <div class="upgrade-summary-row highlight-new">
+            <span class="lbl">{{ isUpgradeFlow() ? 'Nuevo plan:' : 'Plan seleccionado:' }}</span>
+            <span class="val font-bold gold-text">{{ targetCheckoutPlan()!.nombre }}</span>
+          </div>
+          <div class="upgrade-summary-row">
+            <span class="lbl">Precio del plan:</span>
+            <span class="val font-bold">${{ targetCheckoutPlan()!.precio | number:'1.0-0' }} COP</span>
+          </div>
+          <div class="upgrade-summary-row surplus-row">
+            <span class="lbl">{{ isUpgradeFlow() ? 'Excedente a pagar:' : 'Total a pagar:' }}</span>
+            <span class="val total-amount" style="color: #00e676; font-size: 1.25rem; font-weight: 800;">
+              ${{ checkoutAmount() | number:'1.0-0' }} COP
+            </span>
+          </div>
+        </div>
+
+        <!-- SELECCIÓN DE MÉTODO DE PAGO -->
+        <div class="payment-method-selector" style="margin-top: 1.25rem;">
+          <label style="display: block; font-size: 0.85rem; font-weight: 700; color: #ccc; margin-bottom: 0.5rem; text-transform: uppercase;">
+            Método de Pago
+          </label>
+          <div style="display: flex; gap: 0.75rem;">
+            <button type="button" 
+                    (click)="selectedPaymentMethod.set('PSE')"
+                    [style.border]="selectedPaymentMethod() === 'PSE' ? '2px solid #00b0ff' : '1px solid #333'"
+                    [style.background]="selectedPaymentMethod() === 'PSE' ? 'rgba(0, 176, 255, 0.15)' : '#1e1e1e'"
+                    style="flex: 1; padding: 0.75rem; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: 0.2s;">
+              <span style="display: inline-flex; align-items: center;">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="21" x2="21" y2="21"></line><line x1="3" y1="10" x2="21" y2="10"></line><polyline points="5 6 12 3 19 6"></polyline><line x1="4" y1="10" x2="4" y2="21"></line><line x1="20" y1="10" x2="20" y2="21"></line><line x1="8" y1="14" x2="8" y2="17"></line><line x1="12" y1="14" x2="12" y2="17"></line><line x1="16" y1="14" x2="16" y2="17"></line></svg>
+              </span>
+              PSE (Débito)
+            </button>
+            <button type="button" 
+                    (click)="selectedPaymentMethod.set('TARJETA')"
+                    [style.border]="selectedPaymentMethod() === 'TARJETA' ? '2px solid #00e676' : '1px solid #333'"
+                    [style.background]="selectedPaymentMethod() === 'TARJETA' ? 'rgba(0, 230, 118, 0.15)' : '#1e1e1e'"
+                    style="flex: 1; padding: 0.75rem; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: 0.2s;">
+              <span style="display: inline-flex; align-items: center;">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+              </span>
+              Tarjeta
+            </button>
+          </div>
+        </div>
+
+        <!-- FORMULARIO PSE -->
+        <div *ngIf="selectedPaymentMethod() === 'PSE'" style="margin-top: 1.25rem; background: #1a1a1a; padding: 1rem; border-radius: 8px; border: 1px solid #2a2a2a;">
+          <div class="form-field">
+            <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.4rem;">SELECCIONA TU BANCO</label>
+            <select [ngModel]="selectedBank()" (ngModelChange)="selectedBank.set($event)" style="width: 100%; padding: 0.75rem; border-radius: 6px; border: 1px solid #333; background: #262626; color: white; font-weight: 500;">
+              <option value="Bancolombia">Bancolombia</option>
+              <option value="Banco de Bogotá">Banco de Bogotá</option>
+              <option value="Davivienda">Davivienda</option>
+              <option value="Nequi">Nequi</option>
+              <option value="Daviplata">Daviplata</option>
+              <option value="BBVA Colombia">BBVA Colombia</option>
+              <option value="Banco de Occidente">Banco de Occidente</option>
+              <option value="Scotiabank Colpatria">Scotiabank Colpatria</option>
+              <option value="Banco Popular">Banco Popular</option>
+              <option value="Banco Itaú">Banco Itaú</option>
+            </select>
+          </div>
+
+          <div class="form-field" style="margin-top: 0.75rem;">
+            <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.4rem;">TIPO DE PERSONA</label>
+            <div style="display: flex; gap: 1.5rem; margin-top: 0.25rem;">
+              <label style="color: white; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;">
+                <input type="radio" name="personType" value="NATURAL" [ngModel]="selectedPersonType()" (ngModelChange)="selectedPersonType.set($event)"> Persona Natural
+              </label>
+              <label style="color: white; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;">
+                <input type="radio" name="personType" value="JURIDICA" [ngModel]="selectedPersonType()" (ngModelChange)="selectedPersonType.set($event)"> Persona Jurídica
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- FORMULARIO TARJETA CON VALIDACIONES INLINE Y DATOS FICTICIOS DEMO -->
+        <div *ngIf="selectedPaymentMethod() === 'TARJETA'" style="margin-top: 1.25rem; background: #1a1a1a; padding: 1rem; border-radius: 8px; border: 1px solid #2a2a2a;">
+          
+          <!-- BANNER AMARILLO DE TARJETAS DEMO PARA EVALUACIÓN -->
+          <div style="background: rgba(255, 235, 59, 0.08); border: 1px dashed rgba(255, 235, 59, 0.4); border-radius: 8px; padding: 0.65rem 0.85rem; margin-bottom: 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+              <span style="color: #ffeb3b; display: inline-flex; align-items: center;">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"></path><path d="M10 22h4"></path><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"></path></svg>
+              </span>
+              <span style="font-size: 0.75rem; color: #ffeb3b; font-weight: 800; text-transform: uppercase;">
+                Tarjetas ficticias para la prueba demo (Haz clic para autocompletar):
+              </span>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.4rem;">
+              <button type="button" 
+                      *ngFor="let card of simulatedCards"
+                      (click)="fillDemoCard(card)"
+                      [style.background]="selectedDemoCard()?.id === card.id ? 'rgba(0, 230, 118, 0.2)' : '#262626'"
+                      [style.borderColor]="selectedDemoCard()?.id === card.id ? '#00e676' : '#444'"
+                      style="border: 1px solid; border-radius: 6px; padding: 0.35rem 0.65rem; color: white; font-size: 0.72rem; cursor: pointer; display: flex; align-items: center; gap: 0.35rem; transition: 0.2s;">
+                <span>{{ card.brandIcon }}</span>
+                <strong>{{ card.brand }}</strong>
+                <span style="color: #aaa; font-family: monospace;">•••• {{ card.cardNumber.slice(-4) }}</span>
+                <span style="font-size: 0.65rem; padding: 0.1rem 0.3rem; border-radius: 3px;"
+                      [style.background]="card.type === 'approved' ? 'rgba(0, 230, 118, 0.2)' : 'rgba(255, 68, 68, 0.2)'"
+                      [style.color]="card.type === 'approved' ? '#00e676' : '#ff4444'">
+                  {{ card.type === 'approved' ? 'Aprobada' : 'Declinada' }}
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <div class="form-field">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+              <label style="font-size: 0.8rem; color: #aaa; margin: 0;">NÚMERO DE TARJETA</label>
+              <span *ngIf="cardNumber()" style="font-size: 0.75rem; font-weight: 700; color: #00b0ff;">
+                {{ detectedCardBrandInfo.icon }}
+              </span>
+            </div>
+            <input type="text" [ngModel]="cardNumber()" (ngModelChange)="formatCardNumber($event)" placeholder="4532 1234 5678 8892" maxlength="23"
+                   [style.borderColor]="cardNumberError() ? '#ff4444' : '#333'"
+                   style="width: 100%; padding: 0.75rem; border-radius: 6px; border: 1px solid; background: #262626; color: white; font-family: 'Courier New', monospace; font-size: 1rem; letter-spacing: 2px;">
+            <span *ngIf="cardNumberError()" style="color: #ff4444; font-size: 0.75rem; margin-top: 0.25rem; display: block;">{{ cardNumberError() }}</span>
+          </div>
+
+          <div class="form-field" style="margin-top: 0.75rem;">
+            <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.4rem;">NOMBRE DEL TITULAR</label>
+            <input type="text" [ngModel]="cardHolder()" (ngModelChange)="cardHolder.set($event)" placeholder="Ej: JUAN PEREZ"
+                   [style.borderColor]="cardHolderError() ? '#ff4444' : '#333'"
+                   style="width: 100%; padding: 0.75rem; border-radius: 6px; border: 1px solid; background: #262626; color: white; text-transform: uppercase;">
+            <span *ngIf="cardHolderError()" style="color: #ff4444; font-size: 0.75rem; margin-top: 0.25rem; display: block;">{{ cardHolderError() }}</span>
+          </div>
+
+          <div style="display: flex; gap: 0.75rem; margin-top: 0.75rem;">
+            <div class="form-field" style="flex: 1;">
+              <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.4rem;">VENCIMIENTO</label>
+              <input type="text" [ngModel]="cardExp()" (ngModelChange)="formatCardExp($event)" placeholder="MM/YY" maxlength="5"
+                     [style.borderColor]="cardExpError() ? '#ff4444' : '#333'"
+                     style="width: 100%; padding: 0.75rem; border-radius: 6px; border: 1px solid; background: #262626; color: white; text-align: center; font-family: 'Courier New', monospace;">
+              <span *ngIf="cardExpError()" style="color: #ff4444; font-size: 0.75rem; margin-top: 0.25rem; display: block;">{{ cardExpError() }}</span>
+            </div>
+            <div class="form-field" style="flex: 1;">
+              <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.4rem;">CVV</label>
+              <input type="password" [ngModel]="cardCvv()" (ngModelChange)="cardCvv.set($event)" placeholder="•••" maxlength="4"
+                     [style.borderColor]="cardCvvError() ? '#ff4444' : '#333'"
+                     style="width: 100%; padding: 0.75rem; border-radius: 6px; border: 1px solid; background: #262626; color: white; text-align: center;">
+              <span *ngIf="cardCvvError()" style="color: #ff4444; font-size: 0.75rem; margin-top: 0.25rem; display: block;">{{ cardCvvError() }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- BARRA DE SEGURIDAD -->
+        <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 1rem; padding: 0.6rem 0.75rem; background: rgba(0, 230, 118, 0.08); border: 1px solid rgba(0, 230, 118, 0.2); border-radius: 6px;">
+          <span style="color: #00e676; display: inline-flex; align-items: center;">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          </span>
+          <span style="font-size: 0.75rem; color: #888;">Transacción protegida con cifrado SSL y protocolo 3D Secure 2.0. Tus datos bancarios no se almacenan.</span>
+        </div>
+
+        <!-- BOTONES DE ACCIÓN -->
+        <div style="display: flex; gap: 0.75rem; margin-top: 1.25rem;">
+          <button type="button" class="btn-ghost" (click)="cancelPaymentCheckout()" style="flex: 1; padding: 0.75rem; border-radius: 6px; border: 1px solid #444; background: transparent; color: #aaa; font-weight: bold; cursor: pointer;">
+            Cancelar
+          </button>
+          <button type="button" 
+                  (click)="onInitialCheckoutSubmit()" 
+                  [disabled]="isProcessingPayment()"
+                  style="flex: 1.5; padding: 0.75rem; border-radius: 6px; border: none; background: linear-gradient(135deg, #DC143C 0%, #ff4d4d 100%); color: white; font-weight: 800; cursor: pointer; box-shadow: 0 4px 15px rgba(220, 20, 60, 0.4); transition: 0.2s;"
+                  [style.opacity]="isProcessingPayment() ? '0.6' : '1'">
+            {{ selectedPaymentMethod() === 'PSE' ? 'Continuar a Pago PSE' : 'Continuar a Validación 3D Secure' }} (${{ checkoutAmount() | number:'1.0-0' }} COP)
+          </button>
+        </div>
+      </ng-container>
+
+      <!-- ═══════ PASO 2: SIMULACIÓN DE PORTAL PSE ESPECÍFICO DEL BANCO ═══════ -->
+      <ng-container *ngIf="paymentStep() === 'pse_form'">
+        <button class="close-btn" (click)="cancelPaymentCheckout()" aria-label="Cerrar">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+
+        <!-- BANNER CABECERA DE LA SIMULACIÓN BANCARIA -->
+        <div style="border-radius: 12px; padding: 1.1rem 1.25rem; border: 1px solid rgba(255, 255, 255, 0.15); margin-bottom: 1rem; transition: 0.3s; background: #1a1a1a;"
+             [style.borderColor]="currentBankConfig.primaryColor">
+          
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <span style="font-size: 1.8rem; background: rgba(0,0,0,0.4); width: 46px; height: 46px; border-radius: 10px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.2);">
+                {{ currentBankConfig.logoIcon }}
+              </span>
+              <div>
+                <span style="font-size: 0.65rem; letter-spacing: 0.8px; color: #ffeb3b; font-weight: 800; text-transform: uppercase; display: flex; align-items: center; gap: 0.35rem;">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>
+                  PASARELA SIMULADA — UNIVERSIDAD
+                </span>
+                <h2 style="margin: 0; font-size: 1.15rem; color: white; font-weight: 800;">
+                  {{ currentBankConfig.labels.loginTitle }}
+                </h2>
+              </div>
+            </div>
+
+              <!-- SELECTOR DE BANCO PARA CAMBIAR SIN PROCESAR PAGO -->
+              <div style="min-width: 145px;">
+                <label style="display: block; font-size: 0.65rem; color: #aaa; font-weight: 700; margin-bottom: 0.2rem; text-transform: uppercase;">Cambiar Banco</label>
+                <select [ngModel]="selectedBank()" (ngModelChange)="onBankChange($event)" style="width: 100%; padding: 0.4rem 0.6rem; border-radius: 6px; border: 1px solid #555; background: #242424; color: white; font-size: 0.8rem; font-weight: 700;">
+                  <option value="Nequi">Nequi</option>
+                  <option value="Bancolombia">Bancolombia</option>
+                  <option value="Davivienda">Davivienda</option>
+                  <option value="Banco de Bogotá">Banco de Bogotá</option>
+                  <option value="Daviplata">Daviplata</option>
+                  <option value="BBVA Colombia">BBVA Colombia</option>
+                  <option value="Banco de Occidente">Banco de Occidente</option>
+                  <option value="Scotiabank Colpatria">Scotiabank Colpatria</option>
+                  <option value="Banco Popular">Banco Popular</option>
+                  <option value="Banco Itaú">Banco Itaú</option>
+                </select>
+              </div>
+          </div>
+        </div>
+
+        <!-- TARJETA CON DATOS DEMO SUGERIDOS PARA LA EVALUACIÓN UNIVERSITARIA -->
+        <div style="background: rgba(255, 235, 59, 0.08); border: 1px dashed rgba(255, 235, 59, 0.4); border-radius: 8px; padding: 0.65rem 0.85rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.65rem;">
+          <span style="color: #ffeb3b; display: inline-flex; align-items: center;">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"></path><path d="M10 22h4"></path><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"></path></svg>
+          </span>
+          <div style="font-size: 0.75rem; color: #eee; line-height: 1.35;">
+            <strong style="color: #ffeb3b;">Credenciales ficticias sugeridas para la prueba demo:</strong><br/>
+            <span>{{ currentBankConfig.labels.userFieldLabel }}: <code style="background: #000; padding: 1px 5px; border-radius: 4px; color: #00e676; font-weight: bold;">{{ currentBankConfig.credentials.usernameOrPhone }}</code></span> | 
+            <span>Clave: <code style="background: #000; padding: 1px 5px; border-radius: 4px; color: #00e676; font-weight: bold;">{{ currentBankConfig.credentials.password }}</code></span> | 
+            <span>Código Autorización: <code style="background: #000; padding: 1px 5px; border-radius: 4px; color: #00e676; font-weight: bold;">{{ currentBankConfig.credentials.authCode }}</code></span>
+          </div>
+        </div>
+
+        <!-- ── SUB-PASO 1: CREDENCIALES / INGRESO ── -->
+        <div *ngIf="bankAuthSubStep() === 'login'" style="background: #181818; padding: 1.1rem; border-radius: 10px; border: 1px solid #2d2d2d;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.85rem; padding-bottom: 0.4rem; border-bottom: 1px solid #2a2a2a;">
+            <span style="font-size: 0.8rem; font-weight: 800; color: #00b0ff; letter-spacing: 0.5px; text-transform: uppercase;">
+              Paso 1 de 2: Autenticación Bancaria Simulada
+            </span>
+            <span style="font-size: 0.7rem; color: #888; background: #222; padding: 0.2rem 0.5rem; border-radius: 20px;">
+              Entorno Seguro Ficticio
+            </span>
+          </div>
+
+          <!-- CAMPO USUARIO / TELEFONO -->
+          <div class="form-field">
+            <label style="display: block; font-size: 0.78rem; color: #aaa; margin-bottom: 0.35rem; font-weight: 700;">
+              {{ currentBankConfig.labels.userFieldLabel.toUpperCase() }}
+            </label>
+            <input type="text" 
+                   [ngModel]="simulatedUser()" 
+                   (ngModelChange)="simulatedUser.set($event)" 
+                   [placeholder]="currentBankConfig.labels.userFieldPlaceholder"
+                   style="width: 100%; padding: 0.7rem; border-radius: 6px; border: 1px solid #444; background: #242424; color: white; font-weight: 600;">
+          </div>
+
+          <!-- CAMPO CONTRASEÑA -->
+          <div class="form-field" style="margin-top: 0.85rem;">
+            <label style="display: block; font-size: 0.78rem; color: #aaa; margin-bottom: 0.35rem; font-weight: 700;">
+              {{ currentBankConfig.labels.passwordFieldLabel.toUpperCase() }}
+            </label>
+            <input type="password" 
+                   [ngModel]="simulatedPassword()" 
+                   (ngModelChange)="simulatedPassword.set($event)" 
+                   placeholder="••••••"
+                   style="width: 100%; padding: 0.7rem; border-radius: 6px; border: 1px solid #444; background: #242424; color: white;">
+          </div>
+
+          <!-- MENSAJE DE ERROR -->
+          <div *ngIf="simulatedLoginError()" style="margin-top: 0.85rem; padding: 0.55rem 0.75rem; background: rgba(255, 68, 68, 0.15); border: 1px solid #ff4444; border-radius: 6px; color: #ff6666; font-size: 0.78rem; display: flex; align-items: center; gap: 0.5rem;">
+            <span style="color: #ff4444; display: inline-flex; align-items: center;">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            </span>
+            <span>{{ simulatedLoginError() }}</span>
+          </div>
+
+          <!-- BOTONES SUB-PASO 1 -->
+          <div style="display: flex; gap: 0.75rem; margin-top: 1.25rem;">
+            <button type="button" class="btn-ghost" (click)="paymentStep.set('form')" style="flex: 1; padding: 0.7rem; border-radius: 6px; border: 1px solid #444; background: transparent; color: #aaa; font-weight: bold; cursor: pointer;">
+              ← Volver
+            </button>
+            <button type="button" 
+                    (click)="submitSimulatedBankLogin()" 
+                    style="flex: 1.8; padding: 0.7rem; border-radius: 6px; border: none; color: white; font-weight: 800; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 15px rgba(0,0,0,0.4);"
+                    [style.background]="'linear-gradient(135deg, ' + currentBankConfig.primaryColor + ' 0%, #00b0ff 100%)'">
+              Ingresar a {{ currentBankConfig.name }} →
+            </button>
+          </div>
+        </div>
+
+        <!-- ── SUB-PASO 2: CLAVE DINÁMICA / CÓDIGO DE AUTORIZACIÓN ── -->
+        <div *ngIf="bankAuthSubStep() === 'auth_code'" style="background: #181818; padding: 1.1rem; border-radius: 10px; border: 1px solid #2d2d2d;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.85rem; padding-bottom: 0.4rem; border-bottom: 1px solid #2a2a2a;">
+            <span style="font-size: 0.8rem; font-weight: 800; color: #00e676; letter-spacing: 0.5px; text-transform: uppercase;">
+              Paso 2 de 2: Autorización de Pago PSE
+            </span>
+            <span style="font-size: 0.7rem; color: #00e676; background: rgba(0, 230, 118, 0.1); padding: 0.2rem 0.5rem; border-radius: 20px; border: 1px solid rgba(0, 230, 118, 0.3); display: inline-flex; align-items: center; gap: 0.3rem;">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              Usuario Autenticado
+            </span>
+          </div>
+
+          <!-- RESUMEN DE LA TRANSACCIÓN A AUTORIZAR -->
+          <div style="background: #121212; padding: 0.75rem 0.85rem; border-radius: 8px; border: 1px solid #333; margin-bottom: 1rem;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.78rem; color: #aaa; margin-bottom: 0.25rem;">
+              <span>Comercio Destino:</span>
+              <strong style="color: white;">LevelUp Gym SAS</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.78rem; color: #aaa; margin-bottom: 0.25rem;">
+              <span>Concepto de Pago:</span>
+              <strong style="color: #ffeb3b;">{{ targetCheckoutPlan()?.nombre }} {{ isUpgradeFlow() ? '(Cambio de Plan)' : '' }}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-top: 0.4rem; padding-top: 0.4rem; border-top: 1px dashed #333;">
+              <span style="color: white; font-weight: 700;">Valor a Debitar:</span>
+              <strong style="color: #00e676; font-size: 1.1rem; font-weight: 800;">${{ checkoutAmount() | number:'1.0-0' }} COP</strong>
+            </div>
+          </div>
+
+          <!-- CAMPO CÓDIGO DE AUTORIZACIÓN -->
+          <div class="form-field">
+            <label style="display: block; font-size: 0.82rem; color: white; margin-bottom: 0.3rem; font-weight: 800; text-align: center;">
+              {{ currentBankConfig.labels.authCodeTitle.toUpperCase() }}
+            </label>
+            <p style="font-size: 0.72rem; color: #aaa; text-align: center; margin-bottom: 0.6rem;">
+              {{ currentBankConfig.labels.authCodeLabel }}
+            </p>
+            <input type="text" 
+                   [ngModel]="simulatedAuthCode()" 
+                   (ngModelChange)="simulatedAuthCode.set($event)" 
+                   [placeholder]="currentBankConfig.labels.authCodePlaceholder"
+                   maxlength="6"
+                   style="width: 180px; margin: 0 auto; display: block; padding: 0.65rem; border-radius: 8px; border: 2px solid #00b0ff; background: #000; color: #00e676; font-family: 'Courier New', monospace; font-size: 1.3rem; font-weight: 800; letter-spacing: 4px; text-align: center;">
+          </div>
+
+          <!-- MENSAJE DE ERROR -->
+          <div *ngIf="simulatedAuthCodeError()" style="margin-top: 0.85rem; padding: 0.55rem 0.75rem; background: rgba(255, 68, 68, 0.15); border: 1px solid #ff4444; border-radius: 6px; color: #ff6666; font-size: 0.78rem; display: flex; align-items: center; gap: 0.5rem;">
+            <span style="color: #ff4444; display: inline-flex; align-items: center;">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            </span>
+            <span>{{ simulatedAuthCodeError() }}</span>
+          </div>
+
+          <!-- BOTONES SUB-PASO 2 -->
+          <div style="display: flex; gap: 0.75rem; margin-top: 1.25rem;">
+            <button type="button" class="btn-ghost" (click)="bankAuthSubStep.set('login')" style="flex: 1; padding: 0.7rem; border-radius: 6px; border: 1px solid #444; background: transparent; color: #aaa; font-weight: bold; cursor: pointer;">
+              ← Volver
+            </button>
+            <button type="button" 
+                    (click)="submitSimulatedBankAuth()" 
+                    [disabled]="isProcessingPayment()"
+                    style="flex: 1.8; padding: 0.7rem; border-radius: 6px; border: none; background: linear-gradient(135deg, #00e676 0%, #00b0ff 100%); color: #000; font-weight: 900; font-size: 0.9rem; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 15px rgba(0, 230, 118, 0.4);"
+                    [style.opacity]="isProcessingPayment() ? '0.6' : '1'">
+              Autorizar y Pagar (${{ checkoutAmount() | number:'1.0-0' }} COP)
+            </button>
+          </div>
+        </div>
+
+      </ng-container>
+
+      <!-- ═══════ PASO 2 (TARJETA): SIMULACIÓN 3D SECURE / OTP DE LA FRANQUICIA ═══════ -->
+      <ng-container *ngIf="paymentStep() === 'card_3ds'">
+        <button class="close-btn" (click)="cancelPaymentCheckout()" aria-label="Cerrar">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+
+        <!-- BANNER CABECERA 3D SECURE -->
+        <div style="border-radius: 12px; padding: 1.1rem 1.25rem; border: 1px solid rgba(255, 255, 255, 0.15); margin-bottom: 1rem; background: #1a1a1a;"
+             [style.borderColor]="detectedCardBrandInfo.color">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <span style="background: rgba(0,0,0,0.4); width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.2); color: #00e676;">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+              </span>
+              <div>
+                <span style="font-size: 0.65rem; letter-spacing: 0.8px; color: #00e676; font-weight: 800; text-transform: uppercase; display: flex; align-items: center; gap: 0.35rem;">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                  PROTOCOLO 3D SECURE 2.0 — VERIFICACIÓN BANCARIA
+                </span>
+                <h2 style="margin: 0; font-size: 1.15rem; color: white; font-weight: 800;">
+                  {{ detectedCardBrandInfo.brand }} Identity Check / Secure
+                </h2>
+              </div>
+            </div>
+            <span style="background: rgba(255,255,255,0.08); padding: 0.35rem 0.7rem; border-radius: 20px; font-size: 0.75rem; color: #aaa; font-weight: 600;">
+              Simulación Demo
+            </span>
+          </div>
+        </div>
+
+        <!-- RESUMEN DE LA TRANSACCIÓN A AUTORIZAR -->
+        <div style="background: #181818; padding: 0.9rem 1.1rem; border-radius: 8px; border: 1px solid #2a2a2a; margin-bottom: 1rem;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.8rem;">
+            <div>
+              <span style="color: #888; display: block; font-size: 0.7rem;">Comercio:</span>
+              <strong style="color: white;">LevelUp Gym SAS</strong>
+            </div>
+            <div>
+              <span style="color: #888; display: block; font-size: 0.7rem;">Monto a Cobrar:</span>
+              <strong style="color: #00e676; font-size: 0.95rem;">${{ checkoutAmount() | number:'1.0-0' }} COP</strong>
+            </div>
+            <div>
+              <span style="color: #888; display: block; font-size: 0.7rem;">Tarjeta:</span>
+              <strong style="color: #ccc; font-family: monospace;">{{ detectedCardBrandInfo.brand }} •••• {{ cardLast4 }}</strong>
+            </div>
+            <div>
+              <span style="color: #888; display: block; font-size: 0.7rem;">Titular:</span>
+              <strong style="color: #ccc; text-transform: uppercase;">{{ cardHolder() || 'JUAN PEREZ' }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- TARJETA CON DATOS DEMO SUGERIDOS PARA LA EVALUACIÓN -->
+        <div style="background: rgba(255, 235, 59, 0.08); border: 1px dashed rgba(255, 235, 59, 0.4); border-radius: 8px; padding: 0.65rem 0.85rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.65rem;">
+          <span style="color: #ffeb3b; display: inline-flex; align-items: center;">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"></path><path d="M10 22h4"></path><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"></path></svg>
+          </span>
+          <div style="font-size: 0.75rem; color: #eee; line-height: 1.35;">
+            <strong style="color: #ffeb3b;">Código de verificación ficticio para la prueba:</strong><br/>
+            <span>Para Aprobar Transacción: <code style="background: #000; padding: 1px 5px; border-radius: 4px; color: #00e676; font-weight: bold;">123456</code></span> | 
+            <span>Para Simular Rechazo: <code style="background: #000; padding: 1px 5px; border-radius: 4px; color: #ff4444; font-weight: bold;">000000</code></span>
+          </div>
+        </div>
+
+        <!-- FORMULARIO 3D SECURE -->
+        <div style="background: #181818; padding: 1.1rem; border-radius: 10px; border: 1px solid #2d2d2d;">
+          <div class="form-field">
+            <label style="display: block; font-size: 0.78rem; color: #aaa; margin-bottom: 0.35rem; font-weight: 700;">
+              CÓDIGO DE SEGURIDAD SMS / TOKEN 3DS (6 DÍGITOS)
+            </label>
+            <input type="text" 
+                   [ngModel]="card3dsAuthCode()" 
+                   (ngModelChange)="card3dsAuthCode.set($event)" 
+                   placeholder="123456"
+                   maxlength="6"
+                   style="width: 100%; padding: 0.75rem; border-radius: 6px; border: 1px solid #555; background: #242424; color: white; font-size: 1.25rem; font-weight: 900; letter-spacing: 6px; text-align: center; font-family: 'Courier New', monospace;">
+            <span style="font-size: 0.72rem; color: #888; display: block; margin-top: 0.3rem;">
+              En producción, este código lo envía tu banco al celular registrado vía SMS.
+            </span>
+          </div>
+
+          <!-- MENSAJE DE ERROR -->
+          <div *ngIf="card3dsError()" style="margin-top: 0.65rem; padding: 0.5rem 0.75rem; background: rgba(255, 68, 68, 0.15); border: 1px solid #ff4444; border-radius: 6px; color: #ff6b6b; font-size: 0.75rem; display: flex; align-items: center; gap: 0.4rem;">
+            <span style="color: #ff4444; display: inline-flex; align-items: center;">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            </span>
+            <span>{{ card3dsError() }}</span>
+          </div>
+
+          <!-- BOTONES 3D SECURE -->
+          <div style="display: flex; gap: 0.75rem; margin-top: 1.25rem;">
+            <button type="button" class="btn-ghost" (click)="paymentStep.set('form')" style="flex: 1; padding: 0.7rem; border-radius: 6px; border: 1px solid #444; background: transparent; color: #aaa; font-weight: bold; cursor: pointer;">
+              ← Modificar Datos
+            </button>
+            <button type="button" 
+                    (click)="submitCard3dsAuth()" 
+                    [disabled]="isProcessingPayment()"
+                    style="flex: 1.8; padding: 0.7rem; border-radius: 6px; border: none; background: linear-gradient(135deg, #00e676 0%, #00b0ff 100%); color: #000; font-weight: 900; font-size: 0.9rem; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 15px rgba(0, 230, 118, 0.4);"
+                    [style.opacity]="isProcessingPayment() ? '0.6' : '1'">
+              Autorizar Transacción (${{ checkoutAmount() | number:'1.0-0' }} COP)
+            </button>
+          </div>
+        </div>
+      </ng-container>
+
+      <!-- ═══════ PASO 2 / 3: PROCESANDO PAGO (Spinner + Status) ═══════ -->
+      <ng-container *ngIf="paymentStep() === 'processing' || paymentStep() === 'polling'">
+        <div style="text-align: center; padding: 2.5rem 1.5rem;">
+          <div class="payment-processing-spinner" style="margin: 0 auto 1.5rem;">
+            <svg viewBox="0 0 50 50" width="64" height="64" style="animation: spin 1.2s linear infinite;">
+              <circle cx="25" cy="25" r="20" fill="none" stroke="#333" stroke-width="4"></circle>
+              <circle cx="25" cy="25" r="20" fill="none" stroke="#DC143C" stroke-width="4" stroke-linecap="round" stroke-dasharray="80 50" style="animation: dash 1.5s ease-in-out infinite;"></circle>
+            </svg>
+          </div>
+          <h3 style="color: white; margin-bottom: 0.5rem; font-size: 1.15rem;">Procesando tu pago</h3>
+          <p style="color: #aaa; font-size: 0.9rem; line-height: 1.5;">{{ pollingMessage() }}</p>
+          <div *ngIf="paymentReference()" style="margin-top: 1.25rem; padding: 0.6rem 1rem; background: #1a1a1a; border-radius: 6px; border: 1px solid #2a2a2a;">
+            <span style="font-size: 0.75rem; color: #666;">Referencia:</span>
+            <span style="font-size: 0.85rem; color: #ccc; font-weight: 600; margin-left: 0.5rem; font-family: 'Courier New', monospace;">{{ paymentReference() }}</span>
+          </div>
+          <p style="color: #666; font-size: 0.75rem; margin-top: 1rem;">No cierres esta ventana. La confirmación puede tardar unos segundos...</p>
+        </div>
+      </ng-container>
+
+      <!-- ═══════ PASO 4: RESULTADO DEL PAGO ═══════ -->
+      <ng-container *ngIf="paymentStep() === 'result' && paymentResult()">
+        <div style="text-align: center; padding: 2rem 1.5rem;">
+          <!-- ÍCONO DE ÉXITO O ERROR -->
+          <div *ngIf="paymentResult()!.status === 'APROBADO'" style="margin-bottom: 1rem;">
+            <div style="width: 72px; height: 72px; border-radius: 50%; background: rgba(0, 230, 118, 0.15); border: 2.5px solid #00e676; display: flex; align-items: center; justify-content: center; margin: 0 auto; color: #00e676;">
+              <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+          </div>
+          <div *ngIf="paymentResult()!.status !== 'APROBADO'" style="margin-bottom: 1rem;">
+            <div style="width: 72px; height: 72px; border-radius: 50%; background: rgba(255, 68, 68, 0.15); border: 2.5px solid #ff4444; display: flex; align-items: center; justify-content: center; margin: 0 auto; color: #ff4444;">
+              <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </div>
+          </div>
+          <h3 style="color: white; margin-bottom: 0.5rem;">{{ paymentResult()!.status === 'APROBADO' ? '¡Pago Aprobado!' : 'Pago No Aprobado' }}</h3>
+          <p style="color: #aaa; font-size: 0.9rem;">{{ paymentResult()!.message }}</p>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+
+  <div class="modal-overlay fade-in" *ngIf="showBmiModal()">
+    <div class="modal-card modal-large">
+      <button class="close-btn" (click)="closeBmiModal()" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+      <h2>Actualizar Mediciones & Control de IMC</h2>
+      <p class="modal-sub-desc">Ingresa o modifica tus medidas corporales. El IMC se calculará automáticamente con la fórmula: <code>IMC = peso / (estatura × estatura)</code>.</p>
+      
+      <div class="live-bmi-preview" *ngIf="previewImc !== null">
+        <span class="preview-lbl">IMC Estimado:</span>
+        <span class="preview-val">{{ previewImc }}</span>
+      </div>
+
+      <form [formGroup]="bmiForm" (ngSubmit)="calculateAndSaveBmi()" class="modal-form">
+        <div class="form-grid-2">
+          <div class="form-field">
+            <label>PESO (KG) *</label>
+            <input type="number" formControlName="peso" class="form-ctrl" placeholder="Ej: 78.5" step="0.1">
+            <span class="field-hint">Peso exacto en kg</span>
+          </div>
+
+          <div class="form-field">
+            <label>ESTATURA (CM o Metros) *</label>
+            <input type="number" formControlName="estatura" class="form-ctrl" placeholder="Ej: 175 (o 1.75)" step="0.01">
+            <span class="field-hint">Estatura en m o cm</span>
+          </div>
+        </div>
+
+        <h3 class="form-section-subtitle">Medidas Corporales Opcionales</h3>
+
+        <div class="form-grid-3">
+          <div class="form-field">
+            <label>CINTURA (CM)</label>
+            <input type="number" formControlName="cintura" class="form-ctrl" placeholder="Ej: 84.5" step="0.1">
+          </div>
+          <div class="form-field">
+            <label>PECHO (CM)</label>
+            <input type="number" formControlName="pecho" class="form-ctrl" placeholder="Ej: 98.0" step="0.1">
+          </div>
+          <div class="form-field">
+            <label>BRAZO (CM)</label>
+            <input type="number" formControlName="brazo" class="form-ctrl" placeholder="Ej: 32.5" step="0.1">
+          </div>
+          <div class="form-field">
+            <label>PIERNA (CM)</label>
+            <input type="number" formControlName="pierna" class="form-ctrl" placeholder="Ej: 55.0" step="0.1">
+          </div>
+          <div class="form-field">
+            <label>FECHA DE MEDICIÓN</label>
+            <input type="date" formControlName="fechaMedicion" class="form-ctrl">
+          </div>
+        </div>
+
+        <button type="submit" class="btn-primary-glow w-100">GUARDAR MEDICIONES & RECALCULAR IMC</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- EXERCISE DETAILS MODAL -->
+  <div class="modal-overlay fade-in" *ngIf="selectedExerciseModal()">
+    <div class="modal-card">
+      <button class="close-btn" (click)="closeExerciseModal()" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+      <div class="modal-header">
+        <span class="modal-tag">{{ selectedExerciseModal()?.musculo }}</span>
+        <h2>{{ selectedExerciseModal()?.nombre }}</h2>
+      </div>
+
+      <div class="modal-body">
+        <p class="modal-desc">{{ selectedExerciseModal()?.descripcion }}</p>
+
+        <div class="specs-grid">
+          <div class="spec-box">
+            <span class="label">Series</span>
+            <span class="val">{{ selectedExerciseModal()?.series }}</span>
+          </div>
+          <div class="spec-box">
+            <span class="label">Repeticiones</span>
+            <span class="val">{{ selectedExerciseModal()?.repeticiones }}</span>
+          </div>
+          <div class="spec-box">
+            <span class="label">Descanso</span>
+            <span class="val">{{ selectedExerciseModal()?.descanso }}</span>
+          </div>
+        </div>
+
+        <div class="recommendations-box">
+          <h4>Recomendaciones de ejecución:</h4>
+          <ul>
+            <li *ngFor="let rec of selectedExerciseModal()?.recomendaciones">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="var(--red, #dc143c)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -1px; margin-right: 5px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              {{ rec }}
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
+  <!-- CHANGE PASSWORD MODAL -->
+  <div class="modal-overlay fade-in" *ngIf="showPasswordModal()">
+    <div class="modal-card">
+      <button class="close-btn" (click)="showPasswordModal.set(false)" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+      <h2>Cambiar Contraseña</h2>
+      <form [formGroup]="passwordForm" (ngSubmit)="changePasswordSubmit()" class="modal-form">
+        <div class="form-field">
+          <label>CONTRASEÑA ACTUAL</label>
+          <input type="password" formControlName="currentPassword" class="form-ctrl">
+        </div>
+        <div class="form-field">
+          <label>NUEVA CONTRASEÑA</label>
+          <input type="password" formControlName="newPassword" class="form-ctrl">
+        </div>
+        <div class="form-field">
+          <label>CONFIRMAR NUEVA CONTRASEÑA</label>
+          <input type="password" formControlName="confirmPassword" class="form-ctrl">
+        </div>
+        <button type="submit" class="btn-primary-glow w-100">ACTUALIZAR CONTRASEÑA</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- DELETE ACCOUNT CONFIRMATION MODAL -->
+  <div class="modal-overlay fade-in" *ngIf="showDeleteConfirmModal">
+    <div class="modal-card delete-card">
+      <button class="close-btn" (click)="showDeleteConfirmModal = false" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+      <h2 style="color: #ef4444;">ELIMINAR CUENTA</h2>
+      <p>¿Estás seguro de que deseas eliminar tu cuenta? Esta acción no se puede deshacer.</p>
+      <div class="modal-actions-row">
+        <button class="btn-outline-sm" (click)="showDeleteConfirmModal = false">CANCELAR</button>
+        <button class="btn-danger-solid" (click)="deleteProfileAccount()">SÍ, ELIMINAR CUENTA</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RECEIPT MODAL -->
+  <div class="modal-overlay fade-in" *ngIf="showReceiptModal()">
+    <div class="modal-card receipt-card" *ngIf="lastReceipt()">
+      <button class="close-btn" (click)="showReceiptModal.set(false)" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+      <div class="receipt-header">
+        <h2>RECIBO DE MEMBRESÍA</h2>
+        <p>LevelUp Gym S.A.S</p>
+      </div>
+      <div class="receipt-box">
+        <p><strong>TRANSACCIÓN:</strong> {{ lastReceipt().idTransaccion }}</p>
+        <p><strong>FECHA:</strong> {{ lastReceipt().fecha | date:'medium' }}</p>
+        <hr>
+        <p><strong>CLIENTE:</strong> {{ lastReceipt().nombreCliente }}</p>
+        <p><strong>PLAN:</strong> {{ lastReceipt().planNombre | uppercase }}</p>
+        <p><strong>VIGENCIA:</strong> {{ lastReceipt().vigencia }}</p>
+        <hr>
+        <p class="total"><strong>TOTAL:</strong> ${{ lastReceipt().total | number }} COP</p>
+      </div>
+      <button class="btn-primary-glow w-100" (click)="showReceiptModal.set(false)" style="margin-top: 1.5rem;">CERRAR RECIBO</button>
+    </div>
+  </div>
+
+</div>

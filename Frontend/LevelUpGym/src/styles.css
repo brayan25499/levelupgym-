@@ -1,0 +1,228 @@
+/* ===== ROOT VARIABLES ===== */
+:root {
+  --black: #050505;
+  --dark: #0d0d0d;
+  --dark-2: #161616;
+  --dark-3: #1e1e1e;
+  --card-bg: #111111;
+  --red: #dc143c;
+  --red-dark: #8b0000;
+  --red-bright: #ff1744;
+  --red-glow: rgba(220, 20, 60, 0.4);
+  --orange: #ff4500;
+  --gold: #ffd700;
+  --white: #ffffff;
+  --gray: #888888;
+  --gray-light: #cccccc;
+  --border: rgba(220, 20, 60, 0.2);
+  --font-display: 'Bebas Neue', sans-serif;
+  --font-heading: 'Barlow Condensed', sans-serif;
+  --font-body: 'Barlow', sans-serif;
+  --nav-h: 80px;
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===== RESET ===== */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--black);
+  color: var(--white);
+  font-family: var(--font-body);
+  overflow-x: hidden;
+  cursor: default;
+}
+a { text-decoration: none; color: inherit; }
+button { cursor: pointer; border: none; outline: none; }
+input, select, textarea { outline: none; }
+img { max-width: 100%; }
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--black); }
+::-webkit-scrollbar-thumb { background: var(--red); border-radius: 3px; }
+
+/* ===== GLOBAL CLASSES ===== */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+.section-tag {
+  font-family: var(--font-heading);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 4px;
+  color: var(--red);
+  margin-bottom: 0.75rem;
+}
+.section-title {
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  line-height: 0.95;
+  margin-bottom: 3rem;
+  letter-spacing: 2px;
+}
+.accent { color: var(--red); }
+
+/* ===== BUTTONS ===== */
+.btn-primary {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 3px;
+  background: var(--red);
+  color: var(--white);
+  padding: 0.9rem 2.5rem;
+  clip-path: polygon(12px 0%, 100% 0%, calc(100% - 12px) 100%, 0% 100%);
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+  display: inline-block;
+}
+.btn-primary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.5s;
+}
+.btn-primary:hover::before { transform: translateX(100%); }
+.btn-primary:hover {
+  background: var(--red-bright);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px var(--red-glow);
+}
+.btn-primary.btn-large { padding: 1.1rem 3rem; font-size: 1rem; }
+
+.btn-ghost {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 3px;
+  background: transparent;
+  color: var(--white);
+  padding: 0.9rem 2.5rem;
+  border: 1px solid rgba(255,255,255,0.3);
+  clip-path: polygon(12px 0%, 100% 0%, calc(100% - 12px) 100%, 0% 100%);
+  transition: var(--transition);
+  display: inline-block;
+}
+.btn-ghost:hover {
+  border-color: var(--red);
+  color: var(--red);
+  transform: translateY(-2px);
+}
+
+/* Page transitions */
+.page {
+  animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== CUSTOM ALERT OVERLAY & BOX ===== */
+.alert-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: alertFadeIn 0.3s ease-out;
+}
+
+.alert-box {
+  background: #111;
+  border: 1px solid var(--border);
+  padding: 2.5rem;
+  width: 90%;
+  max-width: 450px;
+  text-align: center;
+  border-radius: 8px;
+  position: relative;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  animation: alertZoomIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.alert-box.success { border-color: #00e676; box-shadow: 0 0 25px rgba(0, 230, 118, 0.15); }
+.alert-box.error { border-color: #ff1744; box-shadow: 0 0 25px rgba(255, 23, 68, 0.15); }
+.alert-box.info { border-color: #00b0ff; box-shadow: 0 0 25px rgba(0, 176, 255, 0.15); }
+.alert-box.confirm { border-color: #ffd700; box-shadow: 0 0 25px rgba(255, 215, 0, 0.15); }
+
+.alert-icon-wrapper {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.2rem;
+  margin: 0 auto 1.5rem auto;
+}
+.alert-box.success .alert-icon-wrapper { background: rgba(0, 230, 118, 0.15); color: #00e676; }
+.alert-box.error .alert-icon-wrapper { background: rgba(255, 23, 68, 0.15); color: #ff1744; }
+.alert-box.info .alert-icon-wrapper { background: rgba(0, 176, 255, 0.15); color: #00b0ff; }
+.alert-box.confirm .alert-icon-wrapper { background: rgba(255, 215, 0, 0.15); color: #ffd700; }
+
+.alert-title {
+  font-family: var(--font-heading);
+  font-size: 1.8rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin-bottom: 0.8rem;
+}
+.alert-box.success .alert-title { color: #00e676; }
+.alert-box.error .alert-title { color: #ff1744; }
+.alert-box.info .alert-title { color: #00b0ff; }
+.alert-box.confirm .alert-title { color: #ffd700; }
+
+.alert-msg {
+  color: #aaa;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin-bottom: 2rem;
+}
+
+.alert-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.alert-btn {
+  padding: 0.8rem 2rem;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  letter-spacing: 1px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  min-width: 110px;
+  border: none;
+  outline: none;
+}
+
+.alert-btn.btn-ok { background: white; color: black; }
+.alert-btn.btn-ok:hover { opacity: 0.9; }
+.alert-btn.btn-yes { background: var(--red); color: white; }
+.alert-btn.btn-yes:hover { background: var(--red-bright); }
+.alert-btn.btn-no { background: #333; color: white; }
+.alert-btn.btn-no:hover { background: #444; }
+
+@keyframes alertFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes alertZoomIn {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+

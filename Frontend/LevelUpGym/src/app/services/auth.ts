@@ -1,0 +1,83 @@
+import { Injectable, inject, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable, tap } from 'rxjs';
+import { environment } from '../../environments/environment';
+
+export interface AuthResponse {
+  email: string;
+  token: string;
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+export class AuthService {
+  private http = inject(HttpClient);
+  private apiUrl = `${environment.apiUrl}/api/auth`;
+
+  currentUser = signal<AuthResponse | null>(this.getUserFromStorage());
+
+  private getUserFromStorage(): AuthResponse | null {
+    const user = localStorage.getItem('user');
+    return user ? JSON.parse(user) : null;
+  }
+
+  login(credentials: any): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.apiUrl}/login`, credentials).pipe(
+      tap(response => {
+        localStorage.setItem('user', JSON.stringify(response));
+        this.currentUser.set(response);
+      })
+    );
+  }
+
+  register(userData: any): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.apiUrl}/register`, userData).pipe(
+      tap(response => {
+        localStorage.setItem('user', JSON.stringify(response));
+        this.currentUser.set(response);
+      })
+    );
+  }
+
+  logout() {
+    localStorage.removeItem('user');
+    this.currentUser.set(null);
+  }
+
+  forgotPassword(data: any): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/forgot-password`, data);
+  }
+
+  checkEmail(email: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/check-email`, { email });
+  }
+
+  requestOtp(email: string, medium: string = 'email'): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/request-otp`, { email, medium });
+  }
+
+  verifyOtp(email: string, code: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/verify-otp`, { email, code });
+  }
+
+  resetPassword(email: string, code: string, newPassword: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/reset-password`, { email, code, newPassword });
+  }
+
+  getToken(): string | null {
+    return this.currentUser()?.token || null;
+  }
+
+  getProfile(): Observable<any> {
+    return this.http.get<any>(`${environment.apiUrl}/api/clients/profile`);
+  }
+
+  updateProfile(data: any): Observable<any> {
+    return this.http.put<any>(`${environment.apiUrl}/api/clients/profile`, data);
+  }
+
+  deleteAccount(): Observable<any> {
+    return this.http.delete<any>(`${environment.apiUrl}/api/clients/profile`);
+  }
+}
