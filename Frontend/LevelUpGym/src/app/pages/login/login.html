@@ -2,236 +2,480 @@
   <div class="auth-bg">
     <div class="auth-pattern"></div>
   </div>
+
   <div class="auth-container">
     <div class="auth-brand">
       <span class="brand-level">LEVEL</span><span class="brand-up">UP</span><span class="brand-gym">GYM</span>
     </div>
-    <div class="auth-card">
-      <div class="auth-header">
-        <h2>BIENVENIDO <span class="accent">DE VUELTA</span></h2>
-        <p>Entra a tu cuenta y sigue entrenando</p>
-      </div>
-      <form class="auth-form" [formGroup]="loginForm" (ngSubmit)="onSubmit()" autocomplete="off">
-        <div class="error-banner" *ngIf="errorMessage">
-          {{errorMessage}}
-        </div>
 
-        <div class="form-group">
-          <label>EMAIL</label>
-          <input type="text" class="form-input" placeholder="tu@email.com" formControlName="email" autocomplete="off" [class.invalid]="loginForm.get('email')?.invalid && loginForm.get('email')?.touched">
-          <div class="error-msg" *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched">
-            <span *ngIf="loginForm.get('email')?.hasError('required')">Campo obligatorio</span>
-            <span *ngIf="loginForm.get('email')?.hasError('noSpaces')">El correo electrónico no puede contener espacios</span>
-            <span *ngIf="loginForm.get('email')?.hasError('missingAt')">El email debe contener @</span>
-            <span *ngIf="loginForm.get('email')?.hasError('invalidEmail')">Formato de email inválido (ej: usuario@dominio.com)</span>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>CONTRASEÑA</label>
-          <div class="input-with-icon">
-            <input type="password" class="form-input" placeholder="••••••••" formControlName="password" autocomplete="off" [class.invalid]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">
-          </div>
-          <div class="error-msg" *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">
-            <span *ngIf="loginForm.get('password')?.hasError('required')">La contraseña es obligatoria</span>
-            <span *ngIf="loginForm.get('password')?.hasError('spacesNotAllowed')">La contraseña no puede contener espacios</span>
-          </div>
-        </div>
-        <div class="form-options">
-          <label class="checkbox-label">
-            <input type="checkbox"> Recordarme
-          </label>
-          <a (click)="toggleForgotModal(true)" class="forgot-link" style="cursor: pointer;">¿Olvidaste tu contraseña?</a>
-        </div>
-        <br>
-        <button type="submit" class="btn-primary" style="width:100%; padding: 1rem;" [disabled]="isLoading || isGoogleLoading || isFacebookLoading">
-          <span *ngIf="!isLoading">INICIAR SESIÓN</span>
-          <span *ngIf="isLoading">PROCESANDO...</span>
-        </button>
-      </form>
-      <div class="auth-divider"><span>O CONTINÚA CON</span></div>
-      <div class="social-auth">
-        <button type="button" 
-                class="social-btn" 
-                [class.btn-loading]="isGoogleLoading"
-                [class.btn-success]="isGoogleSuccess"
-                [disabled]="isLoading || isGoogleLoading" 
-                (click)="loginWithGoogle()">
-          <svg *ngIf="!isGoogleLoading && !isGoogleSuccess" width="18" height="18" viewBox="0 0 24 24" style="flex-shrink:0;">
-            <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
-            <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.35 24 12 24z"/>
-            <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.14-1.55.38-2.27V6.58H1.25C.45 8.16 0 9.94 0 12s.45 3.84 1.25 5.42l4.03-3.15z"/>
-            <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.35 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
-          </svg>
-          <span class="social-spinner" *ngIf="isGoogleLoading"></span>
-          <span class="social-check" *ngIf="isGoogleSuccess">✓</span>
-          <span *ngIf="!isGoogleLoading && !isGoogleSuccess">Continuar con Google</span>
-          <span *ngIf="isGoogleLoading">Conectando con Google...</span>
-          <span *ngIf="isGoogleSuccess">¡Sesión iniciada!</span>
-        </button>
-      </div>
-      <p class="auth-switch">¿No tienes cuenta? <a routerLink="/register">Regístrate gratis</a></p>
+```
+<div class="auth-card">
+  <div class="auth-header">
+    <h2>BIENVENIDO <span class="accent">DE VUELTA</span></h2>
+    <p>Entra a tu cuenta y sigue entrenando</p>
+  </div>
+
+  <form class="auth-form" [formGroup]="loginForm" (ngSubmit)="onSubmit()" autocomplete="off">
+
+    <div class="error-banner" *ngIf="errorMessage">
+      {{errorMessage}}
     </div>
+
+    <div class="form-group">
+      <label>EMAIL</label>
+
+      <input
+        type="text"
+        class="form-input"
+        placeholder="tu@email.com"
+        formControlName="email"
+        autocomplete="off"
+        [class.invalid]="loginForm.get('email')?.invalid && loginForm.get('email')?.touched"
+      >
+
+      <div
+        class="error-msg"
+        *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched"
+      >
+        <span *ngIf="loginForm.get('email')?.hasError('required')">
+          Campo obligatorio
+        </span>
+
+        <span *ngIf="loginForm.get('email')?.hasError('noSpaces')">
+          El correo electrónico no puede contener espacios
+        </span>
+
+        <span *ngIf="loginForm.get('email')?.hasError('missingAt')">
+          El email debe contener @
+        </span>
+
+        <span *ngIf="loginForm.get('email')?.hasError('invalidEmail')">
+          Formato de email inválido (ej: usuario@dominio.com)
+        </span>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>CONTRASEÑA</label>
+
+      <div class="input-with-icon">
+        <input
+          type="password"
+          class="form-input"
+          placeholder="••••••••"
+          formControlName="password"
+          autocomplete="off"
+          [class.invalid]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
+        >
+      </div>
+
+      <div
+        class="error-msg"
+        *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
+      >
+        <span *ngIf="loginForm.get('password')?.hasError('required')">
+          La contraseña es obligatoria
+        </span>
+
+        <span *ngIf="loginForm.get('password')?.hasError('spacesNotAllowed')">
+          La contraseña no puede contener espacios
+        </span>
+      </div>
+    </div>
+
+    <div class="form-options">
+      <label class="checkbox-label">
+        <input type="checkbox"> Recordarme
+      </label>
+
+      <a
+        (click)="toggleForgotModal(true)"
+        class="forgot-link"
+        style="cursor: pointer;"
+      >
+        ¿Olvidaste tu contraseña?
+      </a>
+    </div>
+
+    <br>
+
+    <button
+      type="submit"
+      class="btn-primary"
+      style="width:100%; padding: 1rem;"
+      [disabled]="isLoading"
+    >
+      <span *ngIf="!isLoading">INICIAR SESIÓN</span>
+      <span *ngIf="isLoading">PROCESANDO...</span>
+    </button>
+
+  </form>
+
+  <p class="auth-switch">
+    ¿No tienes cuenta?
+    <a routerLink="/register">Regístrate gratis</a>
+  </p>
+</div>
+```
+
   </div>
 
   <!-- MODAL DE RECUPERAR CONTRASEÑA — MULTI-STEP OTP -->
-  <div class="modal-overlay" *ngIf="showForgotModal" (click)="closeRecoveryModal()">
-    <div class="modal-card recovery-modal" (click)="$event.stopPropagation()">
-      <button class="modal-close" (click)="closeRecoveryModal()">&times;</button>
 
-      <!-- Progress Stepper -->
-      <div class="progress-stepper" *ngIf="recoveryStep < 4">
-        <div class="step" [class.active]="recoveryStep === 1" [class.completed]="recoveryStep > 1">
-          <span class="step-circle">{{ recoveryStep > 1 ? '✓' : '1' }}</span>
-          <span class="step-label">EMAIL</span>
-        </div>
-        <div class="step-connector" [class.active]="recoveryStep > 1"></div>
-        <div class="step" [class.active]="recoveryStep === 2" [class.completed]="recoveryStep > 2">
-          <span class="step-circle">{{ recoveryStep > 2 ? '✓' : '2' }}</span>
-          <span class="step-label">CÓDIGO</span>
-        </div>
-        <div class="step-connector" [class.active]="recoveryStep > 2"></div>
-        <div class="step" [class.active]="recoveryStep === 3" [class.completed]="recoveryStep > 3">
-          <span class="step-circle">3</span>
-          <span class="step-label">CONTRASEÑA</span>
+  <div
+    class="modal-overlay"
+    *ngIf="showForgotModal"
+    (click)="closeRecoveryModal()"
+  >
+    <div
+      class="modal-card recovery-modal"
+      (click)="$event.stopPropagation()"
+    >
+
+```
+  <button
+    class="modal-close"
+    (click)="closeRecoveryModal()"
+  >
+    &times;
+  </button>
+
+  <!-- Progress Stepper -->
+
+  <div class="progress-stepper" *ngIf="recoveryStep < 4">
+
+    <div
+      class="step"
+      [class.active]="recoveryStep === 1"
+      [class.completed]="recoveryStep > 1"
+    >
+      <span class="step-circle">
+        {{ recoveryStep > 1 ? '✓' : '1' }}
+      </span>
+      <span class="step-label">EMAIL</span>
+    </div>
+
+    <div
+      class="step-connector"
+      [class.active]="recoveryStep > 1"
+    ></div>
+
+    <div
+      class="step"
+      [class.active]="recoveryStep === 2"
+      [class.completed]="recoveryStep > 2"
+    >
+      <span class="step-circle">
+        {{ recoveryStep > 2 ? '✓' : '2' }}
+      </span>
+      <span class="step-label">CÓDIGO</span>
+    </div>
+
+    <div
+      class="step-connector"
+      [class.active]="recoveryStep > 2"
+    ></div>
+
+    <div
+      class="step"
+      [class.active]="recoveryStep === 3"
+      [class.completed]="recoveryStep > 3"
+    >
+      <span class="step-circle">3</span>
+      <span class="step-label">CONTRASEÑA</span>
+    </div>
+
+  </div>
+
+  <!-- STEP 1: Verify Identity -->
+
+  <div class="step-content" *ngIf="recoveryStep === 1">
+
+    <div class="modal-header">
+      <h3>RECUPERAR</h3>
+      <p>
+        Ingresa tu correo electrónico para recibir un código de seguridad.
+      </p>
+    </div>
+
+    <div class="error-banner" *ngIf="recoveryError">
+      {{ recoveryError }}
+    </div>
+
+    <form (ngSubmit)="onCheckEmail()">
+
+      <div class="form-group">
+        <label>CORREO ELECTRÓNICO</label>
+
+        <input
+          type="email"
+          class="form-input"
+          [class.invalid]="recoveryEmailInputError"
+          placeholder="tu@email.com"
+          [(ngModel)]="recoveryEmail"
+          name="recoveryEmail"
+          required
+          autocomplete="off"
+        >
+
+        <div
+          class="error-msg"
+          *ngIf="recoveryEmailInputError"
+        >
+          {{ recoveryEmailInputError }}
         </div>
       </div>
 
-      <!-- STEP 1: Verify Identity -->
-      <div class="step-content" *ngIf="recoveryStep === 1">
-        <div class="modal-header">
-          <h3>RECUPERAR</h3>
-          <p>Ingresa tu correo electrónico para recibir un código de seguridad.</p>
-        </div>
-        
-        <div class="error-banner" *ngIf="recoveryError">{{ recoveryError }}</div>
-        
-        <form (ngSubmit)="onCheckEmail()">
-          <div class="form-group">
-            <label>CORREO ELECTRÓNICO</label>
-            <input type="email" 
-                   class="form-input" 
-                   [class.invalid]="recoveryEmailInputError"
-                   placeholder="tu@email.com" 
-                   [(ngModel)]="recoveryEmail" 
-                   name="recoveryEmail" 
-                   required 
-                   autocomplete="off">
-            <div class="error-msg" *ngIf="recoveryEmailInputError">{{ recoveryEmailInputError }}</div>
-          </div>
-          <button type="submit" class="btn-primary" style="width:100%; padding: 1rem; margin-top: 0.5rem;" [disabled]="isRecoveryLoading">
-            <span *ngIf="!isRecoveryLoading">ENVIAR CÓDIGO</span>
-            <span *ngIf="isRecoveryLoading">ENVIANDO...</span>
-          </button>
-        </form>
-      </div>
+      <button
+        type="submit"
+        class="btn-primary"
+        style="width:100%; padding: 1rem; margin-top: 0.5rem;"
+        [disabled]="isRecoveryLoading"
+      >
+        <span *ngIf="!isRecoveryLoading">ENVIAR CÓDIGO</span>
+        <span *ngIf="isRecoveryLoading">ENVIANDO...</span>
+      </button>
 
-      <!-- STEP 2: Verify OTP Code -->
-      <div class="step-content" *ngIf="recoveryStep === 2">
-        <div class="modal-header">
-          <h3>CÓDIGO DE SEGURIDAD</h3>
-          <p>Si el correo está registrado, recibirás un código de seguridad para restablecer tu contraseña.</p>
-        </div>
-        <div class="info-message" *ngIf="maskedEmail">
-          Código enviado a <span class="masked-email">{{ maskedEmail }}</span>
-        </div>
-        <div class="error-banner" *ngIf="recoveryError">{{ recoveryError }}</div>
+    </form>
+  </div>
 
-        <div class="otp-container">
-          <input *ngFor="let digit of otpDigits; let i = index; trackBy: trackByFn"
-            type="text"
-            maxlength="1"
-            class="otp-input"
-            [class.filled]="otpDigits[i] !== ''"
-            [class.error]="otpHasError"
-            [value]="otpDigits[i]"
-            [disabled]="otpTimerExpired"
-            (input)="onOtpInput($event, i)"
-            (keydown)="onOtpKeydown($event, i)"
-            (paste)="onOtpPaste($event)"
-            autocomplete="off"
-            inputmode="numeric">
-        </div>
+  <!-- STEP 2: Verify OTP Code -->
 
-        <div class="timer-bar">
-          <span class="timer-countdown" [class.expired]="otpTimerExpired">
-            {{ otpTimerExpired ? 'CÓDIGO EXPIRADO' : ('EXPIRA EN ' + otpTimerDisplay) }}
-          </span>
-          <button class="resend-btn" [disabled]="!canResendOtp" (click)="onResendOtp()">
-            {{ canResendOtp ? 'REENVIAR CÓDIGO' : ('REENVIAR EN ' + resendCooldownDisplay + 'S') }}
-          </button>
-        </div>
+  <div class="step-content" *ngIf="recoveryStep === 2">
 
-        <button type="button" class="btn-primary" style="width:100%; padding: 1rem;" [disabled]="isRecoveryLoading || otpTimerExpired || !isOtpComplete()" (click)="onVerifyOtp()">
-          <span *ngIf="!isRecoveryLoading">VERIFICAR CÓDIGO</span>
-          <span *ngIf="isRecoveryLoading">VERIFICANDO...</span>
-        </button>
-      </div>
+    <div class="modal-header">
+      <h3>CÓDIGO DE SEGURIDAD</h3>
 
-      <!-- STEP 3: New Password -->
-      <div class="step-content" *ngIf="recoveryStep === 3">
-        <div class="modal-header">
-          <h3>NUEVA CONTRASEÑA</h3>
-          <p>Crea tu nueva contraseña segura.</p>
-        </div>
-        <div class="error-banner" *ngIf="recoveryError">{{ recoveryError }}</div>
-        <form (ngSubmit)="onResetNewPassword()">
-          <div class="form-group">
-            <label>NUEVA CONTRASEÑA</label>
-            <div class="password-group">
-              <input [type]="showNewPassword ? 'text' : 'password'" class="form-input" placeholder="Min. 8 caracteres" [(ngModel)]="newPassword" name="newPassword" autocomplete="new-password">
-              <button type="button" class="password-toggle" (click)="showNewPassword = !showNewPassword">
-                {{ showNewPassword ? '🙈' : '👁️' }}
-              </button>
-            </div>
-          </div>
+      <p>
+        Si el correo está registrado, recibirás un código de seguridad
+        para restablecer tu contraseña.
+      </p>
+    </div>
 
-          <ul class="strength-list">
-            <li class="strength-item" [class.valid]="newPassword.length >= 8">
-              <span class="icon">{{ newPassword.length >= 8 ? '✓' : '✗' }}</span> Mín. 8 caracteres
-            </li>
-            <li class="strength-item" [class.valid]="hasUppercase(newPassword)">
-              <span class="icon">{{ hasUppercase(newPassword) ? '✓' : '✗' }}</span> Una mayúscula
-            </li>
-            <li class="strength-item" [class.valid]="hasLowercase(newPassword)">
-              <span class="icon">{{ hasLowercase(newPassword) ? '✓' : '✗' }}</span> Una minúscula
-            </li>
-            <li class="strength-item" [class.valid]="hasNumber(newPassword)">
-              <span class="icon">{{ hasNumber(newPassword) ? '✓' : '✗' }}</span> Un número
-            </li>
-            <li class="strength-item" [class.valid]="hasSpecialChar(newPassword)">
-              <span class="icon">{{ hasSpecialChar(newPassword) ? '✓' : '✗' }}</span> Carácter especial
-            </li>
-          </ul>
+    <div class="info-message" *ngIf="maskedEmail">
+      Código enviado a
+      <span class="masked-email">{{ maskedEmail }}</span>
+    </div>
 
-          <div class="form-group">
-            <label>CONFIRMAR CONTRASEÑA</label>
-            <div class="password-group">
-              <input [type]="showConfirmPassword ? 'text' : 'password'" class="form-input" placeholder="Repite tu contraseña" [(ngModel)]="confirmNewPassword" name="confirmNewPassword" autocomplete="new-password">
-              <button type="button" class="password-toggle" (click)="showConfirmPassword = !showConfirmPassword">
-                {{ showConfirmPassword ? '🙈' : '👁️' }}
-              </button>
-            </div>
-            <div class="mismatch-msg" *ngIf="confirmNewPassword && newPassword !== confirmNewPassword">
-              Las contraseñas no coinciden
-            </div>
-          </div>
+    <div class="error-banner" *ngIf="recoveryError">
+      {{ recoveryError }}
+    </div>
 
-          <button type="submit" class="btn-primary" style="width:100%; padding: 1rem; margin-top: 0.5rem;" [disabled]="isRecoveryLoading || !isPasswordValid()">
-            <span *ngIf="!isRecoveryLoading">ACTUALIZAR CONTRASEÑA</span>
-            <span *ngIf="isRecoveryLoading">ACTUALIZANDO...</span>
-          </button>
-        </form>
-      </div>
+    <div class="otp-container">
 
-      <!-- STEP 4: Success -->
-      <div class="success-screen" *ngIf="recoveryStep === 4">
-        <div class="success-icon">✓</div>
-        <h3>¡LISTO!</h3>
-        <p>Tu contraseña se ha actualizado correctamente.</p>
-        <p class="redirect-text">Redirigiendo al inicio de sesión en {{ redirectCountdown }}s...</p>
-      </div>
+      <input
+        *ngFor="let digit of otpDigits; let i = index; trackBy: trackByFn"
+        type="text"
+        maxlength="1"
+        class="otp-input"
+        [class.filled]="otpDigits[i] !== ''"
+        [class.error]="otpHasError"
+        [value]="otpDigits[i]"
+        [disabled]="otpTimerExpired"
+        (input)="onOtpInput($event, i)"
+        (keydown)="onOtpKeydown($event, i)"
+        (paste)="onOtpPaste($event)"
+        autocomplete="off"
+        inputmode="numeric"
+      >
 
     </div>
-  </div>
-</section>
 
+    <div class="timer-bar">
+
+      <span
+        class="timer-countdown"
+        [class.expired]="otpTimerExpired"
+      >
+        {{ otpTimerExpired ? 'CÓDIGO EXPIRADO' : ('EXPIRA EN ' + otpTimerDisplay) }}
+      </span>
+
+      <button
+        class="resend-btn"
+        [disabled]="!canResendOtp"
+        (click)="onResendOtp()"
+      >
+        {{ canResendOtp ? 'REENVIAR CÓDIGO' : ('REENVIAR EN ' + resendCooldownDisplay + 'S') }}
+      </button>
+
+    </div>
+
+    <button
+      type="button"
+      class="btn-primary"
+      style="width:100%; padding: 1rem;"
+      [disabled]="isRecoveryLoading || otpTimerExpired || !isOtpComplete()"
+      (click)="onVerifyOtp()"
+    >
+      <span *ngIf="!isRecoveryLoading">VERIFICAR CÓDIGO</span>
+      <span *ngIf="isRecoveryLoading">VERIFICANDO...</span>
+    </button>
+
+  </div>
+
+  <!-- STEP 3: New Password -->
+
+  <div class="step-content" *ngIf="recoveryStep === 3">
+
+    <div class="modal-header">
+      <h3>NUEVA CONTRASEÑA</h3>
+      <p>Crea tu nueva contraseña segura.</p>
+    </div>
+
+    <div class="error-banner" *ngIf="recoveryError">
+      {{ recoveryError }}
+    </div>
+
+    <form (ngSubmit)="onResetNewPassword()">
+
+      <div class="form-group">
+
+        <label>NUEVA CONTRASEÑA</label>
+
+        <div class="password-group">
+
+          <input
+            [type]="showNewPassword ? 'text' : 'password'"
+            class="form-input"
+            placeholder="Min. 8 caracteres"
+            [(ngModel)]="newPassword"
+            name="newPassword"
+            autocomplete="new-password"
+          >
+
+          <button
+            type="button"
+            class="password-toggle"
+            (click)="showNewPassword = !showNewPassword"
+          >
+            {{ showNewPassword ? '🙈' : '👁️' }}
+          </button>
+
+        </div>
+
+      </div>
+
+      <ul class="strength-list">
+
+        <li
+          class="strength-item"
+          [class.valid]="newPassword.length >= 8"
+        >
+          <span class="icon">
+            {{ newPassword.length >= 8 ? '✓' : '✗' }}
+          </span>
+          Mín. 8 caracteres
+        </li>
+
+        <li
+          class="strength-item"
+          [class.valid]="hasUppercase(newPassword)"
+        >
+          <span class="icon">
+            {{ hasUppercase(newPassword) ? '✓' : '✗' }}
+          </span>
+          Una mayúscula
+        </li>
+
+        <li
+          class="strength-item"
+          [class.valid]="hasLowercase(newPassword)"
+        >
+          <span class="icon">
+            {{ hasLowercase(newPassword) ? '✓' : '✗' }}
+          </span>
+          Una minúscula
+        </li>
+
+        <li
+          class="strength-item"
+          [class.valid]="hasNumber(newPassword)"
+        >
+          <span class="icon">
+            {{ hasNumber(newPassword) ? '✓' : '✗' }}
+          </span>
+          Un número
+        </li>
+
+        <li
+          class="strength-item"
+          [class.valid]="hasSpecialChar(newPassword)"
+        >
+          <span class="icon">
+            {{ hasSpecialChar(newPassword) ? '✓' : '✗' }}
+          </span>
+          Carácter especial
+        </li>
+
+      </ul>
+
+      <div class="form-group">
+
+        <label>CONFIRMAR CONTRASEÑA</label>
+
+        <div class="password-group">
+
+          <input
+            [type]="showConfirmPassword ? 'text' : 'password'"
+            class="form-input"
+            placeholder="Repite tu contraseña"
+            [(ngModel)]="confirmNewPassword"
+            name="confirmNewPassword"
+            autocomplete="new-password"
+          >
+
+          <button
+            type="button"
+            class="password-toggle"
+            (click)="showConfirmPassword = !showConfirmPassword"
+          >
+            {{ showConfirmPassword ? '🙈' : '👁️' }}
+          </button>
+
+        </div>
+
+        <div
+          class="mismatch-msg"
+          *ngIf="confirmNewPassword && newPassword !== confirmNewPassword"
+        >
+          Las contraseñas no coinciden
+        </div>
+
+      </div>
+
+      <button
+        type="submit"
+        class="btn-primary"
+        style="width:100%; padding: 1rem; margin-top: 0.5rem;"
+        [disabled]="isRecoveryLoading || !isPasswordValid()"
+      >
+        <span *ngIf="!isRecoveryLoading">ACTUALIZAR CONTRASEÑA</span>
+        <span *ngIf="isRecoveryLoading">ACTUALIZANDO...</span>
+      </button>
+
+    </form>
+
+  </div>
+
+  <!-- STEP 4: Success -->
+
+  <div class="success-screen" *ngIf="recoveryStep === 4">
+
+    <div class="success-icon">✓</div>
+
+    <h3>¡LISTO!</h3>
+
+    <p>Tu contraseña se ha actualizado correctamente.</p>
+
+    <p class="redirect-text">
+      Redirigiendo al inicio de sesión en {{ redirectCountdown }}s...
+    </p>
+
+  </div>
+
+</div>
+```
+
+  </div>
+
+</section>
