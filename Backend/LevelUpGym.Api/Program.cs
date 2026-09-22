@@ -27,11 +27,15 @@ public class Program
         builder.Services.AddSingleton<IOtpService, OtpService>();
         builder.Services.AddScoped<IEmailService, ConsoleEmailService>();
         builder.Services.AddScoped<IGoalEvaluationService, GoalEvaluationService>();
+        builder.Services.AddScoped<IPaymentGatewayService, PaymentGatewayService>();
 
         builder.Services.AddCors(options =>
         {
             options.AddPolicy("AllowAngular", policy =>
-                policy.WithOrigins("http://localhost:4200") // Angular default port
+                policy.WithOrigins(
+                        "http://localhost:4200",              // Angular en desarrollo local
+                        "https://monumental-meerkat-0f552c.netlify.app"       // TODO: reemplazar con el dominio real que Netlify asigne
+                      )
                       .AllowAnyMethod()
                       .AllowAnyHeader());
         });

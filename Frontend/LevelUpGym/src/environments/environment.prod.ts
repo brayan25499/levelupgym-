@@ -1,4 +1,5 @@
 export const environment = {
   production: true,
-  apiUrl: ''
+  apiUrl: 'http://levelupgym.somee.com'
 };
+ 

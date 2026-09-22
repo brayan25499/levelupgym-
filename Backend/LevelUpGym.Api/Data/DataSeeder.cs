@@ -181,30 +181,13 @@ public static class DataSeeder
             Console.WriteLine("DataSeeder Client warning: " + ex.Message);
         }
 
-        // 3. Seed EPS
-        if (!context.EpsList.Any())
-        {
-            context.EpsList.AddRange(
-                new Eps { Nombre = "Sanitas" },
-                new Eps { Nombre = "Sura" },
-                new Eps { Nombre = "Compensar" }
-            );
-            context.SaveChanges();
-        }
-
-        // 4. Seed Memberships (requires Items first)
+        // 4. Seed Memberships
         if (!context.Memberships.Any())
         {
-            var item1 = new Item { CreatedAt = DateTime.UtcNow };
-            var item2 = new Item { CreatedAt = DateTime.UtcNow };
-            var item3 = new Item { CreatedAt = DateTime.UtcNow };
-            context.Items.AddRange(item1, item2, item3);
-            context.SaveChanges();
-
             context.Memberships.AddRange(
-                new Membership { Nombre = "Bronce", Descripcion = "Acceso básico a sala de pesas", Precio = 89900, IdItem = item1.IdItem },
-                new Membership { Nombre = "Plata", Descripcion = "Acceso total + Clases grupales", Precio = 159900, IdItem = item2.IdItem },
-                new Membership { Nombre = "Oro", Descripcion = "VIP: Todo incluido + Nutricionista", Precio = 279900, IdItem = item3.IdItem }
+                new Membership { Nombre = "Bronce", Descripcion = "Acceso básico a sala de pesas", Precio = 89900 },
+                new Membership { Nombre = "Plata", Descripcion = "Acceso total + Clases grupales", Precio = 159900 },
+                new Membership { Nombre = "Oro", Descripcion = "VIP: Todo incluido + Nutricionista", Precio = 279900 }
             );
             context.SaveChanges();
         }
@@ -228,8 +211,6 @@ public static class DataSeeder
         var rolHiit = context.RolesGimnasio.First(r => r.Nombre == "Especialista HIIT & Funcional");
         var rolBoxeo = context.RolesGimnasio.First(r => r.Nombre == "Coach Boxeo & MMA");
         var rolNutricion = context.RolesGimnasio.First(r => r.Nombre == "Nutricionista Deportiva");
-        var epsSanitas = context.EpsList.First(e => e.Nombre == "Sanitas");
-        var epsSura = context.EpsList.First(e => e.Nombre == "Sura");
 
         // Entrenador 1: Miguel Vargas - Head Coach · Powerlifting
         if (!context.Profiles.Any(p => p.NumDocumento == "1000000001"))
@@ -246,7 +227,6 @@ public static class DataSeeder
             var emp1 = new Employee
             {
                 IdProfile = profile1.IdProfile,
-                IdEps = epsSanitas.IdEps,
                 FechaContratacion = new DateOnly(2016, 3, 15),
                 SalarioBase = 3500000,
                 Estado = "Activo",
@@ -278,7 +258,6 @@ public static class DataSeeder
             var emp2 = new Employee
             {
                 IdProfile = profile2.IdProfile,
-                IdEps = epsSura.IdEps,
                 FechaContratacion = new DateOnly(2019, 7, 1),
                 SalarioBase = 2800000,
                 Estado = "Activo",
@@ -309,7 +288,6 @@ public static class DataSeeder
             var emp3 = new Employee
             {
                 IdProfile = profile3.IdProfile,
-                IdEps = epsSanitas.IdEps,
                 FechaContratacion = new DateOnly(2018, 1, 10),
                 SalarioBase = 3000000,
                 Estado = "Activo",
@@ -340,7 +318,6 @@ public static class DataSeeder
             var emp4 = new Employee
             {
                 IdProfile = profile4.IdProfile,
-                IdEps = epsSura.IdEps,
                 FechaContratacion = new DateOnly(2020, 5, 20),
                 SalarioBase = 3200000,
                 Estado = "Activo",
@@ -371,7 +348,6 @@ public static class DataSeeder
             var emp5 = new Employee
             {
                 IdProfile = profile5.IdProfile,
-                IdEps = epsSanitas.IdEps,
                 FechaContratacion = new DateOnly(2021, 11, 10),
                 SalarioBase = 3100000,
                 Estado = "Activo",

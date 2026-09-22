@@ -86,6 +86,7 @@ public class Client : BaseEntity
     public virtual ICollection<Subscription> Subscriptions { get; set; } = new List<Subscription>();
     public virtual ICollection<Progress> ProgressReports { get; set; } = new List<Progress>();
     public virtual ICollection<Goal> Goals { get; set; } = new List<Goal>();
+    public virtual ICollection<Venta> Ventas { get; set; } = new List<Venta>();
 }
 
 public class Employee : BaseEntity
@@ -94,8 +95,6 @@ public class Employee : BaseEntity
     public int IdEmpleado { get; set; }
     
     public int IdProfile { get; set; }
-    
-    public int? IdEps { get; set; }
     
     public DateOnly? FechaContratacion { get; set; }
     
@@ -112,7 +111,6 @@ public class Employee : BaseEntity
 
     // Navigation
     public virtual Profile Profile { get; set; } = null!;
-    public virtual Eps? Eps { get; set; }
     public virtual ICollection<EmployeePayment> Payments { get; set; } = new List<EmployeePayment>();
     public virtual ICollection<EmpleadoRolGimnasio> EmpleadoRoles { get; set; } = new List<EmpleadoRolGimnasio>();
 }

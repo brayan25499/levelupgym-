@@ -76,45 +76,7 @@ public class MembershipsController : ControllerBase
         var membership = await _context.Memberships.FindAsync(id);
         if (membership == null) return NotFound(new { message = $"La membresía con ID {id} no existe." });
 
-        var activeStatus = await _context.SubscriptionStatuses.FirstOrDefaultAsync(s => s.Concepto == "ACTIVO")
-            ?? new SubscriptionStatus { Concepto = "ACTIVO" };
-
-        if (activeStatus.IdEstado == 0)
-        {
-            _context.SubscriptionStatuses.Add(activeStatus);
-            await _context.SaveChangesAsync();
-        }
-
-        var activeSub = await _context.Subscriptions
-            .Include(s => s.Membership)
-            .Where(s => s.IdCliente == client.IdCliente && s.DeletedAt == null && (s.IdEstado == activeStatus.IdEstado || (s.Status != null && s.Status.Concepto == "ACTIVO")))
-            .OrderByDescending(s => s.FechaFin)
-            .FirstOrDefaultAsync();
-
-        if (activeSub != null)
-        {
-            activeSub.IdMembresia = id;
-            activeSub.IdEstado = activeStatus.IdEstado;
-            activeSub.FechaFin = DateOnly.FromDateTime(DateTime.Now.AddMonths(1));
-            activeSub.UpdatedAt = DateTime.UtcNow;
-            _context.Entry(activeSub).State = EntityState.Modified;
-        }
-        else
-        {
-            activeSub = new Subscription
-            {
-                IdCliente = client.IdCliente,
-                IdMembresia = id,
-                IdEstado = activeStatus.IdEstado,
-                FechaInicio = DateOnly.FromDateTime(DateTime.Now),
-                FechaFin = DateOnly.FromDateTime(DateTime.Now.AddMonths(1)),
-                CreatedAt = DateTime.UtcNow
-            };
-            _context.Subscriptions.Add(activeSub);
-        }
-
-        await _context.SaveChangesAsync();
-        return Ok(new { message = "Membresía activada con éxito", expiresAt = activeSub.FechaFin });
+        return await ProcessPaymentInternal(client, membership, "EFECTIVO", null, null, null, null);
     }
 
     [Authorize]
@@ -127,19 +89,19 @@ public class MembershipsController : ControllerBase
         var targetMembership = await _context.Memberships.FindAsync(newPlanId);
         if (targetMembership == null) return NotFound(new { message = "El plan seleccionado no existe." });
 
-        var activeStatus = await _context.SubscriptionStatuses.FirstOrDefaultAsync(s => s.Concepto == "ACTIVO");
+        var activeStatus = await _context.SubscriptionStatuses.FirstOrDefaultAsync(s => s.Concepto == "ACTIVO" || s.Concepto == "ACTIVA");
         int activeStatusId = activeStatus?.IdEstado ?? 1;
 
         var activeSub = await _context.Subscriptions
             .Include(s => s.Membership)
             .Include(s => s.Status)
-            .Where(s => s.IdCliente == client.IdCliente && s.DeletedAt == null && (s.IdEstado == activeStatusId || (s.Status != null && s.Status.Concepto == "ACTIVO")))
+            .Where(s => s.IdCliente == client.IdCliente && s.DeletedAt == null && (s.IdEstado == activeStatusId || (s.Status != null && (s.Status.Concepto == "ACTIVO" || s.Status.Concepto == "ACTIVA"))))
             .OrderByDescending(s => s.FechaFin)
             .ThenByDescending(s => s.CreatedAt)
             .FirstOrDefaultAsync();
 
         decimal precioNuevoPlan = targetMembership.Precio ?? 0m;
-        decimal valorPlanActual = activeSub?.Membership?.Precio ?? 0m;
+        decimal valorPlanActual = activeSub?.Precio > 0 ? activeSub.Precio : (activeSub?.Membership?.Precio ?? 0m);
         string nombrePlanActual = activeSub?.Membership?.Nombre ?? "Sin plan activo";
         int? idPlanActual = activeSub?.Membership?.IdMembresia;
 
@@ -148,8 +110,31 @@ public class MembershipsController : ControllerBase
             return BadRequest(new { message = "Ya tienes este plan activo actualmente." });
         }
 
-        decimal excedente = Math.Max(0m, precioNuevoPlan - valorPlanActual);
-        bool esUpgrade = precioNuevoPlan > valorPlanActual;
+        if (activeSub != null)
+        {
+            var hoy = DateOnly.FromDateTime(DateTime.Now);
+            int diasTranscurridos = hoy.DayNumber - activeSub.FechaInicio.DayNumber;
+            if (diasTranscurridos > 10)
+            {
+                return BadRequest(new { 
+                    message = $"Han transcurrido {diasTranscurridos} días desde que inició tu membresía actual ({activeSub.FechaInicio:dd/MM/yyyy}). Los cambios de plan pagando la diferencia solo están permitidos dentro de los primeros 10 días de vigencia. Debes esperar a que venza tu plan el {activeSub.FechaFin:dd/MM/yyyy} para adquirir uno nuevo.",
+                    diasTranscurridos,
+                    limiteDias = 10,
+                    permiteCambio = false
+                });
+            }
+
+            if (precioNuevoPlan <= valorPlanActual)
+            {
+                return BadRequest(new {
+                    message = $"No es posible cambiar a un plan de menor o igual valor ({targetMembership.Nombre}: ${precioNuevoPlan:N0} COP vs Plan Actual: ${valorPlanActual:N0} COP). Durante los primeros 10 días solo puedes cambiar a un plan de mayor precio (Upgrade) pagando la diferencia. Para adquirir un plan de menor valor debes esperar a que venza tu plan actual el {activeSub.FechaFin:dd/MM/yyyy}.",
+                    permiteCambio = false
+                });
+            }
+        }
+
+        decimal excedente = precioNuevoPlan - valorPlanActual;
+        bool esUpgrade = true;
 
         return Ok(new
         {
@@ -161,9 +146,8 @@ public class MembershipsController : ControllerBase
             precioNuevoPlan,
             excedenteAPagar = excedente,
             esUpgrade,
-            mensaje = excedente == 0m 
-                ? "El plan seleccionado tiene un costo menor o igual al actual. No aplica excedente ni reembolso automático."
-                : $"Excedente calculado correctamente: ${excedente:N0} COP"
+            permiteCambio = true,
+            mensaje = $"Excedente calculado correctamente: ${excedente:N0} COP"
         });
     }
 
@@ -177,84 +161,7 @@ public class MembershipsController : ControllerBase
         var targetMembership = await _context.Memberships.FindAsync(newPlanId);
         if (targetMembership == null) return NotFound(new { message = "El plan de membresía seleccionado no existe." });
 
-        var activeStatus = await _context.SubscriptionStatuses.FirstOrDefaultAsync(s => s.Concepto == "ACTIVO")
-            ?? new SubscriptionStatus { Concepto = "ACTIVO" };
-
-        if (activeStatus.IdEstado == 0)
-        {
-            _context.SubscriptionStatuses.Add(activeStatus);
-            await _context.SaveChangesAsync();
-        }
-
-        var activeSub = await _context.Subscriptions
-            .Include(s => s.Membership)
-            .Include(s => s.Status)
-            .Where(s => s.IdCliente == client.IdCliente && s.DeletedAt == null && (s.IdEstado == activeStatus.IdEstado || (s.Status != null && s.Status.Concepto == "ACTIVO")))
-            .OrderByDescending(s => s.FechaFin)
-            .ThenByDescending(s => s.CreatedAt)
-            .FirstOrDefaultAsync();
-
-        decimal precioNuevoPlan = targetMembership.Precio ?? 0m;
-        decimal valorPlanActual = activeSub?.Membership?.Precio ?? 0m;
-        decimal excedente = Math.Max(0m, precioNuevoPlan - valorPlanActual);
-
-        if (activeSub != null)
-        {
-            // Upgrade existing active subscription record in SQL Server
-            activeSub.IdMembresia = targetMembership.IdMembresia;
-            activeSub.IdEstado = activeStatus.IdEstado;
-            activeSub.FechaFin = DateOnly.FromDateTime(DateTime.Now.AddMonths(1));
-            activeSub.UpdatedAt = DateTime.UtcNow;
-            _context.Entry(activeSub).State = EntityState.Modified;
-        }
-        else
-        {
-            // Create new active subscription record
-            activeSub = new Subscription
-            {
-                IdCliente = client.IdCliente,
-                IdMembresia = targetMembership.IdMembresia,
-                IdEstado = activeStatus.IdEstado,
-                FechaInicio = DateOnly.FromDateTime(DateTime.Now),
-                FechaFin = DateOnly.FromDateTime(DateTime.Now.AddMonths(1)),
-                CreatedAt = DateTime.UtcNow
-            };
-            _context.Subscriptions.Add(activeSub);
-        }
-
-        // Deactivate any other duplicate subscriptions if present
-        var duplicates = await _context.Subscriptions
-            .Where(s => s.IdCliente == client.IdCliente && s.IdSuscripcion != activeSub.IdSuscripcion && s.DeletedAt == null)
-            .ToListAsync();
-
-        foreach (var dup in duplicates)
-        {
-            dup.DeletedAt = DateTime.UtcNow;
-            _context.Entry(dup).State = EntityState.Modified;
-        }
-
-        // Record cash movement transaction for surplus payment
-        if (excedente > 0)
-        {
-            var movement = new CashMovement
-            {
-                Tipo = "INGRESO",
-                Monto = excedente,
-                Fecha = DateTime.UtcNow,
-                Descripcion = $"Pago de excedente por cambio a plan {targetMembership.Nombre} (Cliente ID {client.IdCliente})"
-            };
-            _context.CashMovements.Add(movement);
-        }
-
-        await _context.SaveChangesAsync();
-
-        return Ok(new
-        {
-            message = "Membresía actualizada con éxito.",
-            nombreNuevoPlan = targetMembership.Nombre,
-            excedentePagado = excedente,
-            expiresAt = activeSub.FechaFin
-        });
+        return await ProcessPaymentInternal(client, targetMembership, "EFECTIVO", null, null, null, null);
     }
 
     [Authorize]
@@ -267,105 +174,215 @@ public class MembershipsController : ControllerBase
         var targetMembership = await _context.Memberships.FindAsync(request.NewPlanId);
         if (targetMembership == null) return NotFound(new { message = "El plan de membresía seleccionado no existe." });
 
-        var activeStatus = await _context.SubscriptionStatuses.FirstOrDefaultAsync(s => s.Concepto == "ACTIVO")
+        return await ProcessPaymentInternal(client, targetMembership, request.PaymentMethod, request.BankName, request.CardLast4, request.ReferenceId, request.CardHolder);
+    }
+
+    private async Task<IActionResult> ProcessPaymentInternal(
+        Client client,
+        Membership targetMembership,
+        string paymentMethod,
+        string? bankName,
+        string? cardLast4,
+        string? referenceIdInput,
+        string? cardHolder)
+    {
+        var activeStatus = await _context.SubscriptionStatuses.FirstOrDefaultAsync(s => s.Concepto == "ACTIVO" || s.Concepto == "ACTIVA")
             ?? new SubscriptionStatus { Concepto = "ACTIVO" };
 
-        if (activeStatus.IdEstado == 0)
-        {
-            _context.SubscriptionStatuses.Add(activeStatus);
-            await _context.SaveChangesAsync();
-        }
+        var replacedStatus = await _context.SubscriptionStatuses.FirstOrDefaultAsync(s => s.Concepto == "REEMPLAZADA")
+            ?? new SubscriptionStatus { Concepto = "REEMPLAZADA" };
 
         var activeSub = await _context.Subscriptions
             .Include(s => s.Membership)
             .Include(s => s.Status)
-            .Where(s => s.IdCliente == client.IdCliente && s.DeletedAt == null && (s.IdEstado == activeStatus.IdEstado || (s.Status != null && s.Status.Concepto == "ACTIVO")))
+            .Where(s => s.IdCliente == client.IdCliente && s.DeletedAt == null && (s.IdEstado == activeStatus.IdEstado || (s.Status != null && (s.Status.Concepto == "ACTIVO" || s.Status.Concepto == "ACTIVA"))))
             .OrderByDescending(s => s.FechaFin)
             .ThenByDescending(s => s.CreatedAt)
             .FirstOrDefaultAsync();
 
         decimal precioNuevoPlan = targetMembership.Precio ?? 0m;
-        decimal valorPlanActual = activeSub?.Membership?.Precio ?? 0m;
+        decimal valorPlanActual = activeSub != null ? (activeSub.Precio > 0 ? activeSub.Precio : (activeSub.Membership?.Precio ?? 0m)) : 0m;
+
+        if (activeSub != null)
+        {
+            var hoy = DateOnly.FromDateTime(DateTime.Now);
+            int diasTranscurridos = hoy.DayNumber - activeSub.FechaInicio.DayNumber;
+            if (diasTranscurridos > 10)
+            {
+                return BadRequest(new { 
+                    message = $"No es posible realizar el cambio de membresía. Han transcurrido {diasTranscurridos} días desde el inicio de tu plan actual ({activeSub.FechaInicio:dd/MM/yyyy}). Los cambios de plan pagando la diferencia solo se permiten dentro de los primeros 10 días de la membresía. Por favor espera a que tu plan finalice el {activeSub.FechaFin:dd/MM/yyyy} para adquirir una nueva membresía." 
+                });
+            }
+
+            if (precioNuevoPlan <= valorPlanActual)
+            {
+                return BadRequest(new {
+                    message = $"No es posible cambiar a un plan de menor o igual valor ({targetMembership.Nombre}: ${precioNuevoPlan:N0} COP vs Plan Actual: ${valorPlanActual:N0} COP). Durante los primeros 10 días solo puedes cambiar a un plan de mayor precio (Upgrade) pagando la diferencia. Para adquirir un plan de menor valor debes esperar a que venza tu plan actual el {activeSub.FechaFin:dd/MM/yyyy}."
+                });
+            }
+        }
+
         string? nombrePlanAnterior = activeSub?.Membership?.Nombre;
         bool esUpgrade = activeSub != null;
 
-        decimal amountToPay = esUpgrade ? Math.Max(0m, precioNuevoPlan - valorPlanActual) : precioNuevoPlan;
+        decimal amountToPay = esUpgrade ? (precioNuevoPlan - valorPlanActual) : precioNuevoPlan;
 
-        // Referencia única por transacción
-        string refId = !string.IsNullOrWhiteSpace(request.ReferenceId)
-            ? request.ReferenceId.Trim().ToUpperInvariant()
+        string refId = !string.IsNullOrWhiteSpace(referenceIdInput)
+            ? referenceIdInput.Trim().ToUpperInvariant()
             : $"LEVELUP-2026-{Random.Shared.Next(100000, 999999)}";
 
-        // Prevenir transacciones duplicadas
-        if (await _context.CashMovements.AnyAsync(m => m.Descripcion != null && m.Descripcion.Contains(refId)))
+        if (await _context.Pagos.AnyAsync(p => p.ReferenciaExterna == refId))
         {
             return BadRequest(new { message = $"La transacción con referencia {refId} ya fue procesada anteriormente." });
         }
 
-        // Actualizar / crear suscripción en SQL Server
-        if (activeSub != null)
+        using var dbTransaction = await _context.Database.BeginTransactionAsync();
+        try
         {
-            activeSub.IdMembresia = targetMembership.IdMembresia;
-            activeSub.IdEstado = activeStatus.IdEstado;
-            activeSub.FechaFin = DateOnly.FromDateTime(DateTime.Now.AddMonths(1));
-            activeSub.UpdatedAt = DateTime.UtcNow;
-            _context.Entry(activeSub).State = EntityState.Modified;
-        }
-        else
-        {
-            activeSub = new Subscription
+            // 1. Crear Venta
+            var venta = new Venta
+            {
+                IdCliente = client.IdCliente,
+                TipoVenta = esUpgrade ? "CAMBIO_MEMBRESIA" : "NUEVA_MEMBRESIA",
+                Subtotal = precioNuevoPlan,
+                Descuento = esUpgrade ? valorPlanActual : 0m,
+                Total = amountToPay,
+                Estado = "PAGADA",
+                CreatedAt = DateTime.UtcNow
+            };
+            _context.Ventas.Add(venta);
+            await _context.SaveChangesAsync();
+
+            // 2. Crear Detalle de Venta
+            var detalle = new VentaDetalle
+            {
+                IdVenta = venta.IdVenta,
+                IdMembresia = targetMembership.IdMembresia,
+                Descripcion = esUpgrade
+                    ? $"Excedente Cambio de Plan a {targetMembership.Nombre} (Abono plan previo: ${valorPlanActual:N0} COP)"
+                    : $"Suscripción Plan {targetMembership.Nombre}",
+                Cantidad = 1,
+                PrecioUnitario = amountToPay,
+                Descuento = 0m,
+                Subtotal = amountToPay,
+                CreatedAt = DateTime.UtcNow
+            };
+            _context.VentaDetalles.Add(detalle);
+
+            // 3. Crear Pago
+            string metodoPagoNormalizado = string.Equals(paymentMethod, "PSE", StringComparison.OrdinalIgnoreCase) ? "PSE" : (string.Equals(paymentMethod, "TARJETA", StringComparison.OrdinalIgnoreCase) ? "TARJETA" : "EFECTIVO");
+            var pago = new Pago
+            {
+                IdVenta = venta.IdVenta,
+                MetodoPago = metodoPagoNormalizado,
+                Proveedor = bankName ?? (metodoPagoNormalizado == "PSE" ? "Banco PSE" : "Simulador LevelUp"),
+                ReferenciaExterna = refId,
+                Monto = amountToPay,
+                Estado = "APROBADO",
+                FechaPago = DateTime.UtcNow,
+                Metadata = cardLast4 != null ? $"{{\"cardLast4\":\"{cardLast4}\",\"cardHolder\":\"{cardHolder}\"}}" : null,
+                CreatedAt = DateTime.UtcNow
+            };
+            _context.Pagos.Add(pago);
+
+            // 4. Desactivar suscripción anterior marcándola como REEMPLAZADA si existía
+            if (activeSub != null)
+            {
+                activeSub.IdEstado = replacedStatus.IdEstado;
+                activeSub.UpdatedAt = DateTime.UtcNow;
+                _context.Entry(activeSub).State = EntityState.Modified;
+            }
+
+            // Desactivar cualquier otra suscripción activa suelta
+            var otherActiveSubs = await _context.Subscriptions
+                .Where(s => s.IdCliente == client.IdCliente && (activeSub == null || s.IdSuscripcion != activeSub.IdSuscripcion) && s.DeletedAt == null && s.IdEstado == activeStatus.IdEstado)
+                .ToListAsync();
+
+            foreach (var otherSub in otherActiveSubs)
+            {
+                otherSub.IdEstado = replacedStatus.IdEstado;
+                otherSub.UpdatedAt = DateTime.UtcNow;
+                _context.Entry(otherSub).State = EntityState.Modified;
+            }
+
+            await _context.SaveChangesAsync(); // Guardar cambios de suscripción anterior para liberar el índice único filtrado
+
+            // 5. Crear la NUEVA suscripción activa
+            var newSub = new Subscription
             {
                 IdCliente = client.IdCliente,
                 IdMembresia = targetMembership.IdMembresia,
                 IdEstado = activeStatus.IdEstado,
+                IdVenta = venta.IdVenta,
+                IdSuscripcionAnterior = activeSub?.IdSuscripcion,
+                Precio = precioNuevoPlan,
                 FechaInicio = DateOnly.FromDateTime(DateTime.Now),
                 FechaFin = DateOnly.FromDateTime(DateTime.Now.AddMonths(1)),
                 CreatedAt = DateTime.UtcNow
             };
-            _context.Subscriptions.Add(activeSub);
+            _context.Subscriptions.Add(newSub);
+            await _context.SaveChangesAsync();
+
+            // 6. Si fue cambio, crear auditoría en cambios_suscripcion
+            if (activeSub != null)
+            {
+                var cambio = new CambioSuscripcion
+                {
+                    IdCliente = client.IdCliente,
+                    IdSuscripcionAnterior = activeSub.IdSuscripcion,
+                    IdSuscripcionNueva = newSub.IdSuscripcion,
+                    IdVenta = venta.IdVenta,
+                    PrecioAnterior = activeSub.Precio > 0 ? activeSub.Precio : (activeSub.Membership?.Precio ?? 0m),
+                    PrecioNuevo = precioNuevoPlan,
+                    CreditoAplicado = valorPlanActual,
+                    ValorAdicional = amountToPay,
+                    ValorDevuelto = 0m,
+                    Motivo = $"Cambio de plan de {nombrePlanAnterior ?? "Plan anterior"} a {targetMembership.Nombre}",
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.CambiosSuscripcion.Add(cambio);
+            }
+
+            // 7. Movimiento de Caja (CashMovement) para compatibilidad con reportes
+            if (amountToPay > 0)
+            {
+                string metodoDetalle = metodoPagoNormalizado == "PSE"
+                    ? $"PSE ({bankName ?? "Banco PSE"})"
+                    : (metodoPagoNormalizado == "TARJETA" ? $"Tarjeta (••• {cardLast4 ?? "4242"})" : "Efectivo");
+
+                var movement = new CashMovement
+                {
+                    Tipo = "INGRESO",
+                    Monto = amountToPay,
+                    Fecha = DateTime.UtcNow,
+                    Descripcion = $"Pago APROBADO {metodoDetalle} Ref: {refId} - Plan: {targetMembership.Nombre} (Cliente ID: {client.IdCliente})"
+                };
+                _context.CashMovements.Add(movement);
+            }
+
+            await _context.SaveChangesAsync();
+            await dbTransaction.CommitAsync();
+
+            return Ok(new PaymentResultDto
+            {
+                Status = "APPROVED",
+                ReferenceId = refId,
+                PlanName = targetMembership.Nombre ?? "Plan LevelUp",
+                AmountPaid = amountToPay,
+                PaymentMethod = paymentMethod == "PSE" ? "PSE" : (paymentMethod == "TARJETA" ? "Tarjeta de Crédito / Débito" : "Efectivo"),
+                BankName = bankName,
+                Message = esUpgrade
+                    ? $"Cambio de plan a {targetMembership.Nombre} realizado con éxito. Excedente pagado: ${amountToPay:N0} COP"
+                    : $"Suscripción al plan {targetMembership.Nombre} activada con éxito.",
+                IsUpgrade = esUpgrade,
+                PreviousPlanName = nombrePlanAnterior,
+                ExpiresAt = newSub.FechaFin.ToString("yyyy-MM-dd")
+            });
         }
-
-        // Desactivar suscripciones duplicadas anteriores
-        var duplicates = await _context.Subscriptions
-            .Where(s => s.IdCliente == client.IdCliente && s.IdSuscripcion != activeSub.IdSuscripcion && s.DeletedAt == null)
-            .ToListAsync();
-
-        foreach (var dup in duplicates)
+        catch (Exception ex)
         {
-            dup.DeletedAt = DateTime.UtcNow;
-            _context.Entry(dup).State = EntityState.Modified;
+            await dbTransaction.RollbackAsync();
+            return StatusCode(500, new { message = "Error interno procesando la venta y suscripción.", detail = ex.Message });
         }
-
-        // Registrar el movimiento de caja por la compra o pago de excedente aprobado
-        string metodoDetalle = request.PaymentMethod == "PSE"
-            ? $"PSE ({request.BankName ?? "Banco PSE"})"
-            : $"Tarjeta Crédito/Débito (••• {request.CardLast4 ?? "4242"})";
-
-        var movement = new CashMovement
-        {
-            Tipo = "INGRESO",
-            Monto = amountToPay,
-            Fecha = DateTime.UtcNow,
-            Descripcion = $"Pago APROBADO {metodoDetalle} Ref: {refId} - Plan: {targetMembership.Nombre} (Cliente ID: {client.IdCliente})"
-        };
-        _context.CashMovements.Add(movement);
-
-        await _context.SaveChangesAsync();
-
-        return Ok(new PaymentResultDto
-        {
-            Status = "APPROVED",
-            ReferenceId = refId,
-            PlanName = targetMembership.Nombre ?? "Plan LevelUp",
-            AmountPaid = amountToPay,
-            PaymentMethod = request.PaymentMethod == "PSE" ? "PSE" : "Tarjeta de Crédito / Débito",
-            BankName = request.BankName,
-            Message = esUpgrade
-                ? $"Cambio de plan a {targetMembership.Nombre} realizado con éxito. Excedente pagado: ${amountToPay:N0} COP"
-                : $"Suscripción al plan {targetMembership.Nombre} activada con éxito.",
-            IsUpgrade = esUpgrade,
-            PreviousPlanName = nombrePlanAnterior,
-            ExpiresAt = activeSub.FechaFin.ToString("yyyy-MM-dd")
-        });
     }
 }

@@ -20,6 +20,11 @@ export class App {
     return !this.router.url.startsWith('/admin');
   }
 
+  showFooter() {
+    const url = this.router.url;
+    return !url.startsWith('/admin') && !url.startsWith('/dashboard') && !url.startsWith('/profile');
+  }
+
   handleOk() {
     this.alertService.close();
   }

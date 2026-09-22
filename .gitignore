@@ -1,3 +1,5 @@
 **/bin/
 **/obj/
 .vs/
+Backend/LevelUpGym.Api/appsettings.Production.json
+Backend/LevelUpGym.Api/bin/Release/

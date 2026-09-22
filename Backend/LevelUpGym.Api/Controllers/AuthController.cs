@@ -18,13 +18,15 @@ public class AuthController : ControllerBase
     private readonly IJwtService _jwtService;
     private readonly IOtpService _otpService;
     private readonly IEmailService _emailService;
+    private readonly ISocialAuthService _socialAuthService;
 
-    public AuthController(LevelUpDbContext context, IJwtService jwtService, IOtpService otpService, IEmailService emailService)
+    public AuthController(LevelUpDbContext context, IJwtService jwtService, IOtpService otpService, IEmailService emailService, ISocialAuthService socialAuthService)
     {
         _context = context;
         _jwtService = jwtService;
         _otpService = otpService;
         _emailService = emailService;
+        _socialAuthService = socialAuthService;
     }
 
     [HttpPost("register")]
@@ -153,6 +155,81 @@ public class AuthController : ControllerBase
         };
     }
 
+    [HttpPost("google-login")]
+    public async Task<ActionResult<AuthResponse>> GoogleLogin(GoogleLoginRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request?.IdToken))
+        {
+            return BadRequest(new { message = "El token de Google es obligatorio." });
+        }
+
+        var validationResult = await _socialAuthService.VerifyGoogleTokenAsync(request.IdToken);
+        if (!validationResult.Success || string.IsNullOrWhiteSpace(validationResult.Email))
+        {
+            return BadRequest(new { message = validationResult.ErrorMessage ?? "No fue posible validar la sesión con Google." });
+        }
+
+        var normalizedEmail = validationResult.Email.Trim().ToLowerInvariant();
+        Console.WriteLine($"[GoogleLogin] Token verified successfully for email: '{normalizedEmail}'");
+
+        var auth = await _context.Auths.FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail);
+
+        if (auth == null)
+        {
+            Console.WriteLine($"Google login rejected: Email {normalizedEmail} is not registered in LevelUpGym.");
+            return NotFound(new { message = "Este correo no está registrado en LevelUpGym. Primero debes registrarte." });
+        }
+
+        if (auth.Estado != null && auth.Estado.Trim().ToUpper() == "INACTIVO")
+        {
+            return Unauthorized(new { message = "Tu cuenta se encuentra inactiva. Contacta con administración." });
+        }
+
+        Console.WriteLine($"Google login success: {auth.Email} logged in.");
+        return Ok(new AuthResponse
+        {
+            Email = auth.Email,
+            Token = _jwtService.CreateToken(auth)
+        });
+    }
+
+    [HttpPost("facebook-login")]
+    public async Task<ActionResult<AuthResponse>> FacebookLogin(FacebookLoginRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request?.AccessToken))
+        {
+            return BadRequest(new { message = "El token de Facebook es obligatorio." });
+        }
+
+        var validationResult = await _socialAuthService.VerifyFacebookTokenAsync(request.AccessToken);
+        if (!validationResult.Success || string.IsNullOrWhiteSpace(validationResult.Email))
+        {
+            return BadRequest(new { message = validationResult.ErrorMessage ?? "No fue posible validar la sesión con Facebook." });
+        }
+
+        var normalizedEmail = validationResult.Email.Trim().ToLowerInvariant();
+
+        var auth = await _context.Auths.FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail);
+
+        if (auth == null)
+        {
+            Console.WriteLine($"Facebook login rejected: Email {normalizedEmail} is not registered in LevelUpGym.");
+            return NotFound(new { message = "Este correo no está registrado en LevelUpGym. Primero debes registrarte." });
+        }
+
+        if (auth.Estado != null && auth.Estado.Trim().ToUpper() == "INACTIVO")
+        {
+            return Unauthorized(new { message = "Tu cuenta se encuentra inactiva. Contacta con administración." });
+        }
+
+        Console.WriteLine($"Facebook login success: {auth.Email} logged in.");
+        return Ok(new AuthResponse
+        {
+            Email = auth.Email,
+            Token = _jwtService.CreateToken(auth)
+        });
+    }
+
     [HttpPost("forgot-password")]
     public async Task<IActionResult> ForgotPassword(ForgotPasswordRequest request)
     {
@@ -216,18 +293,18 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> RequestOtp(RequestOtpDto request)
     {
         var email = request.Email?.Trim().ToLower() ?? "";
-        var medium = request.Medium?.Trim().ToLower() ?? "email"; // "email" or "phone"
         
         if (string.IsNullOrWhiteSpace(email))
         {
-            return BadRequest(new { message = "Datos inválidos." });
+            return BadRequest(new { message = "El correo electrónico es obligatorio." });
         }
 
         var auth = await _context.Auths.FirstOrDefaultAsync(u => u.Email == email);
         
+        // Regla de seguridad: Si no existe, responder con mensaje genérico sin revelar existencia
         if (auth == null)
         {
-            return NotFound(new { message = "Cuenta no encontrada." });
+            return Ok(new { message = "Si el correo está registrado, recibirás un código de seguridad para restablecer tu contraseña." });
         }
 
         // Check resend cooldown
@@ -236,33 +313,19 @@ public class AuthController : ControllerBase
             return BadRequest(new { message = "Debes esperar antes de solicitar un nuevo código." });
         }
 
+        var profile = await _context.Profiles.FirstOrDefaultAsync(p => p.IdProfile == auth.IdProfile);
+        var recipientName = profile != null ? $"{profile.Nombre} {profile.Apellidos}".Trim() : "Usuario";
+
         var code = _otpService.GenerateOtp(auth.Email);
         
-        if (medium == "phone")
+        // Enviar en segundo plano para no bloquear la respuesta HTTP al usuario
+        _ = Task.Run(async () =>
         {
-            var profile = await _context.Profiles.FirstOrDefaultAsync(p => p.IdProfile == auth.IdProfile);
-            if (profile == null || string.IsNullOrWhiteSpace(profile.Telefono))
-            {
-                return BadRequest(new { message = "No hay un número de celular asociado a esta cuenta." });
-            }
-            // Simular envío de SMS (imprimiendo en consola)
-            Console.WriteLine("\n=========================================");
-            Console.WriteLine("RECUPERACIÓN DE CONTRASEÑA");
-            Console.WriteLine("=========================================");
-            Console.WriteLine($"Usuario: {profile.Telefono}");
-            Console.WriteLine("Método seleccionado: SMS");
-            Console.WriteLine($"Código OTP: {code}");
-            Console.WriteLine($"Generado: {DateTime.Now:HH:mm:ss}");
-            Console.WriteLine("Expira en: 5 minutos");
-            Console.WriteLine("=========================================\n");
-        }
-        else
-        {
-            // Enviar por correo
-            await _emailService.SendOtpEmail(auth.Email, code);
-        }
+            try { await _emailService.SendOtpEmail(auth.Email, recipientName, code); }
+            catch (Exception ex) { Console.WriteLine($"[OTP EMAIL ERROR] {ex.Message}"); }
+        });
 
-        return Ok(new { message = "Código enviado correctamente." });
+        return Ok(new { message = "Si el correo está registrado, recibirás un código de seguridad para restablecer tu contraseña." });
     }
 
     [HttpPost("verify-otp")]
@@ -327,7 +390,7 @@ public class AuthController : ControllerBase
         // Consume the OTP so it can't be reused
         _otpService.ConsumeOtp(email);
 
-        return Ok(new { message = "Tu contraseña fue actualizada correctamente." });
+        return Ok(new { message = "Tu contraseña se ha actualizado correctamente." });
     }
 
     /// <summary>

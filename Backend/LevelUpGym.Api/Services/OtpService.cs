@@ -74,7 +74,7 @@ public class OtpService : IOtpService
 
         if (!_otpStore.TryGetValue(normalizedEmail, out var entry))
         {
-            return (false, "Código inválido. Solicita uno nuevo.", 0);
+            return (false, "El código de seguridad no es válido.", 0);
         }
 
         // Check lockout
@@ -87,13 +87,13 @@ public class OtpService : IOtpService
         // Check if already used
         if (entry.IsUsed)
         {
-            return (false, "Este código ya fue utilizado. Solicita uno nuevo.", 0);
+            return (false, "El código de seguridad no es válido.", 0);
         }
 
         // Check expiration
         if (DateTime.UtcNow > entry.ExpiresAt)
         {
-            return (false, "El código ha expirado. Solicita uno nuevo.", 0);
+            return (false, "El código de seguridad ha expirado. Solicita uno nuevo.", 0);
         }
 
         // Check code match
@@ -108,7 +108,7 @@ public class OtpService : IOtpService
                 return (false, $"Demasiados intentos fallidos. Intenta de nuevo en {LockoutMinutes} minutos.", 0);
             }
 
-            return (false, $"Código incorrecto. Te quedan {remaining} intento(s).", remaining);
+            return (false, "El código de seguridad no es válido.", remaining);
         }
 
         // Valid!

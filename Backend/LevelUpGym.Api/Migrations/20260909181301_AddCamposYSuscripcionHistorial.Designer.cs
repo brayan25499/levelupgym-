@@ -4,6 +4,7 @@ using LevelUpGym.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LevelUpGym.Api.Migrations
 {
     [DbContext(typeof(LevelUpDbContext))]
-    partial class LevelUpDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260909181301_AddCamposYSuscripcionHistorial")]
+    partial class AddCamposYSuscripcionHistorial
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -346,6 +349,9 @@ namespace LevelUpGym.Api.Migrations
                     b.Property<DateOnly?>("FechaContratacion")
                         .HasColumnType("date");
 
+                    b.Property<int?>("IdEps")
+                        .HasColumnType("int");
+
                     b.Property<int>("IdProfile")
                         .HasColumnType("int");
 
@@ -357,6 +363,8 @@ namespace LevelUpGym.Api.Migrations
                         .HasColumnType("datetime2");
 
                     b.HasKey("IdEmpleado");
+
+                    b.HasIndex("IdEps");
 
                     b.HasIndex("IdProfile")
                         .IsUnique();
@@ -402,6 +410,33 @@ namespace LevelUpGym.Api.Migrations
                     b.HasIndex("EmployeeIdEmpleado");
 
                     b.ToTable("EmployeePayments");
+                });
+
+            modelBuilder.Entity("LevelUpGym.Api.Models.Eps", b =>
+                {
+                    b.Property<int>("IdEps")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdEps"));
+
+                    b.Property<DateTime?>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("IdEps");
+
+                    b.ToTable("EpsList");
                 });
 
             modelBuilder.Entity("LevelUpGym.Api.Models.Goal", b =>
@@ -1319,11 +1354,17 @@ namespace LevelUpGym.Api.Migrations
 
             modelBuilder.Entity("LevelUpGym.Api.Models.Employee", b =>
                 {
+                    b.HasOne("LevelUpGym.Api.Models.Eps", "Eps")
+                        .WithMany("Employees")
+                        .HasForeignKey("IdEps");
+
                     b.HasOne("LevelUpGym.Api.Models.Profile", "Profile")
                         .WithOne("Employee")
                         .HasForeignKey("LevelUpGym.Api.Models.Employee", "IdProfile")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Eps");
 
                     b.Navigation("Profile");
                 });
@@ -1507,6 +1548,11 @@ namespace LevelUpGym.Api.Migrations
                     b.Navigation("EmpleadoRoles");
 
                     b.Navigation("Payments");
+                });
+
+            modelBuilder.Entity("LevelUpGym.Api.Models.Eps", b =>
+                {
+                    b.Navigation("Employees");
                 });
 
             modelBuilder.Entity("LevelUpGym.Api.Models.GoalType", b =>
