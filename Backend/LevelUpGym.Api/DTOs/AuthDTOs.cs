@@ -58,4 +58,7 @@ public class ResetPasswordDto
     public string Code { get; set; } = null!;
     public string NewPassword { get; set; } = null!;
 }
-
+public class GoogleLoginDto
+{
+    public string IdToken { get; set; } = null!;
+}

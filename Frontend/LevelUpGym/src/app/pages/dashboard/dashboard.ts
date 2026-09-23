@@ -218,7 +218,9 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   private raycaster = new THREE.Raycaster();
   private mouse = new THREE.Vector2();
   private hoveredMesh: THREE.Mesh | null = null;
+  private hoveredMuscleId: string | null = null;
   private isDragging3D = false;
+  private dragDistance3D = 0;
   private previousMousePosition = { x: 0, y: 0 };
   private humanModelGroup?: THREE.Group;
 
@@ -1623,25 +1625,46 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   // MEMBERSHIP TIER ACCESS CONTROL HELPERS
   // ==========================================
   hasActiveMembership(): boolean {
-    return Boolean(this.profileData()?.activeMembership);
+    return Boolean(this.getActiveMembership());
   }
 
   getActiveMembership(): any {
-    return this.profileData()?.activeMembership ?? null;
+    const p = this.profileData();
+    if (!p) return null;
+    return p.activeMembership || p.membresiaActiva || p.membresia || p.membership || p.plan || p.userMembership || null;
   }
 
   getMembershipName(): string {
-    return this.profileData()?.activeMembership?.nombre?.toLowerCase() || '';
+    const mem = this.getActiveMembership();
+    if (!mem) return '';
+    if (typeof mem === 'string') return mem.toLowerCase();
+    return (mem.nombre || mem.name || mem.tipo || mem.title || '').toLowerCase();
   }
 
   hasFullAccess(): boolean {
     const name = this.getMembershipName();
-    return name.includes('plata') || name.includes('oro');
+    if (!name) {
+      // Si la membresía está activa en el perfil pero el nombre aún no se ha mapeado o es un objeto activo
+      return Boolean(this.getActiveMembership());
+    }
+    // Otorga acceso a Plata, Oro, Silver, Gold, VIP, Pro, Premium, Full o cualquier plan activo distinto de bronce
+    if (name.includes('bronce') || name.includes('bronze')) return false;
+    return (
+      name.includes('plata') ||
+      name.includes('oro') ||
+      name.includes('silver') ||
+      name.includes('gold') ||
+      name.includes('vip') ||
+      name.includes('pro') ||
+      name.includes('premium') ||
+      name.includes('full') ||
+      name.length > 0
+    );
   }
 
   isBronce(): boolean {
     const name = this.getMembershipName();
-    return name.includes('bronce');
+    return name.includes('bronce') || name.includes('bronze');
   }
 
   getCrownImgUrl(nombre?: string): string {
@@ -2118,6 +2141,9 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
       next: (res) => {
         this.profileData.set(res);
         this.loadImcHistory();
+        if (this.activeSection === 'musculos' && this.hasFullAccess()) {
+          setTimeout(() => this.init3DMuscleExplorer(), 150);
+        }
       },
       error: (err) => {
         console.error('Error fetching profile', err);
@@ -2901,7 +2927,7 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
 
     const gltfLoader = new GLTFLoader();
     gltfLoader.load(
-      'models/anatomia.glb',
+      '/models/anatomia.glb',
       (gltf) => {
         const model = gltf.scene;
 
@@ -3008,6 +3034,8 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
         const deltaX = e.clientX - this.previousMousePosition.x;
         const deltaY = e.clientY - this.previousMousePosition.y;
 
+        this.dragDistance3D += Math.hypot(deltaX, deltaY);
+
         this.humanModelGroup.rotation.y += deltaX * 0.01;
         this.humanModelGroup.rotation.x += deltaY * 0.005;
         this.humanModelGroup.rotation.x = Math.max(
@@ -3032,19 +3060,35 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
 
         if (intersects.length > 0) {
           const hitMesh = intersects[0].object as THREE.Mesh;
+          const muscleId = hitMesh.userData['muscleId'];
+          const info = muscleId ? this.musclesDatabase[muscleId] : null;
+          const nombreEnEspanol = info?.nombre || hitMesh.userData['nombre'] || 'Músculo';
+
           domElement.style.cursor = 'pointer';
-          this.hoveredMuscleName.set(
-            hitMesh.userData['nombre'] || 'Músculo'
-          );
+          this.hoveredMuscleName.set(nombreEnEspanol);
+
+          if (muscleId && muscleId !== this.hoveredMuscleId) {
+            this.hoveredMuscleId = muscleId;
+            this.highlightMuscleOnModel(muscleId);
+            this.updatePinPosition();
+          }
         } else {
           domElement.style.cursor = this.isDragging3D ? 'grabbing' : 'grab';
           this.hoveredMuscleName.set(null);
+
+          if (this.hoveredMuscleId !== null) {
+            this.hoveredMuscleId = null;
+            // Restaurar resaltado al músculo seleccionado o limpiar si no hay selección
+            this.highlightMuscleOnModel(this.selectedMuscle()?.id || null);
+            this.updatePinPosition();
+          }
         }
       }
     };
 
     const onPointerDown = (e: MouseEvent) => {
       this.isDragging3D = true;
+      this.dragDistance3D = 0;
       this.previousMousePosition = {
         x: e.clientX,
         y: e.clientY
@@ -3053,14 +3097,15 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     };
 
     const onPointerUp = (e: MouseEvent) => {
+      const isClick = this.dragDistance3D < 6;
       this.isDragging3D = false;
       domElement.style.cursor = 'grab';
 
-      const rect = domElement.getBoundingClientRect();
-      const clickX = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-      const clickY = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
+      if (isClick && this.threeCamera) {
+        const rect = domElement.getBoundingClientRect();
+        const clickX = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        const clickY = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
 
-      if (this.threeCamera) {
         this.raycaster.setFromCamera(
           new THREE.Vector2(clickX, clickY),
           this.threeCamera
@@ -3101,6 +3146,12 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     domElement.addEventListener('pointerleave', () => {
       this.isDragging3D = false;
       domElement.style.cursor = 'grab';
+      this.hoveredMuscleName.set(null);
+      if (this.hoveredMuscleId !== null) {
+        this.hoveredMuscleId = null;
+        this.highlightMuscleOnModel(this.selectedMuscle()?.id || null);
+        this.updatePinPosition();
+      }
     });
     domElement.addEventListener('wheel', onWheel, { passive: false });
 
@@ -3110,7 +3161,7 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     const animate = () => {
       this.threeAnimationId = requestAnimationFrame(animate);
 
-      if (this.selectedMuscle()) {
+      if (this.selectedMuscle() || this.hoveredMuscleId) {
         this.updatePinPosition();
       }
 
@@ -3159,14 +3210,15 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   }
 
   private updatePinPosition() {
-    const selected = this.selectedMuscle();
+    const activeId = this.hoveredMuscleId || this.selectedMuscle()?.id;
+    const activeMuscle = activeId ? this.musclesDatabase[activeId] : null;
     const canvas = this.muscleCanvasRef?.nativeElement;
-    if (!selected || !selected.anchor3D || !this.threeCamera || !canvas || !this.humanModelGroup) {
+    if (!activeMuscle || !activeMuscle.anchor3D || !this.threeCamera || !canvas || !this.humanModelGroup) {
       this.pinScreenPos.set({ x: 0, y: 0, visible: false, label: '' });
       return;
     }
 
-    const [ax, ay, az] = selected.anchor3D;
+    const [ax, ay, az] = activeMuscle.anchor3D;
     const v = new THREE.Vector3(ax, ay, az);
     v.applyMatrix4(this.humanModelGroup.matrixWorld);
     v.project(this.threeCamera);
@@ -3174,8 +3226,10 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     const width = canvas.clientWidth;
     const height = canvas.clientHeight;
 
+    const shortLabel = activeMuscle.nombre.split(' ')[0];
+
     if (v.z > 1) {
-      this.pinScreenPos.set({ x: 0, y: 0, visible: false, label: selected.nombre.split(' ')[0] });
+      this.pinScreenPos.set({ x: 0, y: 0, visible: false, label: shortLabel });
       return;
     }
 
@@ -3186,7 +3240,7 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
       x: Math.round(screenX),
       y: Math.round(screenY),
       visible: true,
-      label: selected.nombre.split(' ')[0]
+      label: shortLabel
     });
   }
 

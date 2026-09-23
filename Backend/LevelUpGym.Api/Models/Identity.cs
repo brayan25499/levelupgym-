@@ -66,6 +66,11 @@ public class Auth : BaseEntity
     [StringLength(20)]
     public string? Estado { get; set; }
 
+    // Identificador único de Google (payload.Subject / "sub" del ID Token).
+    // Nulo para cuentas que solo usan email/contraseña.
+    [StringLength(50)]
+    public string? GoogleId { get; set; }
+
     // Navigation
     public virtual Profile Profile { get; set; } = null!;
     public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();

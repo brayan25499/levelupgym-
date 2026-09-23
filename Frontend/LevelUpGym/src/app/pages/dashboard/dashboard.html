@@ -288,11 +288,6 @@
                 <span>Haz clic en un músculo para ver su información</span>
               </div>
 
-              <!-- Hover Tooltip -->
-              <div class="canvas-hover-tooltip" *ngIf="hoveredMuscleName() && !selectedMuscle()">
-                <span>{{ hoveredMuscleName() }}</span>
-              </div>
-
               <!-- Loading Overlay -->
               <div class="canvas-loader-overlay" *ngIf="isLoading3DModel()">
                 <div class="spinner-glow"></div>

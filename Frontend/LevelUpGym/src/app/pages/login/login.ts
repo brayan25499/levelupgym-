@@ -1,13 +1,16 @@
-import { Component, inject, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, inject, OnDestroy, AfterViewInit, ChangeDetectorRef } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, FormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth';
 import { CommonModule } from '@angular/common';
 import { AlertService } from '../../services/alert.service';
+import { environment } from '../../../environments/environment';
 import {
   loginEmailValidator,
   loginPasswordValidator
 } from '../../validators/custom-validators';
+
+declare const google: any;
 
 @Component({
   selector: 'app-login',
@@ -20,7 +23,7 @@ import {
   templateUrl: './login.html',
   styleUrl: './login.css',
 })
-export class LoginComponent implements OnDestroy {
+export class LoginComponent implements OnDestroy, AfterViewInit {
 
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
@@ -37,6 +40,11 @@ export class LoginComponent implements OnDestroy {
     email: ['', [Validators.required, loginEmailValidator()]],
     password: ['', [Validators.required, loginPasswordValidator()]],
   });
+
+  // ===== Google Login State =====
+
+  isGoogleLoading = false;
+  private googleInitialized = false;
 
   // ===== Recovery Modal State =====
 
@@ -78,6 +86,12 @@ export class LoginComponent implements OnDestroy {
   redirectCountdown = 3;
   private redirectInterval: any = null;
 
+  // ===== Lifecycle =====
+
+  ngAfterViewInit() {
+    this.initGoogleSignIn();
+  }
+
   // ===== Login =====
 
   onSubmit() {
@@ -89,6 +103,7 @@ export class LoginComponent implements OnDestroy {
       this.authService.login(this.loginForm.value).subscribe({
         next: (res) => {
           this.isLoading = false;
+          this.cdr.detectChanges();
 
           if (res.email === 'admin@levelup.com') {
             this.router.navigate(['/admin']);
@@ -123,12 +138,104 @@ export class LoginComponent implements OnDestroy {
               errorMsg ||
               'Error al iniciar sesión. Verifica tus credenciales.';
           }
+
+          this.cdr.detectChanges();
         }
       });
 
     } else {
       this.loginForm.markAllAsTouched();
+      this.cdr.detectChanges();
     }
+  }
+
+  // ===== Google Login =====
+
+  private initGoogleSignIn() {
+    if (this.googleInitialized) return;
+
+    if (typeof google === 'undefined' || !google?.accounts?.id) {
+      // El script de Google (accounts.google.com/gsi/client) aún no cargó.
+      // Reintentamos brevemente por si el <script> del index.html llega después.
+      setTimeout(() => this.initGoogleSignIn(), 300);
+      return;
+    }
+
+    google.accounts.id.initialize({
+      client_id: environment.googleClientId,
+      callback: (response: any) => this.handleGoogleCredential(response),
+    });
+
+    const container = document.getElementById('google-btn-container');
+
+    if (container) {
+      google.accounts.id.renderButton(container, {
+        theme: 'outline',
+        size: 'large',
+        width: 320,
+      });
+    }
+
+    this.googleInitialized = true;
+  }
+
+  onGoogleLogin() {
+    if (this.isGoogleLoading) return;
+
+    // Disparamos el click sobre el botón real de Google (oculto),
+    // para mantener nuestro botón con el estilo de LevelUpGym.
+    const realGoogleButton = document.querySelector(
+      '#google-btn-container div[role="button"]'
+    ) as HTMLElement | null;
+
+    if (realGoogleButton) {
+      realGoogleButton.click();
+    } else {
+      this.errorMessage =
+        'No fue posible iniciar sesión con Google. Intenta nuevamente.';
+      this.cdr.detectChanges();
+    }
+  }
+
+  private handleGoogleCredential(response: any) {
+    this.errorMessage = null;
+    this.isGoogleLoading = true;
+    this.cdr.detectChanges();
+
+    this.authService.googleLogin(response.credential).subscribe({
+      next: (res) => {
+        this.isGoogleLoading = false;
+        this.cdr.detectChanges();
+
+        if (res.email === 'admin@levelup.com') {
+          this.router.navigate(['/admin']);
+        } else {
+          this.router.navigate(['/dashboard']);
+        }
+      },
+
+      error: (err) => {
+        this.isGoogleLoading = false;
+
+        if (err.status === 404 && err.error?.needsRegistration) {
+          // No existe cuenta con este correo: lo mandamos a completar su registro,
+          // prellenando lo que ya sabemos gracias a Google.
+          this.router.navigate(['/register'], {
+            queryParams: {
+              email: err.error?.email || '',
+              nombre: err.error?.nombre || '',
+            },
+          });
+          return;
+        }
+
+        this.errorMessage =
+          err.error?.message ||
+          'No fue posible iniciar sesión con Google. Intenta nuevamente.';
+
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   // ===== Recovery Modal Open/Close =====
@@ -139,6 +246,8 @@ export class LoginComponent implements OnDestroy {
     if (show) {
       this.resetRecoveryState();
     }
+
+    this.cdr.detectChanges();
   }
 
   closeRecoveryModal() {
@@ -147,6 +256,7 @@ export class LoginComponent implements OnDestroy {
     this.showForgotModal = false;
     this.clearAllTimers();
     this.resetRecoveryState();
+    this.cdr.detectChanges();
   }
 
   private resetRecoveryState() {
@@ -209,18 +319,21 @@ export class LoginComponent implements OnDestroy {
     if (!email) {
       this.recoveryEmailInputError =
         'El correo electrónico es obligatorio.';
+      this.cdr.detectChanges();
       return;
     }
 
     if (email.includes(' ')) {
       this.recoveryEmailInputError =
         'El correo no puede contener espacios.';
+      this.cdr.detectChanges();
       return;
     }
 
     if (!email.includes('@')) {
       this.recoveryEmailInputError =
         'El correo debe contener @.';
+      this.cdr.detectChanges();
       return;
     }
 
@@ -230,6 +343,7 @@ export class LoginComponent implements OnDestroy {
     if (!emailPattern.test(email)) {
       this.recoveryEmailInputError =
         'Formato de correo electrónico inválido.';
+      this.cdr.detectChanges();
       return;
     }
 
@@ -238,6 +352,7 @@ export class LoginComponent implements OnDestroy {
     this.isRecoveryLoading = true;
     this.selectedMedium = 'email';
     this.maskedEmail = this.maskEmail(email);
+    this.cdr.detectChanges();
 
     this.authService.requestOtp(email, 'email').subscribe({
       next: () => {
@@ -245,6 +360,7 @@ export class LoginComponent implements OnDestroy {
         this.recoveryStep = 2;
         this.startOtpTimer();
         this.startResendCooldown();
+        this.cdr.detectChanges();
       },
 
       error: (err) => {
@@ -253,6 +369,8 @@ export class LoginComponent implements OnDestroy {
         this.recoveryError =
           err.error?.message ||
           'Hubo un error al enviar el código. Inténtalo más tarde.';
+
+        this.cdr.detectChanges();
       }
     });
   }
@@ -279,6 +397,7 @@ export class LoginComponent implements OnDestroy {
   onRequestOtp() {
     this.recoveryError = null;
     this.isRecoveryLoading = true;
+    this.cdr.detectChanges();
 
     this.authService.requestOtp(
       this.recoveryEmail,
@@ -289,6 +408,7 @@ export class LoginComponent implements OnDestroy {
         this.recoveryStep = 2;
         this.startOtpTimer();
         this.startResendCooldown();
+        this.cdr.detectChanges();
       },
 
       error: (err) => {
@@ -297,6 +417,8 @@ export class LoginComponent implements OnDestroy {
         this.recoveryError =
           err.error?.message ||
           'Hubo un error al enviar el código. Inténtalo más tarde.';
+
+        this.cdr.detectChanges();
       }
     });
   }
@@ -343,6 +465,8 @@ export class LoginComponent implements OnDestroy {
     } else {
       this.otpDigits[index] = '';
     }
+
+    this.cdr.detectChanges();
   }
 
   private distributeOtp(
@@ -362,6 +486,7 @@ export class LoginComponent implements OnDestroy {
     }
 
     this.otpHasError = false;
+    this.cdr.detectChanges();
 
     setTimeout(() => {
       const inputs =
@@ -396,6 +521,7 @@ export class LoginComponent implements OnDestroy {
 
           this.otpDigits[index - 1] = '';
           inputs[index - 1].focus();
+          this.cdr.detectChanges();
         }
       }
 
@@ -447,6 +573,7 @@ export class LoginComponent implements OnDestroy {
 
     this.recoveryError = null;
     this.isRecoveryLoading = true;
+    this.cdr.detectChanges();
 
     const code = this.otpDigits.join('');
 
@@ -458,6 +585,7 @@ export class LoginComponent implements OnDestroy {
         this.isRecoveryLoading = false;
         this.recoveryStep = 3;
         this.clearAllTimers();
+        this.cdr.detectChanges();
       },
 
       error: (err) => {
@@ -467,6 +595,8 @@ export class LoginComponent implements OnDestroy {
         this.recoveryError =
           err.error?.message ||
           'El código de seguridad no es válido.';
+
+        this.cdr.detectChanges();
       }
     });
   }
@@ -482,6 +612,7 @@ export class LoginComponent implements OnDestroy {
     this.otpDigits = ['', '', '', '', '', ''];
     this.otpHasError = false;
     this.isRecoveryLoading = true;
+    this.cdr.detectChanges();
 
     this.authService.requestOtp(
       this.recoveryEmail,
@@ -494,6 +625,7 @@ export class LoginComponent implements OnDestroy {
 
         this.startOtpTimer();
         this.startResendCooldown();
+        this.cdr.detectChanges();
       },
 
       error: (err) => {
@@ -504,6 +636,7 @@ export class LoginComponent implements OnDestroy {
           'Error al reenviar. Inténtalo más tarde.';
 
         this.startResendCooldown();
+        this.cdr.detectChanges();
       }
     });
   }
@@ -533,6 +666,8 @@ export class LoginComponent implements OnDestroy {
         this.recoveryError =
           'El código de verificación ha expirado. Solicita uno nuevo para continuar.';
       }
+
+      this.cdr.detectChanges();
     }, 1000);
   }
 
@@ -575,6 +710,8 @@ export class LoginComponent implements OnDestroy {
 
           this.canResendOtp = true;
         }
+
+        this.cdr.detectChanges();
       }, 1000);
   }
 
@@ -633,6 +770,7 @@ export class LoginComponent implements OnDestroy {
 
     this.recoveryError = null;
     this.isRecoveryLoading = true;
+    this.cdr.detectChanges();
 
     const code = this.otpDigits.join('');
 
@@ -645,6 +783,7 @@ export class LoginComponent implements OnDestroy {
         this.isRecoveryLoading = false;
         this.recoveryStep = 4;
         this.startRedirectCountdown();
+        this.cdr.detectChanges();
       },
 
       error: (err) => {
@@ -653,6 +792,8 @@ export class LoginComponent implements OnDestroy {
         this.recoveryError =
           err.error?.message ||
           'No se pudo actualizar la contraseña. Inténtalo de nuevo.';
+
+        this.cdr.detectChanges();
       }
     });
   }
@@ -679,6 +820,8 @@ export class LoginComponent implements OnDestroy {
           this.clearAllTimers();
           this.resetRecoveryState();
         }
+
+        this.cdr.detectChanges();
       }, 1000);
   }
 

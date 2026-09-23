@@ -31,6 +31,15 @@ export class AuthService {
     );
   }
 
+  googleLogin(idToken: string): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.apiUrl}/google-login`, { idToken }).pipe(
+      tap(response => {
+        localStorage.setItem('user', JSON.stringify(response));
+        this.currentUser.set(response);
+      })
+    );
+  }
+
   register(userData: any): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/register`, userData).pipe(
       tap(response => {

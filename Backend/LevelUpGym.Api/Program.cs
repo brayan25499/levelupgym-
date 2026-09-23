@@ -28,6 +28,7 @@ public class Program
         builder.Services.AddScoped<IEmailService, LevelUpEmailService>();
         builder.Services.AddScoped<IGoalEvaluationService, GoalEvaluationService>();
         builder.Services.AddScoped<IPaymentGatewayService, PaymentGatewayService>();
+        builder.Services.AddScoped<IGoogleAuthService, GoogleAuthService>();
 
         builder.Services.AddCors(options =>
         {

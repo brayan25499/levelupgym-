@@ -18,17 +18,20 @@ public class AuthController : ControllerBase
     private readonly IJwtService _jwtService;
     private readonly IOtpService _otpService;
     private readonly IEmailService _emailService;
+    private readonly IGoogleAuthService _googleAuthService;
 
     public AuthController(
         LevelUpDbContext context,
         IJwtService jwtService,
         IOtpService otpService,
-        IEmailService emailService)
+        IEmailService emailService,
+        IGoogleAuthService googleAuthService)
     {
         _context = context;
         _jwtService = jwtService;
         _otpService = otpService;
         _emailService = emailService;
+        _googleAuthService = googleAuthService;
     }
 
     [HttpPost("register")]
@@ -168,6 +171,56 @@ public class AuthController : ControllerBase
             Email = auth.Email,
             Token = _jwtService.CreateToken(auth)
         };
+    }
+
+    // ===== Google Login =====
+
+    [HttpPost("google-login")]
+    public async Task<IActionResult> GoogleLogin(GoogleLoginDto request)
+    {
+        if (string.IsNullOrWhiteSpace(request.IdToken))
+        {
+            return BadRequest(new
+            {
+                message = "No fue posible iniciar sesión con Google. Intenta nuevamente."
+            });
+        }
+
+        var payload = await _googleAuthService.ValidateIdTokenAsync(request.IdToken);
+
+        if (payload == null)
+        {
+            return Unauthorized(new
+            {
+                message = "No fue posible iniciar sesión con Google. Intenta nuevamente."
+            });
+        }
+
+        var email = payload.Email.Trim().ToLower();
+
+        var auth = await _context.Auths
+            .FirstOrDefaultAsync(u => u.Email == email);
+
+        // No existe cuenta con este correo: no se crea nada automáticamente,
+        // se le pide al usuario completar el registro normal (documento, teléfono, etc.).
+        if (auth == null)
+        {
+            return NotFound(new
+            {
+                message = "No existe una cuenta registrada con este correo. Por favor completa tu registro.",
+                needsRegistration = true,
+                email = payload.Email,
+                nombre = payload.Name
+            });
+        }
+
+        Console.WriteLine($"Google login success: {email} logged in.");
+
+        return Ok(new AuthResponse
+        {
+            Email = auth.Email,
+            Token = _jwtService.CreateToken(auth)
+        });
     }
 
     // ===== Forgot Password =====
