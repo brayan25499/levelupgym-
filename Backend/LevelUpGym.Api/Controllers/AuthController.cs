@@ -18,28 +18,29 @@ public class AuthController : ControllerBase
     private readonly IJwtService _jwtService;
     private readonly IOtpService _otpService;
     private readonly IEmailService _emailService;
-    private readonly ISocialAuthService _socialAuthService;
 
-    public AuthController(LevelUpDbContext context, IJwtService jwtService, IOtpService otpService, IEmailService emailService, ISocialAuthService socialAuthService)
+    public AuthController(
+        LevelUpDbContext context,
+        IJwtService jwtService,
+        IOtpService otpService,
+        IEmailService emailService)
     {
         _context = context;
         _jwtService = jwtService;
         _otpService = otpService;
         _emailService = emailService;
-        _socialAuthService = socialAuthService;
     }
 
     [HttpPost("register")]
     public async Task<ActionResult<AuthResponse>> Register(RegisterRequest request)
     {
-        // Validaciones del backend
         var validationError = ValidateRegisterRequest(request);
+
         if (validationError != null)
         {
             return BadRequest(validationError);
         }
 
-        // Trimear y normalizar datos
         request.Email = request.Email?.Trim().ToLower() ?? "";
         request.Nombre = request.Nombre?.Trim() ?? "";
         request.Apellidos = request.Apellidos?.Trim() ?? "";
@@ -56,18 +57,20 @@ public class AuthController : ControllerBase
             return BadRequest("El número de documento ya está registrado.");
         }
 
-        // Validar que el teléfono no esté asociado a otro usuario registrado
         if (!string.IsNullOrWhiteSpace(request.Telefono))
         {
             var existingProfileWithPhone = await _context.Profiles
                 .FirstOrDefaultAsync(p => p.Telefono == request.Telefono);
+
             if (existingProfileWithPhone != null)
             {
                 var existingAuth = await _context.Auths
                     .FirstOrDefaultAsync(a => a.IdProfile == existingProfileWithPhone.IdProfile);
+
                 if (existingAuth != null)
                 {
-                    return BadRequest("El número de celular ya está asociado a una cuenta registrada.");
+                    return BadRequest(
+                        "El número de celular ya está asociado a una cuenta registrada.");
                 }
             }
         }
@@ -91,11 +94,13 @@ public class AuthController : ControllerBase
 
         // Create Auth
         using var hmac = new HMACSHA512();
+
         var auth = new Auth
         {
             IdProfile = profile.IdProfile,
             Email = request.Email,
-            Password = hmac.ComputeHash(Encoding.UTF8.GetBytes(request.Password)),
+            Password = hmac.ComputeHash(
+                Encoding.UTF8.GetBytes(request.Password)),
             PasswordSalt = hmac.Key,
             Estado = "ACTIVO",
             CreatedAt = DateTime.UtcNow
@@ -104,13 +109,14 @@ public class AuthController : ControllerBase
         _context.Auths.Add(auth);
         await _context.SaveChangesAsync();
 
-        // Create Client (Gym Specific)
+        // Create Client
         var client = new Client
         {
             IdProfile = profile.IdProfile,
             Estado = "ACTIVO",
             CreatedAt = DateTime.UtcNow
         };
+
         _context.Clients.Add(client);
         await _context.SaveChangesAsync();
 
@@ -127,27 +133,36 @@ public class AuthController : ControllerBase
         var email = request.Email.Trim().ToLower();
         var password = request.Password.Trim();
 
-        var auth = await _context.Auths.FirstOrDefaultAsync(u => u.Email == email);
+        var auth = await _context.Auths
+            .FirstOrDefaultAsync(u => u.Email == email);
 
         if (auth == null)
         {
-            Console.WriteLine($"Login failed: User {email} not found.");
+            Console.WriteLine(
+                $"Login failed: User {email} not found.");
+
             return Unauthorized("Usuario no encontrado.");
         }
 
         using var hmac = new HMACSHA512(auth.PasswordSalt);
-        var computedHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(password));
+
+        var computedHash =
+            hmac.ComputeHash(Encoding.UTF8.GetBytes(password));
 
         for (int i = 0; i < computedHash.Length; i++)
         {
-            if (computedHash[i] != auth.Password[i]) 
+            if (computedHash[i] != auth.Password[i])
             {
-                Console.WriteLine($"Login failed: Password mismatch for {email}.");
+                Console.WriteLine(
+                    $"Login failed: Password mismatch for {email}.");
+
                 return Unauthorized("Contraseña incorrecta.");
             }
         }
 
-        Console.WriteLine($"Login success: {email} logged in.");
+        Console.WriteLine(
+            $"Login success: {email} logged in.");
+
         return new AuthResponse
         {
             Email = auth.Email,
@@ -155,302 +170,449 @@ public class AuthController : ControllerBase
         };
     }
 
-    [HttpPost("google-login")]
-    public async Task<ActionResult<AuthResponse>> GoogleLogin(GoogleLoginRequest request)
-    {
-        if (string.IsNullOrWhiteSpace(request?.IdToken))
-        {
-            return BadRequest(new { message = "El token de Google es obligatorio." });
-        }
-
-        var validationResult = await _socialAuthService.VerifyGoogleTokenAsync(request.IdToken);
-        if (!validationResult.Success || string.IsNullOrWhiteSpace(validationResult.Email))
-        {
-            return BadRequest(new { message = validationResult.ErrorMessage ?? "No fue posible validar la sesión con Google." });
-        }
-
-        var normalizedEmail = validationResult.Email.Trim().ToLowerInvariant();
-        Console.WriteLine($"[GoogleLogin] Token verified successfully for email: '{normalizedEmail}'");
-
-        var auth = await _context.Auths.FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail);
-
-        if (auth == null)
-        {
-            Console.WriteLine($"Google login rejected: Email {normalizedEmail} is not registered in LevelUpGym.");
-            return NotFound(new { message = "Este correo no está registrado en LevelUpGym. Primero debes registrarte." });
-        }
-
-        if (auth.Estado != null && auth.Estado.Trim().ToUpper() == "INACTIVO")
-        {
-            return Unauthorized(new { message = "Tu cuenta se encuentra inactiva. Contacta con administración." });
-        }
-
-        Console.WriteLine($"Google login success: {auth.Email} logged in.");
-        return Ok(new AuthResponse
-        {
-            Email = auth.Email,
-            Token = _jwtService.CreateToken(auth)
-        });
-    }
-
-    [HttpPost("facebook-login")]
-    public async Task<ActionResult<AuthResponse>> FacebookLogin(FacebookLoginRequest request)
-    {
-        if (string.IsNullOrWhiteSpace(request?.AccessToken))
-        {
-            return BadRequest(new { message = "El token de Facebook es obligatorio." });
-        }
-
-        var validationResult = await _socialAuthService.VerifyFacebookTokenAsync(request.AccessToken);
-        if (!validationResult.Success || string.IsNullOrWhiteSpace(validationResult.Email))
-        {
-            return BadRequest(new { message = validationResult.ErrorMessage ?? "No fue posible validar la sesión con Facebook." });
-        }
-
-        var normalizedEmail = validationResult.Email.Trim().ToLowerInvariant();
-
-        var auth = await _context.Auths.FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail);
-
-        if (auth == null)
-        {
-            Console.WriteLine($"Facebook login rejected: Email {normalizedEmail} is not registered in LevelUpGym.");
-            return NotFound(new { message = "Este correo no está registrado en LevelUpGym. Primero debes registrarte." });
-        }
-
-        if (auth.Estado != null && auth.Estado.Trim().ToUpper() == "INACTIVO")
-        {
-            return Unauthorized(new { message = "Tu cuenta se encuentra inactiva. Contacta con administración." });
-        }
-
-        Console.WriteLine($"Facebook login success: {auth.Email} logged in.");
-        return Ok(new AuthResponse
-        {
-            Email = auth.Email,
-            Token = _jwtService.CreateToken(auth)
-        });
-    }
+    // ===== Forgot Password =====
 
     [HttpPost("forgot-password")]
-    public async Task<IActionResult> ForgotPassword(ForgotPasswordRequest request)
+    public async Task<IActionResult> ForgotPassword(
+        ForgotPasswordRequest request)
     {
         var email = request.Email.Trim().ToLower();
         var numDoc = request.NumDocumento.Trim();
         var newPassword = request.NewPassword.Trim();
 
-        var auth = await _context.Auths.FirstOrDefaultAsync(u => u.Email == email);
+        var auth = await _context.Auths
+            .FirstOrDefaultAsync(u => u.Email == email);
+
         if (auth == null)
         {
-            return BadRequest("El correo electrónico no está registrado.");
+            return BadRequest(
+                "El correo electrónico no está registrado.");
         }
 
-        var profile = await _context.Profiles.FirstOrDefaultAsync(p => p.IdProfile == auth.IdProfile);
-        if (profile == null || profile.NumDocumento != numDoc)
+        var profile = await _context.Profiles
+            .FirstOrDefaultAsync(
+                p => p.IdProfile == auth.IdProfile);
+
+        if (profile == null ||
+            profile.NumDocumento != numDoc)
         {
-            return BadRequest("El número de documento no coincide con el registrado para esta cuenta.");
+            return BadRequest(
+                "El número de documento no coincide con el registrado para esta cuenta.");
         }
 
         using var hmac = new HMACSHA512();
-        auth.Password = hmac.ComputeHash(Encoding.UTF8.GetBytes(newPassword));
+
+        auth.Password =
+            hmac.ComputeHash(
+                Encoding.UTF8.GetBytes(newPassword));
+
         auth.PasswordSalt = hmac.Key;
 
         await _context.SaveChangesAsync();
 
-        return Ok(new { message = "Contraseña restablecida exitosamente." });
+        return Ok(new
+        {
+            message = "Contraseña restablecida exitosamente."
+        });
     }
 
-    // ===== OTP-Based Password Recovery Endpoints =====
+    // ===== OTP-Based Password Recovery =====
 
     [HttpPost("check-email")]
-    public async Task<IActionResult> CheckEmail(CheckEmailDto request)
+    public async Task<IActionResult> CheckEmail(
+        CheckEmailDto request)
     {
-        var email = request.Email?.Trim().ToLower() ?? "";
-        
+        var email =
+            request.Email?.Trim().ToLower() ?? "";
+
         if (string.IsNullOrWhiteSpace(email))
         {
-            return BadRequest(new { message = "El correo electrónico es obligatorio." });
+            return BadRequest(new
+            {
+                message =
+                    "El correo electrónico es obligatorio."
+            });
         }
 
-        var auth = await _context.Auths.FirstOrDefaultAsync(u => u.Email == email);
-        
+        var auth = await _context.Auths
+            .FirstOrDefaultAsync(
+                u => u.Email == email);
+
         if (auth == null)
         {
-            return NotFound(new { message = "El correo electrónico ingresado no se encuentra registrado en el sistema." });
+            return NotFound(new
+            {
+                message =
+                    "El correo electrónico ingresado no se encuentra registrado en el sistema."
+            });
         }
 
-        var profile = await _context.Profiles.FirstOrDefaultAsync(p => p.IdProfile == auth.IdProfile);
-        
-        var hasPhone = !string.IsNullOrWhiteSpace(profile?.Telefono);
-        
-        return Ok(new 
-        { 
+        var profile = await _context.Profiles
+            .FirstOrDefaultAsync(
+                p => p.IdProfile == auth.IdProfile);
+
+        var hasPhone =
+            !string.IsNullOrWhiteSpace(profile?.Telefono);
+
+        return Ok(new
+        {
             maskedEmail = MaskEmail(auth.Email),
-            maskedPhone = hasPhone && profile?.Telefono != null ? MaskPhone(profile.Telefono) : null,
+            maskedPhone =
+                hasPhone && profile?.Telefono != null
+                    ? MaskPhone(profile.Telefono)
+                    : null,
             hasPhone = hasPhone
         });
     }
 
     [HttpPost("request-otp")]
-    public async Task<IActionResult> RequestOtp(RequestOtpDto request)
+    public async Task<IActionResult> RequestOtp(
+        RequestOtpDto request)
     {
-        var email = request.Email?.Trim().ToLower() ?? "";
-        
+        var email =
+            request.Email?.Trim().ToLower() ?? "";
+
         if (string.IsNullOrWhiteSpace(email))
         {
-            return BadRequest(new { message = "El correo electrónico es obligatorio." });
+            return BadRequest(new
+            {
+                message =
+                    "El correo electrónico es obligatorio."
+            });
         }
 
-        var auth = await _context.Auths.FirstOrDefaultAsync(u => u.Email == email);
-        
-        // Regla de seguridad: Si no existe, responder con mensaje genérico sin revelar existencia
+        var auth = await _context.Auths
+            .FirstOrDefaultAsync(
+                u => u.Email == email);
+
+        // No revelar si el correo existe
         if (auth == null)
         {
-            return Ok(new { message = "Si el correo está registrado, recibirás un código de seguridad para restablecer tu contraseña." });
+            return Ok(new
+            {
+                message =
+                    "Si el correo está registrado, recibirás un código de seguridad para restablecer tu contraseña."
+            });
         }
 
         // Check resend cooldown
         if (!_otpService.CanResend(auth.Email))
         {
-            return BadRequest(new { message = "Debes esperar antes de solicitar un nuevo código." });
+            return BadRequest(new
+            {
+                message =
+                    "Debes esperar antes de solicitar un nuevo código."
+            });
         }
 
-        var profile = await _context.Profiles.FirstOrDefaultAsync(p => p.IdProfile == auth.IdProfile);
-        var recipientName = profile != null ? $"{profile.Nombre} {profile.Apellidos}".Trim() : "Usuario";
+        var profile = await _context.Profiles
+            .FirstOrDefaultAsync(
+                p => p.IdProfile == auth.IdProfile);
 
-        var code = _otpService.GenerateOtp(auth.Email);
-        
-        // Enviar en segundo plano para no bloquear la respuesta HTTP al usuario
+        var recipientName =
+            profile != null
+                ? $"{profile.Nombre} {profile.Apellidos}".Trim()
+                : "Usuario";
+
+        var code =
+            _otpService.GenerateOtp(auth.Email);
+
+        // Enviar correo en segundo plano
         _ = Task.Run(async () =>
         {
-            try { await _emailService.SendOtpEmail(auth.Email, recipientName, code); }
-            catch (Exception ex) { Console.WriteLine($"[OTP EMAIL ERROR] {ex.Message}"); }
+            try
+            {
+                await _emailService.SendOtpEmail(
+                    auth.Email,
+                    recipientName,
+                    code);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(
+                    $"[OTP EMAIL ERROR] {ex.Message}");
+            }
         });
 
-        return Ok(new { message = "Si el correo está registrado, recibirás un código de seguridad para restablecer tu contraseña." });
+        return Ok(new
+        {
+            message =
+                "Si el correo está registrado, recibirás un código de seguridad para restablecer tu contraseña."
+        });
     }
 
     [HttpPost("verify-otp")]
-    public IActionResult VerifyOtp(VerifyOtpDto request)
+    public IActionResult VerifyOtp(
+        VerifyOtpDto request)
     {
-        var email = request.Email?.Trim().ToLower() ?? "";
-        var code = request.Code?.Trim() ?? "";
+        var email =
+            request.Email?.Trim().ToLower() ?? "";
 
-        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(code))
+        var code =
+            request.Code?.Trim() ?? "";
+
+        if (string.IsNullOrWhiteSpace(email) ||
+            string.IsNullOrWhiteSpace(code))
         {
-            return BadRequest(new { message = "Datos incompletos." });
+            return BadRequest(new
+            {
+                message = "Datos incompletos."
+            });
         }
 
-        var (isValid, error, remainingAttempts) = _otpService.ValidateOtp(email, code);
+        var (
+            isValid,
+            error,
+            remainingAttempts
+        ) = _otpService.ValidateOtp(
+            email,
+            code);
 
         if (!isValid)
         {
-            return BadRequest(new { message = error, remainingAttempts });
+            return BadRequest(new
+            {
+                message = error,
+                remainingAttempts
+            });
         }
 
-        return Ok(new { message = "Código verificado correctamente.", verified = true });
+        return Ok(new
+        {
+            message =
+                "Código verificado correctamente.",
+            verified = true
+        });
     }
 
     [HttpPost("reset-password")]
-    public async Task<IActionResult> ResetPassword(ResetPasswordDto request)
+    public async Task<IActionResult> ResetPassword(
+        ResetPasswordDto request)
     {
-        var email = request.Email?.Trim().ToLower() ?? "";
-        var code = request.Code?.Trim() ?? "";
-        var newPassword = request.NewPassword ?? "";
+        var email =
+            request.Email?.Trim().ToLower() ?? "";
 
-        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(newPassword))
+        var code =
+            request.Code?.Trim() ?? "";
+
+        var newPassword =
+            request.NewPassword ?? "";
+
+        if (string.IsNullOrWhiteSpace(email) ||
+            string.IsNullOrWhiteSpace(code) ||
+            string.IsNullOrWhiteSpace(newPassword))
         {
-            return BadRequest(new { message = "Datos incompletos." });
+            return BadRequest(new
+            {
+                message = "Datos incompletos."
+            });
         }
 
-        // Validate OTP one more time before changing password
-        var (isValid, error, _) = _otpService.ValidateOtp(email, code);
+        // Validate OTP
+        var (
+            isValid,
+            error,
+            _
+        ) = _otpService.ValidateOtp(
+            email,
+            code);
+
         if (!isValid)
         {
-            return BadRequest(new { message = error });
+            return BadRequest(new
+            {
+                message = error
+            });
         }
 
         // Validate password strength
-        if (newPassword.Length < 8) return BadRequest(new { message = "La contraseña debe tener al menos 8 caracteres." });
-        if (!System.Text.RegularExpressions.Regex.IsMatch(newPassword, @"[A-Z]")) return BadRequest(new { message = "La contraseña debe contener al menos una mayúscula." });
-        if (!System.Text.RegularExpressions.Regex.IsMatch(newPassword, @"[a-z]")) return BadRequest(new { message = "La contraseña debe contener al menos una minúscula." });
-        if (!System.Text.RegularExpressions.Regex.IsMatch(newPassword, @"\d")) return BadRequest(new { message = "La contraseña debe contener al menos un número." });
-        if (!System.Text.RegularExpressions.Regex.IsMatch(newPassword, @"[!@#$%^&*()_+\-=\[\]{};':""\\|,.<>\/?]")) return BadRequest(new { message = "La contraseña debe contener al menos un carácter especial." });
+        if (newPassword.Length < 8)
+        {
+            return BadRequest(new
+            {
+                message =
+                    "La contraseña debe tener al menos 8 caracteres."
+            });
+        }
 
-        var auth = await _context.Auths.FirstOrDefaultAsync(u => u.Email == email);
+        if (!Regex.IsMatch(
+                newPassword,
+                @"[A-Z]"))
+        {
+            return BadRequest(new
+            {
+                message =
+                    "La contraseña debe contener al menos una mayúscula."
+            });
+        }
+
+        if (!Regex.IsMatch(
+                newPassword,
+                @"[a-z]"))
+        {
+            return BadRequest(new
+            {
+                message =
+                    "La contraseña debe contener al menos una minúscula."
+            });
+        }
+
+        if (!Regex.IsMatch(
+                newPassword,
+                @"\d"))
+        {
+            return BadRequest(new
+            {
+                message =
+                    "La contraseña debe contener al menos un número."
+            });
+        }
+
+        if (!Regex.IsMatch(
+                newPassword,
+                @"[!@#$%^&*()_+\-=\[\]{};':""\\|,.<>\/?]"))
+        {
+            return BadRequest(new
+            {
+                message =
+                    "La contraseña debe contener al menos un carácter especial."
+            });
+        }
+
+        var auth = await _context.Auths
+            .FirstOrDefaultAsync(
+                u => u.Email == email);
+
         if (auth == null)
         {
-            return BadRequest(new { message = "No se pudo actualizar la contraseña." });
+            return BadRequest(new
+            {
+                message =
+                    "No se pudo actualizar la contraseña."
+            });
         }
 
         using var hmac = new HMACSHA512();
-        auth.Password = hmac.ComputeHash(Encoding.UTF8.GetBytes(newPassword));
+
+        auth.Password =
+            hmac.ComputeHash(
+                Encoding.UTF8.GetBytes(newPassword));
+
         auth.PasswordSalt = hmac.Key;
         auth.UpdatedAt = DateTime.UtcNow;
+
         await _context.SaveChangesAsync();
 
-        // Consume the OTP so it can't be reused
+        // Consume OTP
         _otpService.ConsumeOtp(email);
 
-        return Ok(new { message = "Tu contraseña se ha actualizado correctamente." });
+        return Ok(new
+        {
+            message =
+                "Tu contraseña se ha actualizado correctamente."
+        });
     }
 
-    /// <summary>
-    /// Masks an email for display: u***r@domain.com
-    /// </summary>
-    private static string MaskEmail(string email)
+    // ===== Helpers =====
+
+    private static string MaskEmail(
+        string email)
     {
         var parts = email.Split('@');
-        if (parts.Length != 2 || parts[0].Length < 2) return email;
+
+        if (parts.Length != 2 ||
+            parts[0].Length < 2)
+        {
+            return email;
+        }
+
         var local = parts[0];
-        var masked = local[0] + new string('*', Math.Max(local.Length - 2, 1)) + local[^1];
+
+        var masked =
+            local[0] +
+            new string(
+                '*',
+                Math.Max(local.Length - 2, 1)) +
+            local[^1];
+
         return masked + "@" + parts[1];
     }
 
-    /// <summary>
-    /// Masks a phone number for display: ******4567
-    /// </summary>
-    private static string MaskPhone(string phone)
+    private static string MaskPhone(
+        string phone)
     {
-        if (string.IsNullOrWhiteSpace(phone) || phone.Length < 4) return phone;
-        var lastFour = phone.Substring(phone.Length - 4);
-        return new string('*', phone.Length - 4) + lastFour;
+        if (string.IsNullOrWhiteSpace(phone) ||
+            phone.Length < 4)
+        {
+            return phone;
+        }
+
+        var lastFour =
+            phone.Substring(phone.Length - 4);
+
+        return new string(
+            '*',
+            phone.Length - 4) + lastFour;
     }
 
-    // Método privado para validar el registro
-    private string? ValidateRegisterRequest(RegisterRequest request)
+    // ===== Register Validation =====
+
+    private string? ValidateRegisterRequest(
+        RegisterRequest request)
     {
-        // Validar Nombre
+        // Nombre
         if (string.IsNullOrWhiteSpace(request.Nombre))
             return "El nombre es obligatorio.";
-        
-        request.Nombre = request.Nombre.Trim();
-        if (request.Nombre != request.Nombre.Trim() || request.Nombre.StartsWith(" ") || request.Nombre.EndsWith(" "))
-            return "El nombre no debe tener espacios al inicio o al final.";
 
-        // Validar Apellidos
+        request.Nombre =
+            request.Nombre.Trim();
+
+        if (request.Nombre != request.Nombre.Trim() ||
+            request.Nombre.StartsWith(" ") ||
+            request.Nombre.EndsWith(" "))
+        {
+            return "El nombre no debe tener espacios al inicio o al final.";
+        }
+
+        // Apellidos
         if (string.IsNullOrWhiteSpace(request.Apellidos))
             return "Los apellidos son obligatorios.";
-        
-        request.Apellidos = request.Apellidos.Trim();
-        if (request.Apellidos != request.Apellidos.Trim() || request.Apellidos.StartsWith(" ") || request.Apellidos.EndsWith(" "))
-            return "Los apellidos no deben tener espacios al inicio o al final.";
 
-        // Validar Email
+        request.Apellidos =
+            request.Apellidos.Trim();
+
+        if (request.Apellidos != request.Apellidos.Trim() ||
+            request.Apellidos.StartsWith(" ") ||
+            request.Apellidos.EndsWith(" "))
+        {
+            return "Los apellidos no deben tener espacios al inicio o al final.";
+        }
+
+        // Email
         if (string.IsNullOrWhiteSpace(request.Email))
             return "El email es obligatorio.";
-        
-        // No permitir espacios en el correo electrónico
+
         if (request.Email.Contains(" "))
             return "El correo electrónico no puede contener espacios.";
-        
-        request.Email = request.Email.Trim();
+
+        request.Email =
+            request.Email.Trim();
+
         if (!request.Email.Contains("@"))
             return "El email debe contener @.";
 
-        var emailPattern = @"^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.(com|co|es|net|org|edu|gov|io|me|info|cl|ar|mx|pe|ec|ve|com\.co|edu\.co|org\.co)$";
-        if (!Regex.IsMatch(request.Email, emailPattern, RegexOptions.IgnoreCase))
-            return "Formato de email inválido.";
+        var emailPattern =
+            @"^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.(com|co|es|net|org|edu|gov|io|me|info|cl|ar|mx|pe|ec|ve|com\.co|edu\.co|org\.co)$";
 
-        // Validar Contraseña
+        if (!Regex.IsMatch(
+                request.Email,
+                emailPattern,
+                RegexOptions.IgnoreCase))
+        {
+            return "Formato de email inválido.";
+        }
+
+        // Contraseña
         if (string.IsNullOrWhiteSpace(request.Password))
             return "La contraseña es obligatoria.";
 
@@ -460,57 +622,88 @@ public class AuthController : ControllerBase
         if (request.Password.Length < 8)
             return "La contraseña debe tener al menos 8 caracteres.";
 
-        if (!Regex.IsMatch(request.Password, @"[A-Z]"))
+        if (!Regex.IsMatch(
+                request.Password,
+                @"[A-Z]"))
+        {
             return "La contraseña debe contener al menos una mayúscula.";
+        }
 
-        if (!Regex.IsMatch(request.Password, @"[a-z]"))
+        if (!Regex.IsMatch(
+                request.Password,
+                @"[a-z]"))
+        {
             return "La contraseña debe contener al menos una minúscula.";
+        }
 
-        if (!Regex.IsMatch(request.Password, @"\d"))
+        if (!Regex.IsMatch(
+                request.Password,
+                @"\d"))
+        {
             return "La contraseña debe contener al menos un número.";
+        }
 
-        if (!Regex.IsMatch(request.Password, @"[!@#$%^&*()_+\-=\[\]{};':""\\|,.<>\/?]"))
+        if (!Regex.IsMatch(
+                request.Password,
+                @"[!@#$%^&*()_+\-=\[\]{};':""\\|,.<>\/?]"))
+        {
             return "La contraseña debe contener al menos un carácter especial (!@#$%^&*).";
+        }
 
-        // Validar Número de Documento
+        // Documento
         if (string.IsNullOrWhiteSpace(request.NumDocumento))
             return "El número de documento es obligatorio.";
 
-        // No permitir espacios en el número de documento
         if (request.NumDocumento.Contains(" "))
             return "El número de documento no puede contener espacios.";
 
-        if (!Regex.IsMatch(request.NumDocumento, @"^\d+$"))
+        if (!Regex.IsMatch(
+                request.NumDocumento,
+                @"^\d+$"))
+        {
             return "El número de documento solo debe contener números.";
+        }
 
-        // Validar Teléfono si se proporciona
+        // Teléfono
         if (!string.IsNullOrWhiteSpace(request.Telefono))
         {
-            request.Telefono = request.Telefono.Trim();
+            request.Telefono =
+                request.Telefono.Trim();
+
             if (request.Telefono.Contains(" "))
                 return "El teléfono no puede contener espacios.";
 
-            if (!Regex.IsMatch(request.Telefono, @"^\+?\d+$"))
+            if (!Regex.IsMatch(
+                    request.Telefono,
+                    @"^\+?\d+$"))
+            {
                 return "El teléfono solo debe contener números y opcionalmente un + al inicio.";
+            }
 
             if (request.Telefono.Length > 30)
                 return "El teléfono no puede tener más de 30 caracteres.";
         }
 
-        // Validar Peso si se proporciona
+        // Peso
         if (request.Peso.HasValue)
         {
-            if (request.Peso < 30 || request.Peso > 300)
+            if (request.Peso < 30 ||
+                request.Peso > 300)
+            {
                 return "El peso debe estar entre 30 kg y 300 kg.";
+            }
         }
 
-        // Validar Estatura si se proporciona
+        // Estatura
         if (request.Estatura.HasValue)
         {
-            if (request.Estatura < 100 || request.Estatura > 250)
+            if (request.Estatura < 100 ||
+                request.Estatura > 250)
+            {
                 return "La estatura debe estar entre 100 cm y 250 cm.";
+            }
         }
 
-        return null; // Sin errores
+        return null;
     }
 }
