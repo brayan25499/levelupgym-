@@ -26,7 +26,11 @@ export class App {
   }
 
   handleOk() {
+    const alert = this.alertService.currentAlert();
     this.alertService.close();
+    if (alert && alert.onOk) {
+      alert.onOk();
+    }
   }
 
   handleYes() {

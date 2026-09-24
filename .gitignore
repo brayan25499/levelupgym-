@@ -4,3 +4,6 @@
 Backend/LevelUpGym.Api/appsettings.Production.json
 Backend/LevelUpGym.Api/bin/Release/
 appsettings.Development.json
+Backend/.env
+*.env
+*.zip

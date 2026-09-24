@@ -218,19 +218,45 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
         this.isGoogleLoading = false;
 
         if (err.status === 404 && err.error?.needsRegistration) {
-          // No existe cuenta con este correo: lo mandamos a completar su registro,
-          // prellenando lo que ya sabemos gracias a Google.
-          this.router.navigate(['/register'], {
-            queryParams: {
-              email: err.error?.email || '',
-              nombre: err.error?.nombre || '',
-            },
-          });
+          const email = err.error?.email || '';
+          const nombre = err.error?.nombre || '';
+          const noticeMsg =
+            err.error?.message ||
+            'Este correo no está registrado en LevelUpGym. Debes crear una cuenta para continuar.';
+
+          let hasRedirected = false;
+          const navigateToRegister = () => {
+            if (hasRedirected) return;
+            hasRedirected = true;
+            this.alertService.close();
+            this.router.navigate(['/register'], {
+              queryParams: { email, nombre }
+            });
+          };
+
+          // Mostrar aviso claro al usuario antes de redirigir a Registro
+          this.alertService.info(
+            noticeMsg,
+            'Cuenta no registrada',
+            () => navigateToRegister()
+          );
+
+          // Redirección automática si el usuario no interactúa en 2.5s
+          setTimeout(() => {
+            navigateToRegister();
+          }, 3000);
+
+          this.cdr.detectChanges();
           return;
         }
 
+        const errorMsg =
+          typeof err.error === 'string'
+            ? err.error
+            : (err.error?.message || '');
+
         this.errorMessage =
-          err.error?.message ||
+          errorMsg ||
           'No fue posible iniciar sesión con Google. Intenta nuevamente.';
 
         this.cdr.detectChanges();

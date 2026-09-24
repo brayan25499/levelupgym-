@@ -207,7 +207,7 @@ public class AuthController : ControllerBase
         {
             return NotFound(new
             {
-                message = "No existe una cuenta registrada con este correo. Por favor completa tu registro.",
+                message = "Este correo no está registrado en LevelUpGym. Debes crear una cuenta para continuar.",
                 needsRegistration = true,
                 email = payload.Email,
                 nombre = payload.Name
