@@ -122,9 +122,16 @@ public class ClassSessionsController : ControllerBase
 
         if (classSession == null) return NotFound("Clase no encontrada.");
 
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var nowTime = DateTime.Now.TimeOfDay;
+        if (classSession.Fecha < today || (classSession.Fecha == today && classSession.HoraInicio <= nowTime))
+        {
+            return BadRequest(new { message = "Esta sesión ya ha finalizado y no acepta más inscripciones." });
+        }
+
         if (classSession.Enrollments.Count >= classSession.CapacidadMaxima)
         {
-            return BadRequest(new { message = "La clase ya ha alcanzado su capacidad máxima." });
+            return BadRequest(new { message = "Esta sesión ya alcanzó el límite de cupos." });
         }
 
         if (classSession.Enrollments.Any(e => e.IdCliente == client.IdCliente))
@@ -177,12 +184,17 @@ public class ClassSessionsController : ControllerBase
         // Format Hora: "09:00 AM"
         var horaFormatted = DateTime.Today.Add(c.HoraInicio).ToString("hh:mm tt", CultureInfo.InvariantCulture);
 
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var nowTime = DateTime.Now.TimeOfDay;
+        var esPasada = c.Fecha < today || (c.Fecha == today && c.HoraInicio <= nowTime);
+
         return new ClassSessionDto
         {
             IdClass = c.IdClass,
             Nombre = c.Nombre,
             Fecha = fechaFormatted,
             Hora = horaFormatted,
+            FechaRaw = c.Fecha.ToString("yyyy-MM-dd"),
             CapacidadMaxima = c.CapacidadMaxima,
             Inscritos = c.Enrollments?.Count ?? 0,
             Estado = c.Estado,
@@ -191,7 +203,8 @@ public class ClassSessionsController : ControllerBase
                 IdEmpleado = c.Entrenador.IdEmpleado,
                 NombreCompleto = $"{c.Entrenador.Profile.Nombre} {c.Entrenador.Profile.Apellidos}"
             },
-            Inscrito = currentClientId.HasValue && (c.Enrollments?.Any(e => e.IdCliente == currentClientId.Value) ?? false)
+            Inscrito = currentClientId.HasValue && (c.Enrollments?.Any(e => e.IdCliente == currentClientId.Value) ?? false),
+            EsPasada = esPasada
         };
     }
 }

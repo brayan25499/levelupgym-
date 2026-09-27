@@ -74,6 +74,10 @@ export class AuthService {
     return this.http.post<any>(`${this.apiUrl}/reset-password`, { email, code, newPassword });
   }
 
+  changePassword(data: { currentPassword: string; newPassword: string }): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/change-password`, data);
+  }
+
   getToken(): string | null {
     return this.currentUser()?.token || null;
   }

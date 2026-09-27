@@ -6,11 +6,13 @@ public class ClassSessionDto
     public string Nombre { get; set; } = null!;
     public string Fecha { get; set; } = null!; // format: "18 de Agosto, 2026"
     public string Hora { get; set; } = null!; // format: "09:00 AM"
+    public string FechaRaw { get; set; } = null!; // format: "yyyy-MM-dd"
     public int CapacidadMaxima { get; set; }
     public int Inscritos { get; set; }
     public string Estado { get; set; } = null!;
     public EntrenadorBasicoDto Entrenador { get; set; } = null!;
     public bool Inscrito { get; set; } // indicates if the current user is enrolled
+    public bool EsPasada { get; set; }
 }
 
 public class EntrenadorBasicoDto

@@ -14,6 +14,8 @@ export interface ClassSession {
   nombre: string;
   fecha: string; // Ej: "18 de Agosto, 2026"
   hora: string;  // Ej: "09:00 AM"
+  fechaRaw?: string;
+  esPasada?: boolean;
   capacidadMaxima: number;
   inscritos: number;
   estado: string;

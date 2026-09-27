@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { AuthService } from '../../services/auth';
+import { passwordValidator, passwordMatchValidator } from '../../validators/custom-validators';
 import { ClassSessionService, ClassSession } from '../../services/class-session.service';
 import { AlertService } from '../../services/alert.service';
 import { ProgressService, ProgressReport } from '../../services/progress.service';
@@ -169,13 +170,21 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   selectedExerciseModal = signal<ExerciseItem | null>(null);
   showNewSessionModal = signal<boolean>(false);
   showPasswordModal = signal<boolean>(false);
+  isChangingPassword = signal<boolean>(false);
 
   // Forms
   passwordForm = this.fb.group({
     currentPassword: ['', Validators.required],
-    newPassword: ['', [Validators.required, Validators.minLength(8)]],
+    newPassword: ['', [Validators.required, passwordValidator()]],
     confirmPassword: ['', Validators.required]
+  }, {
+    validators: passwordMatchValidator('newPassword', 'confirmPassword')
   });
+
+  openPasswordModal() {
+    this.passwordForm.reset();
+    this.showPasswordModal.set(true);
+  }
 
   sessionForm = this.fb.group({
     entrenamiento: ['Entrenamiento de Fuerza', Validators.required],
@@ -2118,12 +2127,23 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   loadClasses() {
     this.classService.getClasses().subscribe({
       next: (data) => {
-        const available = data.filter(c => !c.inscrito);
+        const available = data.filter(c => !c.inscrito && !this.isClassPassed(c));
         const enrolled = data.filter(c => c.inscrito);
         this.availableClasses.set(available);
         this.myClasses.set(enrolled);
       }
     });
+  }
+
+  isClassPassed(clase: ClassSession): boolean {
+    if (clase.esPasada !== undefined && clase.esPasada !== null) {
+      return clase.esPasada;
+    }
+    if (clase.fechaRaw) {
+      const todayStr = new Date().toISOString().split('T')[0];
+      if (clase.fechaRaw < todayStr) return true;
+    }
+    return false;
   }
 
   ngAfterViewInit() {
@@ -2191,6 +2211,18 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
       this.setSection('membresia');
       return;
     }
+
+    const targetClass = this.availableClasses().find(c => c.idClass === idClass);
+    if (targetClass && targetClass.inscritos >= targetClass.capacidadMaxima) {
+      this.alertService.error('Esta sesión ya alcanzó el límite de cupos.', 'Cupos Agotados');
+      return;
+    }
+
+    if (targetClass && this.isClassPassed(targetClass)) {
+      this.alertService.error('Esta sesión ya ha finalizado.', 'Sesión Pasada');
+      this.loadClasses();
+      return;
+    }
     
     this.classService.enroll(idClass).subscribe({
       next: (res) => {
@@ -2199,6 +2231,7 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
       },
       error: (err) => {
         this.alertService.error(err.error?.message || 'Error al inscribirse');
+        this.loadClasses();
       }
     });
   }
@@ -2252,19 +2285,34 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   }
 
   changePasswordSubmit() {
+    this.passwordForm.markAllAsTouched();
     if (this.passwordForm.invalid) {
-      this.alertService.error('Por favor completa los campos correctamente.');
-      return;
-    }
-    const val = this.passwordForm.value;
-    if (val.newPassword !== val.confirmPassword) {
-      this.alertService.error('Las contraseñas no coinciden.');
+      if (this.passwordForm.hasError('passwordMismatch')) {
+        this.alertService.error('Las contraseñas no coinciden.', 'Error de Validación');
+      } else {
+        this.alertService.error('Por favor verifica que la contraseña cumpla todos los requisitos.', 'Error de Validación');
+      }
       return;
     }
 
-    this.alertService.success('Tu contraseña ha sido actualizada con éxito.');
-    this.showPasswordModal.set(false);
-    this.passwordForm.reset();
+    const val = this.passwordForm.value;
+    const currentPassword = val.currentPassword || '';
+    const newPassword = val.newPassword || '';
+
+    this.isChangingPassword.set(true);
+    this.authService.changePassword({ currentPassword, newPassword }).subscribe({
+      next: (res) => {
+        this.isChangingPassword.set(false);
+        this.alertService.success(res?.message || 'Tu contraseña ha sido cambiada con éxito.', '¡Éxito!');
+        this.showPasswordModal.set(false);
+        this.passwordForm.reset();
+      },
+      error: (err) => {
+        this.isChangingPassword.set(false);
+        const errorMsg = err.error?.message || (typeof err.error === 'string' ? err.error : 'No se pudo cambiar la contraseña. Verifica tu contraseña actual.');
+        this.alertService.error(errorMsg, 'Error');
+      }
+    });
   }
 
   // Payment Checkout Modal State

@@ -133,7 +133,9 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit, OnDestroy
 
   loadClasses() {
     this.classService.getClasses().subscribe(data => {
-      this.classes.set(data);
+      // Solo mostrar clases cuya fecha+hora aún no ha pasado.
+      // El backend calcula esPasada = Fecha < hoy OR (Fecha == hoy AND HoraInicio <= ahora).
+      this.classes.set(data.filter(c => !c.esPasada));
       this.renderCharts();
     });
   }

@@ -33,6 +33,12 @@ public class ForgotPasswordRequest
     public string NewPassword { get; set; } = null!;
 }
 
+public class ChangePasswordRequest
+{
+    public string CurrentPassword { get; set; } = null!;
+    public string NewPassword { get; set; } = null!;
+}
+
 // ===== OTP Flow DTOs =====
 
 public class CheckEmailDto

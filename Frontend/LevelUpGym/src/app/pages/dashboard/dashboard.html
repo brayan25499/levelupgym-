@@ -249,14 +249,59 @@
         </div>
 
         <!-- LOCKED FEATURE BANNER FOR BRONCE / NO PLAN -->
-        <div class="locked-feature-banner" *ngIf="!hasFullAccess()">
-          <div class="lock-icon-huge">
-            <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        <div class="muscle-lock-gate" *ngIf="!hasFullAccess()">
+
+          <!-- Top accent bar -->
+          <div class="mlg-accent-bar"></div>
+
+          <div class="mlg-inner">
+
+            <!-- Left: Icon + Badges -->
+            <div class="mlg-visual">
+              <div class="mlg-lock-ring">
+                <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+              </div>
+              <div class="mlg-plan-badges">
+                <span class="mlg-badge mlg-badge--plata">PLATA</span>
+                <span class="mlg-badge mlg-badge--oro">ORO</span>
+              </div>
+            </div>
+
+            <!-- Right: Content -->
+            <div class="mlg-content">
+              <span class="mlg-eyebrow">FUNCIÓN PREMIUM</span>
+              <h3 class="mlg-title">Modelo Anatómico 3D Interactivo</h3>
+              <p class="mlg-subtitle">Exclusivo para Plan <strong>PLATA</strong> y <strong>ORO</strong></p>
+              <p class="mlg-desc">La exploración muscular interactiva en 3D y la consulta de ejercicios por grupo muscular son funciones premium disponibles únicamente para los suscriptores de los planes <strong>PLATA</strong> u <strong>ORO</strong>.</p>
+
+              <!-- Feature pills -->
+              <div class="mlg-features">
+                <div class="mlg-feature-pill">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                  Maniquí 3D rotable
+                </div>
+                <div class="mlg-feature-pill">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  Selección por grupo muscular
+                </div>
+                <div class="mlg-feature-pill">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                  Rutinas y técnicas de hipertrofia
+                </div>
+              </div>
+
+              <button class="mlg-cta-btn" (click)="setSection('membresia')">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+                DESBLOQUEAR MODELO 3D
+              </button>
+            </div>
+
           </div>
-          <h3>Modelo Anatómico 3D Interactivo Exclusivo para Plan PLATA y ORO</h3>
-          <p>La exploración muscular interactiva en 3D y la consulta de ejercicios por grupo muscular son funciones premium disponibles únicamente para los suscriptores de los planes <strong>PLATA</strong> u <strong>ORO</strong>.</p>
-          <button class="btn-primary-glow" (click)="setSection('membresia')">DESBLOQUEAR MODELO 3D</button>
         </div>
+
 
         <!-- UNLOCKED 3D CONTENT (PLATA / ORO) -->
         <div *ngIf="hasFullAccess()" class="anatomy-master-container">
@@ -997,14 +1042,59 @@
         </div>
 
         <!-- LOCKED FEATURE BANNER FOR BRONCE / NO PLAN -->
-        <div class="locked-feature-banner" *ngIf="!hasFullAccess()">
-          <div class="lock-icon-huge">
-            <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        <div class="sessions-lock-gate" *ngIf="!hasFullAccess()">
+
+          <!-- Top accent bar -->
+          <div class="slg-accent-bar"></div>
+
+          <div class="slg-inner">
+
+            <!-- Left: Icon + Badges -->
+            <div class="slg-visual">
+              <div class="slg-lock-ring">
+                <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+              </div>
+              <div class="slg-plan-badges">
+                <span class="slg-badge slg-badge--plata">PLATA</span>
+                <span class="slg-badge slg-badge--oro">ORO</span>
+              </div>
+            </div>
+
+            <!-- Right: Content -->
+            <div class="slg-content">
+              <span class="slg-eyebrow">FUNCIÓN PREMIUM</span>
+              <h3 class="slg-title">Inscripción a Clases</h3>
+              <p class="slg-subtitle">Exclusiva para Plan <strong>PLATA</strong> y <strong>ORO</strong></p>
+              <p class="slg-desc">La asistencia a clases grupales y sesiones dirigidas está disponible únicamente para miembros de los planes <strong>PLATA</strong> u <strong>ORO</strong>.</p>
+
+              <!-- Feature pills -->
+              <div class="slg-features">
+                <div class="slg-feature-pill">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                  Clases grupales dirigidas
+                </div>
+                <div class="slg-feature-pill">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  Reserva y gestión de cupo
+                </div>
+                <div class="slg-feature-pill">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  Sesiones con entrenador personal
+                </div>
+              </div>
+
+              <button class="slg-cta-btn" (click)="setSection('membresia')">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                MEJORAR PLAN
+              </button>
+            </div>
+
           </div>
-          <h3>Inscripción a Clases Exclusiva para Plan PLATA y ORO</h3>
-          <p>La asistencia a clases grupales y sesiones dirigidas está disponible únicamente para miembros de los planes <strong>PLATA</strong> u <strong>ORO</strong>.</p>
-          <button class="btn-primary-glow" (click)="setSection('membresia')">MEJORAR PLAN</button>
         </div>
+
 
         <!-- UNLOCKED SESSIONS CONTENT (PLATA / ORO) -->
         <div *ngIf="hasFullAccess()">
@@ -1104,10 +1194,14 @@
                   </div>
                 </div>
                 <div class="session-action-box">
+                  <span class="quota-full-msg" *ngIf="clase.inscritos >= clase.capacidadMaxima">
+                    Esta sesión ya alcanzó el límite de cupos.
+                  </span>
                   <button class="btn-enroll-slanted" 
                           (click)="enrollInClass(clase.idClass)" 
                           [disabled]="clase.inscritos >= clase.capacidadMaxima"
-                          [class.disabled-btn]="clase.inscritos >= clase.capacidadMaxima">
+                          [class.disabled-btn]="clase.inscritos >= clase.capacidadMaxima"
+                          [title]="clase.inscritos >= clase.capacidadMaxima ? 'Esta sesión ya alcanzó el límite de cupos.' : 'Inscribirse a esta clase'">
                     {{ clase.inscritos >= clase.capacidadMaxima ? 'CUPOS AGOTADOS' : 'INSCRIBIRSE AHORA' }}
                   </button>
                 </div>
@@ -1273,7 +1367,7 @@
                 </span>
                 <span class="cfg-action-arrow">→</span>
               </button>
-              <button class="cfg-action-btn" (click)="showPasswordModal.set(true)">
+              <button class="cfg-action-btn" (click)="openPasswordModal()">
                 <span class="cfg-action-icon">
                   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
                 </span>
@@ -1355,13 +1449,14 @@
                     <span class="cfg-theme-name">Oscuro</span>
                     <span class="cfg-theme-tag">Predeterminado</span>
                   </button>
-                  <button class="cfg-theme-option" [class.active]="themeMode === 'light'" (click)="themeMode = 'light'">
-                    <span class="cfg-theme-icon">
+                  <div class="cfg-theme-option cfg-theme-option--soon" title="Esta función estará disponible próximamente">
+                    <span class="cfg-soon-badge">PRÓXIMAMENTE</span>
+                    <span class="cfg-theme-icon cfg-theme-icon--soon">
                       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
                     </span>
                     <span class="cfg-theme-name">Claro</span>
-                    <span class="cfg-theme-tag">Modo día</span>
-                  </button>
+                    <span class="cfg-theme-tag">En desarrollo</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -2069,17 +2164,56 @@
       <form [formGroup]="passwordForm" (ngSubmit)="changePasswordSubmit()" class="modal-form">
         <div class="form-field">
           <label>CONTRASEÑA ACTUAL</label>
-          <input type="password" formControlName="currentPassword" class="form-ctrl">
+          <input 
+            type="password" 
+            formControlName="currentPassword" 
+            class="form-ctrl"
+            placeholder="Ingresa tu contraseña actual"
+            autocomplete="current-password"
+            [class.invalid]="passwordForm.get('currentPassword')?.invalid && passwordForm.get('currentPassword')?.touched">
+          <div class="error-msg" *ngIf="passwordForm.get('currentPassword')?.invalid && passwordForm.get('currentPassword')?.touched">
+            <span *ngIf="passwordForm.get('currentPassword')?.hasError('required')">Campo obligatorio</span>
+          </div>
         </div>
         <div class="form-field">
           <label>NUEVA CONTRASEÑA</label>
-          <input type="password" formControlName="newPassword" class="form-ctrl">
+          <input 
+            type="password" 
+            formControlName="newPassword" 
+            class="form-ctrl"
+            placeholder="Min. 8 caracteres"
+            autocomplete="new-password"
+            [class.invalid]="passwordForm.get('newPassword')?.invalid && passwordForm.get('newPassword')?.touched">
+          <div class="error-msg" *ngIf="passwordForm.get('newPassword')?.invalid && passwordForm.get('newPassword')?.touched">
+            <span *ngIf="passwordForm.get('newPassword')?.hasError('required')">Campo obligatorio</span>
+            <span *ngIf="passwordForm.get('newPassword')?.hasError('minLength')">Mínimo 8 caracteres</span>
+            <span *ngIf="passwordForm.get('newPassword')?.hasError('noUppercase')">Debe contener al menos 1 mayúscula</span>
+            <span *ngIf="passwordForm.get('newPassword')?.hasError('noLowercase')">Debe contener al menos 1 minúscula</span>
+            <span *ngIf="passwordForm.get('newPassword')?.hasError('noNumber')">Debe contener al menos 1 número</span>
+            <span *ngIf="passwordForm.get('newPassword')?.hasError('noSpecialChar')">Debe contener al menos 1 carácter especial (!@#$%^&*)</span>
+            <span *ngIf="passwordForm.get('newPassword')?.hasError('spacesNotAllowed')">No se permiten espacios</span>
+          </div>
         </div>
         <div class="form-field">
           <label>CONFIRMAR NUEVA CONTRASEÑA</label>
-          <input type="password" formControlName="confirmPassword" class="form-ctrl">
+          <input 
+            type="password" 
+            formControlName="confirmPassword" 
+            class="form-ctrl"
+            placeholder="Repite contraseña"
+            autocomplete="new-password"
+            [class.invalid]="(passwordForm.get('confirmPassword')?.invalid || passwordForm.hasError('passwordMismatch')) && passwordForm.get('confirmPassword')?.touched">
+          <div class="error-msg" *ngIf="passwordForm.get('confirmPassword')?.invalid && passwordForm.get('confirmPassword')?.touched">
+            <span *ngIf="passwordForm.get('confirmPassword')?.hasError('required')">Campo obligatorio</span>
+          </div>
+          <div class="error-msg" *ngIf="passwordForm.hasError('passwordMismatch') && passwordForm.get('confirmPassword')?.touched">
+            Las contraseñas no coinciden
+          </div>
         </div>
-        <button type="submit" class="btn-primary-glow w-100">ACTUALIZAR CONTRASEÑA</button>
+        <button type="submit" class="btn-primary-glow w-100" [disabled]="isChangingPassword()">
+          <span *ngIf="!isChangingPassword()">ACTUALIZAR CONTRASEÑA</span>
+          <span *ngIf="isChangingPassword()">ACTUALIZANDO...</span>
+        </button>
       </form>
     </div>
   </div>
