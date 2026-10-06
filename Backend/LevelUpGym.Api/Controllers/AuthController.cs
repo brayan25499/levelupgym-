@@ -7,6 +7,8 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using LevelUpGym.Api.Services;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace LevelUpGym.Api.Controllers;
 
@@ -220,6 +222,65 @@ public class AuthController : ControllerBase
         {
             Email = auth.Email,
             Token = _jwtService.CreateToken(auth)
+        });
+    }
+
+    // ===== Change Password (Authenticated) =====
+
+    [Authorize]
+    [HttpPost("change-password")]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+    {
+        var email = User.FindFirst(ClaimTypes.Email)?.Value;
+        if (string.IsNullOrEmpty(email))
+        {
+            return Unauthorized(new { message = "Usuario no autenticado." });
+        }
+
+        if (string.IsNullOrWhiteSpace(request.CurrentPassword))
+        {
+            return BadRequest(new { message = "La contraseña actual es obligatoria." });
+        }
+
+        var auth = await _context.Auths.FirstOrDefaultAsync(u => u.Email == email);
+        if (auth == null)
+        {
+            return NotFound(new { message = "Usuario no encontrado." });
+        }
+
+        // Verify current password
+        using var currentHmac = new HMACSHA512(auth.PasswordSalt);
+        var computedHash = currentHmac.ComputeHash(Encoding.UTF8.GetBytes(request.CurrentPassword.Trim()));
+
+        if (!CryptographicOperations.FixedTimeEquals(computedHash, auth.Password))
+        {
+            return BadRequest(new { message = "La contraseña actual es incorrecta." });
+        }
+
+        // Validate new password using the existing password validations
+        var validationError = ValidatePassword(request.NewPassword);
+        if (validationError != null)
+        {
+            return BadRequest(new { message = validationError });
+        }
+
+        if (request.CurrentPassword.Trim() == request.NewPassword.Trim())
+        {
+            return BadRequest(new { message = "La nueva contraseña debe ser diferente a la contraseña actual." });
+        }
+
+        // Update password hash and salt
+        using var newHmac = new HMACSHA512();
+        auth.Password = newHmac.ComputeHash(Encoding.UTF8.GetBytes(request.NewPassword.Trim()));
+        auth.PasswordSalt = newHmac.Key;
+        auth.UpdatedAt = DateTime.UtcNow;
+
+        _context.Entry(auth).State = EntityState.Modified;
+        await _context.SaveChangesAsync();
+
+        return Ok(new
+        {
+            message = "Tu contraseña ha sido cambiada con éxito."
         });
     }
 
@@ -608,6 +669,34 @@ public class AuthController : ControllerBase
             phone.Length - 4) + lastFour;
     }
 
+    // ===== Password Validation (Reused for Register & Change Password) =====
+
+    public static string? ValidatePassword(string? password)
+    {
+        if (string.IsNullOrWhiteSpace(password))
+            return "La contraseña es obligatoria.";
+
+        if (password.Contains(" "))
+            return "La contraseña no puede contener espacios.";
+
+        if (password.Length < 8)
+            return "La contraseña debe tener al menos 8 caracteres.";
+
+        if (!Regex.IsMatch(password, @"[A-Z]"))
+            return "La contraseña debe contener al menos una mayúscula.";
+
+        if (!Regex.IsMatch(password, @"[a-z]"))
+            return "La contraseña debe contener al menos una minúscula.";
+
+        if (!Regex.IsMatch(password, @"\d"))
+            return "La contraseña debe contener al menos un número.";
+
+        if (!Regex.IsMatch(password, @"[!@#$%^&*()_+\-=\[\]{};':""\\|,.<>\/?]"))
+            return "La contraseña debe contener al menos un carácter especial (!@#$%^&*).";
+
+        return null;
+    }
+
     // ===== Register Validation =====
 
     private string? ValidateRegisterRequest(
@@ -666,41 +755,10 @@ public class AuthController : ControllerBase
         }
 
         // Contraseña
-        if (string.IsNullOrWhiteSpace(request.Password))
-            return "La contraseña es obligatoria.";
-
-        if (request.Password.Contains(" "))
-            return "La contraseña no puede contener espacios.";
-
-        if (request.Password.Length < 8)
-            return "La contraseña debe tener al menos 8 caracteres.";
-
-        if (!Regex.IsMatch(
-                request.Password,
-                @"[A-Z]"))
+        var passwordError = ValidatePassword(request.Password);
+        if (passwordError != null)
         {
-            return "La contraseña debe contener al menos una mayúscula.";
-        }
-
-        if (!Regex.IsMatch(
-                request.Password,
-                @"[a-z]"))
-        {
-            return "La contraseña debe contener al menos una minúscula.";
-        }
-
-        if (!Regex.IsMatch(
-                request.Password,
-                @"\d"))
-        {
-            return "La contraseña debe contener al menos un número.";
-        }
-
-        if (!Regex.IsMatch(
-                request.Password,
-                @"[!@#$%^&*()_+\-=\[\]{};':""\\|,.<>\/?]"))
-        {
-            return "La contraseña debe contener al menos un carácter especial (!@#$%^&*).";
+            return passwordError;
         }
 
         // Documento
