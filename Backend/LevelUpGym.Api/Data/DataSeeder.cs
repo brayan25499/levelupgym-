@@ -170,7 +170,7 @@ public static class DataSeeder
             else
             {
                 using var hmac = new System.Security.Cryptography.HMACSHA512();
-                clientAuth.Password = hmac.ComputeHash(Encoding.UTF8.GetBytes("cliente123"));
+                clientAuth.Password = hmac.ComputeHash(Encoding.UTF8.GetBytes("Cliente123!"));
                 clientAuth.PasswordSalt = hmac.Key;
                 clientAuth.Estado = "ACTIVO";
                 context.SaveChanges();
@@ -179,6 +179,82 @@ public static class DataSeeder
         catch (Exception ex)
         {
             Console.WriteLine("DataSeeder Client warning: " + ex.Message);
+        }
+
+        // 2c. Seed Employee User (Entrenador)
+        try
+        {
+            var trainerAuth = context.Auths.FirstOrDefault(a => a.Email == "entrenador@levelup.com");
+            if (trainerAuth == null)
+            {
+                var trainerProfile = context.Profiles.FirstOrDefault(p => p.NumDocumento == "999888777");
+                if (trainerProfile == null)
+                {
+                    trainerProfile = new Profile
+                    {
+                        Nombre = "Entrenador",
+                        Apellidos = "Principal",
+                        TipoDocumento = "CC",
+                        NumDocumento = "999888777",
+                        Telefono = "3009998877",
+                        Sexo = "M",
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    context.Profiles.Add(trainerProfile);
+                    context.SaveChanges();
+                }
+
+                if (!context.Auths.Any(a => a.IdProfile == trainerProfile.IdProfile))
+                {
+                    using var hmac = new System.Security.Cryptography.HMACSHA512();
+                    trainerAuth = new Auth
+                    {
+                        IdProfile = trainerProfile.IdProfile,
+                        Email = "entrenador@levelup.com",
+                        Password = hmac.ComputeHash(Encoding.UTF8.GetBytes("entrenador123")),
+                        PasswordSalt = hmac.Key,
+                        Estado = "Active",
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    context.Auths.Add(trainerAuth);
+                    context.SaveChanges();
+                }
+
+                if (!context.Employees.Any(e => e.IdProfile == trainerProfile.IdProfile))
+                {
+                    var employeeEntity = new Employee
+                    {
+                        IdProfile = trainerProfile.IdProfile,
+                        FechaContratacion = DateOnly.FromDateTime(DateTime.UtcNow),
+                        SalarioBase = 2500000,
+                        Estado = "Activo",
+                        Especialidad = "Entrenador General",
+                        Descripcion = "Entrenador de planta para atención a clientes."
+                    };
+                    context.Employees.Add(employeeEntity);
+                    context.SaveChanges();
+                }
+
+                var employeeRole = context.Roles.FirstOrDefault(r => r.Nombre == "Employee");
+                if (employeeRole != null && trainerAuth != null && !context.UserRoles.Any(ur => ur.IdAuth == trainerAuth.IdAuth))
+                {
+                    context.UserRoles.Add(new UserRole { IdAuth = trainerAuth.IdAuth, IdRol = employeeRole.IdRol });
+                    context.SaveChanges();
+                }
+            }
+            else
+            {
+                // Forzar contraseña en cada inicio por si fue modificada
+                using var hmac = new System.Security.Cryptography.HMACSHA512();
+                trainerAuth.Password = hmac.ComputeHash(Encoding.UTF8.GetBytes("entrenador123"));
+                trainerAuth.PasswordSalt = hmac.Key;
+                trainerAuth.Estado = "Active";
+                context.SaveChanges();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("DataSeeder Employee warning: " + ex.Message);
         }
 
         // 4. Seed Memberships
@@ -362,7 +438,5 @@ public static class DataSeeder
             );
             context.SaveChanges();
         }
-
-    }
-}
-
+    } // fin de Seed()
+} // fin de la clase

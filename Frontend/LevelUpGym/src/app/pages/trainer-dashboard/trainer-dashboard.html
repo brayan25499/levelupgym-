@@ -1,0 +1,115 @@
+<div class="trainer-dashboard">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <span class="brand-level">LEVEL</span><span class="brand-up">UP</span><span class="brand-gym">GYM</span>
+      <p class="role-badge">PANEL ENTRENADOR</p>
+    </div>
+    <nav class="sidebar-nav">
+      <button (click)="setTab('clases')" [class.active]="activeTab === 'clases'"><span class="menu-icon icon-calendar"></span> Clases</button>
+      <button (click)="setTab('objetivos')" [class.active]="activeTab === 'objetivos'"><span class="menu-icon icon-goals"></span> Objetivos</button>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="btn-logout" (click)="logout()"><span class="menu-icon icon-logout"></span> Salir</button>
+    </div>
+  </aside>
+
+  <main class="dashboard-content" [ngSwitch]="activeTab">
+    <header class="content-header">
+      <div>
+        <span class="eyebrow">Panel de Entrenador</span>
+        <h1>Bienvenido, <span class="accent">Coach</span></h1>
+      </div>
+      <div class="user-info">
+        <div class="user-meta">
+          <span>entrenador&#64;levelup.com</span>
+          <span class="user-role">Entrenador</span>
+        </div>
+        <div class="avatar">E</div>
+      </div>
+    </header>
+
+    <!-- CLASES TAB -->
+    <div *ngSwitchCase="'clases'" class="tab-content fade-in">
+      <section class="recent-activity">
+        <div class="card-header">
+          <h2>Gestión de Clases Programadas</h2>
+        </div>
+        <div class="activity-table-wrapper">
+          <table class="activity-table">
+            <thead>
+              <tr>
+                <th>Clase</th>
+                <th>Entrenador</th>
+                <th>Fecha</th>
+                <th>Hora</th>
+                <th class="num">Cupos</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let c of classes()">
+                <td><strong>{{ c.nombre }}</strong></td>
+                <td>{{ c.entrenador.nombreCompleto }}</td>
+                <td>{{ c.fecha }}</td>
+                <td>{{ c.hora }}</td>
+                <td class="num"><strong>{{ c.inscritos }}</strong> / {{ c.capacidadMaxima }}</td>
+                <td>
+                  <span class="status-badge" [class.success]="c.estado === 'Programada'" [class.completed]="c.estado === 'Completada'" [class.cancelled]="c.estado === 'Cancelada'">
+                    {{ c.estado }}
+                  </span>
+                </td>
+              </tr>
+              <tr class="empty-row" *ngIf="classes().length === 0">
+                <td colspan="6">No hay clases programadas actualmente.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- OBJETIVOS TAB -->
+    <div *ngSwitchCase="'objetivos'" class="tab-content fade-in">
+      <section class="recent-activity">
+        <div class="card-header">
+          <h2>Catálogo de Objetivos del Gimnasio</h2>
+        </div>
+        <div class="activity-table-wrapper">
+          <table class="activity-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Descripción</th>
+                <th>Unidad</th>
+                <th>Tipo de dato</th>
+                <th>Dirección</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let gt of goalTypes()">
+                <td><strong>{{ gt.nombre }}</strong></td>
+                <td style="max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ gt.descripcion || '—' }}</td>
+                <td>{{ gt.unidad }}</td>
+                <td><span class="tipo-dato-badge">{{ gt.tipoDato }}</span></td>
+                <td>
+                  <span class="direccion-badge" [class.menor]="gt.direccion === 'MENOR'" [class.mayor]="gt.direccion === 'MAYOR'">
+                    {{ gt.direccion === 'MENOR' ? '↓ Reducir' : '↑ Aumentar' }}
+                  </span>
+                </td>
+                <td>
+                  <span class="status-badge" [class.success]="gt.activo" [class.pending]="!gt.activo">
+                    {{ gt.activo ? 'ACTIVO' : 'INACTIVO' }}
+                  </span>
+                </td>
+              </tr>
+              <tr class="empty-row" *ngIf="goalTypes().length === 0">
+                <td colspan="6">No hay tipos de objetivo registrados.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
