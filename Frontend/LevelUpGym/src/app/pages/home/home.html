@@ -52,15 +52,22 @@
         <div class="feature-card featured" style="--img: url('https://plus.unsplash.com/premium_photo-1661580260078-4c554d5b01dc?q=80&w=870&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')">
           <div class="feature-badge">POPULAR</div>
           <h3>Entrenadores Certificados</h3>
-          <p>18 especialistas con certificaciones internacionales. Programas personalizados que se adaptan a tus metas reales.</p>
+          <p>
+            @if (trainerCount() > 0) {
+              {{ trainerCount() }} {{ trainerCount() === 1 ? 'especialista' : 'especialistas' }} con certificaciones internacionales.
+            } @else {
+              Especialistas con certificaciones internacionales.
+            }
+            Programas personalizados que se adaptan a tus metas reales.
+          </p>
         </div>
         <div class="feature-card" style="--img: url('https://images.unsplash.com/photo-1592588253414-887759037c2a?q=80&w=387&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')">
           <h3>Clases en Vivo 24/7</h3>
           <p>Spinning, CrossFit, Boxeo, Yoga y más. Más de 60 clases semanales con los mejores instructores de la ciudad.</p>
         </div>
-        <div class="feature-card" style="--img: url('https://images.unsplash.com/photo-1768161680813-615df885ff82?q=80&w=386&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')">
-          <h3>Nutrición & Suplementos</h3>
-          <p>Asesoría nutricional incluida en planes premium. Tienda propia con los mejores suplementos al mejor precio.</p>
+        <div class="feature-card" style="--img: url('https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=700')">
+          <h3>Reserva de Clases Online</h3>
+          <p>Reserva tus cupos en clases grupales y eventos de manera rápida desde la app, sin filas ni esperas.</p>
         </div>
         <div class="feature-card" style="--img: url('https://images.unsplash.com/photo-1723117417817-a122a6d202d5?w=700')">
           <h3>Tracking de Progreso</h3>
