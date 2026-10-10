@@ -9,6 +9,7 @@ using System.Text.RegularExpressions;
 using LevelUpGym.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
+using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace LevelUpGym.Api.Controllers;
 
@@ -22,18 +23,21 @@ public class AuthController : ControllerBase
     private readonly IEmailService _emailService;
     private readonly IGoogleAuthService _googleAuthService;
 
+    private readonly ILogger<AuthController> _logger;
+
     public AuthController(
         LevelUpDbContext context,
         IJwtService jwtService,
         IOtpService otpService,
         IEmailService emailService,
-        IGoogleAuthService googleAuthService)
+        IGoogleAuthService googleAuthService, ILogger<AuthController> logger)
     {
         _context = context;
         _jwtService = jwtService;
         _otpService = otpService;
         _emailService = emailService;
         _googleAuthService = googleAuthService;
+        _logger = logger;
     }
 
     [HttpPost("register")]
@@ -379,76 +383,86 @@ public class AuthController : ControllerBase
         });
     }
 
+
     [HttpPost("request-otp")]
-    public async Task<IActionResult> RequestOtp(
-        RequestOtpDto request)
+    public async Task<IActionResult> RequestOtp(RequestOtpDto request)
     {
-        var email =
-            request.Email?.Trim().ToLower() ?? "";
+        const string successMessage =
+            "Si el correo está registrado, recibirás un código de seguridad para restablecer tu contraseña.";
+
+        // 1. Validar y normalizar el correo
+        var email = request.Email?.Trim().ToLowerInvariant() ?? string.Empty;
 
         if (string.IsNullOrWhiteSpace(email))
         {
             return BadRequest(new
             {
-                message =
-                    "El correo electrónico es obligatorio."
+                message = "El correo electrónico es obligatorio."
             });
         }
 
-        var auth = await _context.Auths
-            .FirstOrDefaultAsync(
-                u => u.Email == email);
-
-        // No revelar si el correo existe
-        if (auth == null)
-        {
-            return Ok(new
-            {
-                message =
-                    "Si el correo está registrado, recibirás un código de seguridad para restablecer tu contraseña."
-            });
-        }
-
-        // Check resend cooldown
-        if (!_otpService.CanResend(auth.Email))
-        {
-            return BadRequest(new
-            {
-                message =
-                    "Debes esperar antes de solicitar un nuevo código."
-            });
-        }
-
-        var profile = await _context.Profiles
-            .FirstOrDefaultAsync(
-                p => p.IdProfile == auth.IdProfile);
-
-        var recipientName =
-            profile != null
-                ? $"{profile.Nombre} {profile.Apellidos}".Trim()
-                : "Usuario";
-
-        var code =
-            _otpService.GenerateOtp(auth.Email);
-
-        // Enviar correo con el código OTP
         try
         {
+            // 2. Buscar la cuenta
+            var auth = await _context.Auths
+                .FirstOrDefaultAsync(u => u.Email == email);
+
+            // No revelar si el correo está registrado
+            if (auth == null)
+            {
+                return Ok(new { message = successMessage });
+            }
+
+            // 3. Comprobar el tiempo de espera para reenviar el código
+            if (!_otpService.CanResend(auth.Email))
+            {
+                return BadRequest(new
+                {
+                    message = "Debes esperar antes de solicitar un nuevo código."
+                });
+            }
+
+            // 4. Obtener el nombre del usuario
+            var profile = await _context.Profiles
+                .FirstOrDefaultAsync(p => p.IdProfile == auth.IdProfile);
+
+            var recipientName = profile == null
+                ? "Usuario"
+                : $"{profile.Nombre} {profile.Apellidos}".Trim();
+
+            // 5. Generar el código OTP
+            var code = _otpService.GenerateOtp(auth.Email);
+
+            // 6. Enviar el correo de recuperación
             await _emailService.SendOtpEmail(
                 auth.Email,
                 recipientName,
-                code);
+                code
+            );
+
+            _logger.LogInformation(
+                "Correo OTP enviado al destinatario {Email}",
+                auth.Email
+            );
+
+            return Ok(new { message = successMessage });
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[OTP EMAIL ERROR] {ex.Message}");
-        }
+            _logger.LogError(
+                ex,
+                "Error al procesar la solicitud OTP para {Email}",
+                email
+            );
 
-        return Ok(new
-        {
-            message =
-                "Si el correo está registrado, recibirás un código de seguridad para restablecer tu contraseña."
-        });
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                new
+                {
+                    message = "Ocurrió un error al procesar la solicitud. Inténtalo más tarde."
+                }
+            );
+        }
     }
 
     [HttpPost("verify-otp")]
