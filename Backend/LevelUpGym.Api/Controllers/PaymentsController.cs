@@ -1,4 +1,4 @@
-using System.Security.Claims;
+using Azure.Core;
 using LevelUpGym.Api.Data;
 using LevelUpGym.Api.DTOs;
 using LevelUpGym.Api.Models;
@@ -6,6 +6,8 @@ using LevelUpGym.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using System.Security.Claims;
 
 namespace LevelUpGym.Api.Controllers;
 
@@ -252,8 +254,42 @@ public class PaymentsController : ControllerBase
             return NotFound(new { message = $"No se encontró ninguna transacción con referencia {referenceId}" });
         }
 
+     
         var detalle = pago.Venta?.Detalles?.FirstOrDefault();
         string planName = detalle?.Membership?.Nombre ?? "Plan";
+
+        var IdClient = pago.Venta?.IdCliente;
+
+        var idPerfile = await _context.Clients
+            .FirstOrDefaultAsync(v => v.IdCliente == IdClient);
+
+        var correoClient = await _context.Auths
+            .FirstOrDefaultAsync(v => v.IdProfile == idPerfile.IdProfile);
+
+        var nombreCliente = await _context.Profiles
+            .FirstOrDefaultAsync(p => p.IdProfile == idPerfile.IdProfile);
+
+        var mensajeInvoice = new InvoiceEmailDto
+        {
+            InvoiceNumber = pago.ReferenciaExterna!,
+            ClientName = nombreCliente.Nombre,
+            ClientEmail = correoClient.Email.ToString() ?? "clockwissenl1@gmail.com",
+            PlanName = planName,
+            PlanPrice = pago.Monto,
+            Total = pago.Monto,
+            PaymentMethod = pago.MetodoPago,
+          
+            Status = pago.Estado switch
+            {
+                "APROBADO" => "El pago fue aprobado exitosamente y tu membresía se encuentra activa.",
+                "PROCESANDO" => "Tu pago se está procesando. Por favor espera a que la entidad bancaria confirme.",
+                "RECHAZADO" => "El pago fue rechazado por la entidad bancaria.",
+                "CANCELADO" => "La transacción fue cancelada.",
+                _ => "Transacción en estado pendiente."
+            }
+        };
+
+        await _emailService.SendInvoiceEmail(mensajeInvoice);
 
         return Ok(new PaymentStatusResponseDto
         {

@@ -13,8 +13,8 @@ public class InvoiceEmailDto
     public string PlanName { get; set; } = string.Empty;
     public decimal PlanPrice { get; set; }
     public string MembershipPeriod { get; set; } = "Mensual";
-    public decimal Subtotal { get; set; }
-    public decimal Discount { get; set; }
+    public decimal? Subtotal { get; set; }
+    public decimal? Discount { get; set; }
     public decimal Total { get; set; }
     public string PaymentMethod { get; set; } = "Tarjeta";
     public string Status { get; set; } = "PAGADO";
@@ -251,6 +251,14 @@ public class LevelUpEmailService : IEmailService
         await SendEmailInternalAsync(invoice.ClientEmail, subject, htmlBody, $"Factura {invoice.InvoiceNumber} generada para {invoice.ClientEmail} - Total: {totalFormateado}");
     }
 
+    /// <summary>
+    /// Metodo para enviar informacion de consultar en el formulario de contacto
+    /// </summary>
+    /// <param name="nombre"></param>
+    /// <param name="emailQuestion"></param>
+    /// <param name="asunto"></param>
+    /// <param name="message"></param>
+    /// <returns></returns>
     public async Task SendQuestionsEmail (string nombre, string emailQuestion, string asunto, string message)
     {
         var subject = asunto;
