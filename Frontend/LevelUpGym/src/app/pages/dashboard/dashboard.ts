@@ -1,4 +1,4 @@
-import { Component, inject, signal, ElementRef, ViewChild, AfterViewInit, OnDestroy } from '@angular/core';
+import { Component, inject, signal, computed, ElementRef, ViewChild, AfterViewInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
@@ -1627,8 +1627,63 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     sessionReminders: true,
     promotions: false
   };
+    // Próxima sesión reservada (la más cercana en el futuro), calculada desde myClasses
+  nextSessionView = computed(() => {
+    const now = Date.now();
+    const next = this.myClasses()
+      .map(c => ({ clase: c, date: this.parseClassDate(c.fecha, c.hora) }))
+      .filter(x => x.date !== null && x.date.getTime() >= now)
+      .sort((a, b) => a.date!.getTime() - b.date!.getTime())[0];
 
-  themeMode = 'dark';
+    if (!next) return null;
+
+    const d = next.date!;
+    return {
+      fecha: d.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' }).replace('.', '').toUpperCase(),
+      hora: d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+      nombre: next.clase.nombre,
+      entrenador: next.clase.entrenador?.nombreCompleto || 'Entrenador'
+    };
+  });
+
+    private parseClassDate(fecha: string, hora: string): Date | null {
+    if (!fecha) return null;
+
+    const MESES: Record<string, number> = {
+      enero: 1, febrero: 2, marzo: 3, abril: 4, mayo: 5, junio: 6,
+      julio: 7, agosto: 8, septiembre: 9, setiembre: 9, octubre: 10,
+      noviembre: 11, diciembre: 12
+    };
+
+    let y: number, m: number, d: number;
+
+    // Formato del backend: "18 de Agosto, 2026"
+    const texto = fecha
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // quita tildes
+      .toLowerCase();
+    const es = /(\d{1,2})\s+de\s+([a-z]+),?\s+(\d{4})/.exec(texto);
+    const iso = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(fecha);
+    const dmy = /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/.exec(fecha);
+
+    if (es && MESES[es[2]]) {
+      d = +es[1]; m = MESES[es[2]]; y = +es[3];
+    } else if (iso) {
+      y = +iso[1]; m = +iso[2]; d = +iso[3];
+    } else if (dmy) {
+      d = +dmy[1]; m = +dmy[2]; y = +dmy[3];
+    } else {
+      return null;
+    }
+
+    let h = 0, min = 0;
+    const t = /(\d{1,2}):(\d{2})/.exec(hora ?? '');
+    if (t) {
+      h = +t[1]; min = +t[2];
+      if (/pm/i.test(hora) && h < 12) h += 12;
+      if (/am/i.test(hora) && h === 12) h = 0;
+    }
+    return new Date(y, m - 1, d, h, min);
+  }
 
   // ==========================================
   // MEMBERSHIP TIER ACCESS CONTROL HELPERS
@@ -1682,6 +1737,56 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     if (n.includes('oro') || n.includes('gold')) return 'assets/img/gold-crown.png';
     if (n.includes('plata') || n.includes('silver')) return 'assets/img/silver-crown.png';
     return 'assets/img/bronze-crown.png';
+  }
+
+  // 10 days rule & plan filtering logic
+  get diasTranscurridosMembresia(): number {
+    const mem = this.getActiveMembership();
+    if (!mem || !mem.fechaInicio) return 0;
+    const inicioDate = new Date(mem.fechaInicio);
+    const hoyDate = new Date();
+    const diffTime = hoyDate.getTime() - inicioDate.getTime();
+    return Math.floor(diffTime / (1000 * 3600 * 24));
+  }
+
+  get diasRestantesParaCambio(): number {
+    return Math.max(0, 10 - this.diasTranscurridosMembresia);
+  }
+
+  get puedeCambiarPlan(): boolean {
+    const mem = this.getActiveMembership();
+    if (!mem) return true; // Si no tiene plan activo, puede contratar cualquiera
+    return this.diasTranscurridosMembresia <= 10;
+  }
+
+  get filteredAvailablePlans(): Membership[] {
+    const memName = this.getMembershipName();
+    const all = this.availablePlans();
+
+    if (!memName) return all;
+
+    if (memName.includes('bronce') || memName.includes('bronze')) {
+      // Bronce: Opciones PLATA y ORO
+      return all.filter(p => {
+        const n = p.nombre.toLowerCase();
+        return n.includes('plata') || n.includes('silver') || n.includes('oro') || n.includes('gold');
+      });
+    }
+
+    if (memName.includes('plata') || memName.includes('silver')) {
+      // Plata: Únicamente ORO
+      return all.filter(p => {
+        const n = p.nombre.toLowerCase();
+        return n.includes('oro') || n.includes('gold');
+      });
+    }
+
+    if (memName.includes('oro') || memName.includes('gold')) {
+      // Oro: Ninguna opción de cambio
+      return [];
+    }
+
+    return all;
   }
 
   // ==========================================
@@ -2237,17 +2342,21 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   }
 
   unenrollClass(idClass: number) {
-    if (confirm('¿Seguro que deseas cancelar tu inscripción a esta clase?')) {
-      this.classService.unenroll(idClass).subscribe({
-        next: (res) => {
-          this.alertService.success(res.message);
-          this.loadClasses();
-        },
-        error: (err) => {
-          this.alertService.error(err.error?.message || 'Error al cancelar inscripción');
-        }
-      });
-    }
+    this.alertService.confirm(
+      '¿Seguro que deseas cancelar tu inscripción a esta clase?',
+      () => {
+        this.classService.unenroll(idClass).subscribe({
+          next: (res) => {
+            this.alertService.success(res.message || 'Inscripción cancelada.');
+            this.loadClasses();
+          },
+          error: (err) => {
+            this.alertService.error(err.error?.message || 'Error al cancelar inscripción');
+          }
+        });
+      },
+      'Cancelar reserva'
+    );
   }
 
   updateProfile() {

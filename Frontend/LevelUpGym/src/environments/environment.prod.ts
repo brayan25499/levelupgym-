@@ -1,5 +1,5 @@
 export const environment = {
   production: true,
   apiUrl: 'http://levelupgym.somee.com',
-  googleClientId: "564933543472-gmjvk1o0mlu0rhpjlgndonr1fpf1868h.apps.googleusercontent.com"
+  googleClientId: "177824334537-q9qajc8u1g4cc3rack23qfg6opf05409.apps.googleusercontent.com"
 };

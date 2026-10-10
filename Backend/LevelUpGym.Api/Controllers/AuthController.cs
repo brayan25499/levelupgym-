@@ -431,22 +431,18 @@ public class AuthController : ControllerBase
         var code =
             _otpService.GenerateOtp(auth.Email);
 
-        // Enviar correo en segundo plano
-        _ = Task.Run(async () =>
+        // Enviar correo con el código OTP
+        try
         {
-            try
-            {
-                await _emailService.SendOtpEmail(
-                    auth.Email,
-                    recipientName,
-                    code);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(
-                    $"[OTP EMAIL ERROR] {ex.Message}");
-            }
-        });
+            await _emailService.SendOtpEmail(
+                auth.Email,
+                recipientName,
+                code);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[OTP EMAIL ERROR] {ex.Message}");
+        }
 
         return Ok(new
         {

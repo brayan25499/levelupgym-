@@ -369,6 +369,13 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit, OnDestroy
   }
 
   private buildRevenueChart(canvas: HTMLCanvasElement, labels: string[], values: number[]) {
+    // Si el canvas ya no está en pantalla (cambiaste de pestaña), no dibujar
+    if (!canvas.isConnected) return;
+
+    // Destruir la gráfica anterior justo antes de crear la nueva
+    this.revenueChartInstance?.destroy();
+    this.revenueChartInstance = undefined;
+
     const ctx = canvas.getContext('2d')!;
     const gradient = ctx.createLinearGradient(0, 0, 0, 260);
     gradient.addColorStop(0, this.chartTheme.red);

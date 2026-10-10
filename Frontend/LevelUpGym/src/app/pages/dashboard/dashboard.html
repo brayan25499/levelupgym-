@@ -1,4 +1,4 @@
-<div class="dashboard-container" [class.light-theme]="themeMode === 'light'">
+<div class="dashboard-container">
   <!-- Mobile Header Bar -->
   <div class="mobile-top-bar">
     <div class="brand">
@@ -163,24 +163,6 @@
             <div class="card-footer-link">Ver membresía →</div>
           </div>
 
-          <!-- Próximo Entrenamiento Summary Card -->
-          <div class="summary-card card-clickable" (click)="setSection('sesiones')">
-            <div class="card-header-row">
-              <span class="card-icon-box">
-                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5h11M6.5 17.5h11M3 10v4M21 10v4M4.5 8v8M19.5 8v8"></path></svg>
-              </span>
-              <span class="badge-tag" [class.badge-lock]="!hasFullAccess()">
-                {{ hasFullAccess() ? 'ACCESIBLE' : 'PLAN PLATA/ORO' }}
-              </span>
-            </div>
-            <h3 class="card-heading">Próximo Entrenamiento</h3>
-            <div class="card-body-data">
-              <span class="highlight-val">{{ hasFullAccess() ? 'Torso & Hipertrofia' : 'Acceso Estándar' }}</span>
-              <p class="card-sub-info">{{ hasFullAccess() ? 'Rutina Guiada • 60 Minutos' : 'Entrenamiento Libre en Sala' }}</p>
-            </div>
-            <div class="card-footer-link">{{ hasFullAccess() ? 'Ver rutinas →' : 'Desbloquear rutinas →' }}</div>
-          </div>
-
           <!-- TARJETA IMC EN EL INICIO -->
           <div class="summary-card card-clickable" (click)="setSection('progreso')">
             <div class="card-header-row">
@@ -204,16 +186,23 @@
                 <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
               </span>
               <span class="badge-tag" [class.badge-lock]="!hasFullAccess()">
-                {{ hasFullAccess() ? '14 AGO' : 'PLAN PLATA/ORO' }}
+                {{ !hasFullAccess() ? 'PLAN PLATA/ORO' : (nextSessionView()?.fecha || 'SIN SESIÓN') }}
               </span>
             </div>
             <h3 class="card-heading">Próxima Sesión</h3>
             <div class="card-body-data">
-              <span class="highlight-val">{{ hasFullAccess() ? '09:00 AM' : 'Sin Sesión' }}</span>
-              <p class="card-sub-info">{{ hasFullAccess() ? 'Coach Carlos Ruiz • Evaluaciones' : 'Requiere Plan Plata u Oro' }}</p>
+              <span class="highlight-val">{{ !hasFullAccess() ? 'Sin Sesión' : (nextSessionView()?.hora || 'Sin Sesión') }}</span>
+              <p class="card-sub-info">
+                {{ !hasFullAccess() ? 'Requiere Plan Plata u Oro' : (nextSessionView() ? (nextSessionView()?.entrenador + ' • ' + nextSessionView()?.nombre) : 'Reserva tu próxima clase') }}
+              </p>
             </div>
-            <div class="card-footer-link">{{ hasFullAccess() ? 'Ver sesiones →' : 'Agendar sesión →' }}</div>
+            <div class="card-footer-link">
+              {{ !hasFullAccess() ? 'Agendar sesión →' : (nextSessionView() ? 'Ver sesiones →' : 'Reservar clase →') }}
+            </div>
           </div>
+
+
+
         </div>
 
         <!-- Upgrade Tier Banner (if Bronce or No Plan) -->
@@ -1010,9 +999,31 @@
 
         <!-- Plans Selection / Upgrade Section -->
         <div class="plans-upgrade-container">
-          <h3 class="upgrade-title">Planes Disponibles en LevelUpGym</h3>
-          <div class="plans-cards-flex">
-            <div class="plan-card-item" *ngFor="let plan of availablePlans()" [ngClass]="plan.nombre.toLowerCase()">
+          <h3 class="upgrade-title">Opciones de Cambio de Plan</h3>
+
+          <!-- Mensaje para usuarios con ORO -->
+          <div class="no-data-card-box" *ngIf="getMembershipName().includes('oro') || getMembershipName().includes('gold')">
+            <div class="no-data-icon">👑</div>
+            <h4>Ya tienes el plan ORO</h4>
+            <p>Ya cuentas con el nivel más alto de membresía en LevelUpGym. ¡Disfruta de todos los beneficios VIP!</p>
+          </div>
+
+          <!-- Banner de límite de 10 días finalizado (para usuarios con plan que NO es Oro pero expiró el tiempo de cambio) -->
+          <div class="no-data-card-box" *ngIf="getActiveMembership() && !(getMembershipName().includes('oro') || getMembershipName().includes('gold')) && !puedeCambiarPlan">
+            <div class="no-data-icon">⏰</div>
+            <h4>El período para cambiar de plan ha finalizado</h4>
+            <p>Solo tenías 10 días desde la adquisición de tu membresía para cambiar de plan. Podrás cambiar o renovar tu plan una vez venza tu membresía actual.</p>
+          </div>
+
+          <!-- Indicador de días restantes para cambiar (si le quedan días) -->
+          <div class="days-remaining-banner" *ngIf="getActiveMembership() && !(getMembershipName().includes('oro') || getMembershipName().includes('gold')) && puedeCambiarPlan" style="background: rgba(220, 20, 60, 0.15); border: 1px solid rgba(220, 20, 60, 0.4); padding: 12px 18px; border-radius: 8px; margin-bottom: 20px; color: #fff; font-size: 0.95rem; display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 1.2rem;">⏱️</span>
+            <span><strong>Días restantes para cambiar de plan: {{ diasRestantesParaCambio }}</strong> (Solo disponible durante los primeros 10 días desde la adquisición de tu membresía).</span>
+          </div>
+
+          <!-- Tarjetas de planes permitidos -->
+          <div class="plans-cards-flex" *ngIf="filteredAvailablePlans.length > 0">
+            <div class="plan-card-item" *ngFor="let plan of filteredAvailablePlans" [ngClass]="plan.nombre.toLowerCase()">
               <div class="dash-crown-box">
                 <img [src]="getCrownImgUrl(plan.nombre)" [alt]="plan.nombre + ' Crown'" class="dash-crown-img">
               </div>
@@ -1025,8 +1036,8 @@
                 <span class="period">/mes</span>
               </div>
               <p class="plan-desc-text">{{ plan.descripcion }}</p>
-              <button class="btn-primary-action" (click)="buyPlan(plan.idMembresia)">
-                {{ (profileData()?.activeMembership?.nombre?.toLowerCase() === plan.nombre.toLowerCase()) ? 'PLAN ACTUAL' : 'ADQUIRIR / MEJORAR PLAN' }}
+              <button class="btn-primary-action" [disabled]="!puedeCambiarPlan" (click)="puedeCambiarPlan && buyPlan(plan.idMembresia)">
+                {{ puedeCambiarPlan ? 'CAMBIAR A ESTE PLAN' : 'PERÍODO FINALIZADO' }}
               </button>
             </div>
           </div>
@@ -1426,41 +1437,6 @@
             </div>
           </div>
 
-          <!-- Card: Preferencias de Interfaz -->
-          <div class="cfg-card">
-            <div class="cfg-card-corner"></div>
-            <div class="cfg-card-header">
-              <div class="cfg-card-icon cfg-card-icon--cyan">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
-              </div>
-              <div>
-                <h3 class="cfg-card-title">Preferencias de Interfaz</h3>
-                <p class="cfg-card-desc">Personaliza la apariencia visual de tu panel.</p>
-              </div>
-            </div>
-            <div class="cfg-card-body">
-              <div class="cfg-theme-selector">
-                <span class="cfg-theme-label">TEMA DE PANTALLA</span>
-                <div class="cfg-theme-options">
-                  <button class="cfg-theme-option" [class.active]="themeMode === 'dark'" (click)="themeMode = 'dark'">
-                    <span class="cfg-theme-icon">
-                      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-                    </span>
-                    <span class="cfg-theme-name">Oscuro</span>
-                    <span class="cfg-theme-tag">Predeterminado</span>
-                  </button>
-                  <div class="cfg-theme-option cfg-theme-option--soon" title="Esta función estará disponible próximamente">
-                    <span class="cfg-soon-badge">PRÓXIMAMENTE</span>
-                    <span class="cfg-theme-icon cfg-theme-icon--soon">
-                      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
-                    </span>
-                    <span class="cfg-theme-name">Claro</span>
-                    <span class="cfg-theme-tag">En desarrollo</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
 
           <!-- Card: Zona de Peligro -->
           <div class="cfg-card cfg-card--danger">

@@ -105,8 +105,10 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
           this.isLoading = false;
           this.cdr.detectChanges();
 
-          if (res.email === 'admin@levelup.com') {
+if (res.email === 'admin@levelup.com') {
             this.router.navigate(['/admin']);
+          } else if (res.email === 'entrenador@levelup.com') {
+            this.router.navigate(['/trainer']);
           } else {
             this.router.navigate(['/dashboard']);
           }

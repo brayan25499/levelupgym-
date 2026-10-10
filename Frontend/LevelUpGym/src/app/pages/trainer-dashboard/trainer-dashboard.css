@@ -1,0 +1,10 @@
+@import '../admin-dashboard/admin-dashboard.css';
+
+/* Ajustes específicos para el panel de entrenador manteniendo total consistencia visual */
+.trainer-dashboard {
+  display: flex;
+  min-height: 100vh;
+  background-color: #0a0a0a;
+  color: #e0e0e0;
+  font-family: 'Barlow', sans-serif;
+}
