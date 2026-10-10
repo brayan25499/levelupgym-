@@ -1,7 +1,8 @@
-using Microsoft.AspNetCore.Mvc;
 using LevelUpGym.Api.Data;
-using LevelUpGym.Api.Models;
 using LevelUpGym.Api.DTOs;
+using LevelUpGym.Api.Models;
+using LevelUpGym.Api.Services;
+using Microsoft.AspNetCore.Mvc;
 using System.Text.RegularExpressions;
 
 namespace LevelUpGym.Api.Controllers;
@@ -11,6 +12,8 @@ namespace LevelUpGym.Api.Controllers;
 public class ContactoController : ControllerBase
 {
     private readonly LevelUpDbContext _context;
+    private readonly IEmailService _emailService;
+
 
     // Allowed subjects (must match frontend dropdown values)
     private static readonly HashSet<string> AsuntosPermitidos = new(StringComparer.OrdinalIgnoreCase)
@@ -21,9 +24,10 @@ public class ContactoController : ControllerBase
         "Tienda y Suplementos"
     };
 
-    public ContactoController(LevelUpDbContext context)
+    public ContactoController(LevelUpDbContext context, IEmailService emailService)
     {
         _context = context;
+        _emailService = emailService;
     }
 
     [HttpPost]
@@ -93,6 +97,8 @@ public class ContactoController : ControllerBase
         if (errors.Count > 0)
             return BadRequest(new { errors });
 
+        await _emailService.SendQuestionsEmail(request.Nombre, request.Correo, request.Asunto, request.Mensaje);
+
         // Sanitize message before storing
         var sanitizedMensaje = SanitizeMensaje(request.Mensaje.Trim());
 
@@ -106,6 +112,8 @@ public class ContactoController : ControllerBase
             Estado = "Pendiente",
             CreatedAt = DateTime.UtcNow
         };
+
+
 
         _context.MensajesContacto.Add(mensaje);
         await _context.SaveChangesAsync();

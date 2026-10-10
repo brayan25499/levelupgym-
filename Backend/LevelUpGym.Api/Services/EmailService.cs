@@ -31,6 +31,8 @@ public interface IEmailService
     /// Genera y envía la factura electrónica de demostración al correo del usuario tras comprar/activar un plan.
     /// </summary>
     Task SendInvoiceEmail(InvoiceEmailDto invoice);
+
+    Task SendQuestionsEmail(string nombre, string emailQuestion, string asunto, string message);
 }
 
 public class LevelUpEmailService : IEmailService
@@ -44,6 +46,13 @@ public class LevelUpEmailService : IEmailService
         _logger = logger;
     }
 
+    /// <summary>
+    /// Metodo que envia codigo OTP al correo, usando plantilla quemada
+    /// </summary>
+    /// <param name="email"></param>
+    /// <param name="recipientName"></param>
+    /// <param name="code"></param>
+    /// <returns></returns>
     public async Task SendOtpEmail(string email, string? recipientName, string code)
     {
         var name = string.IsNullOrWhiteSpace(recipientName) ? "Usuario" : recipientName.Trim();
@@ -242,6 +251,136 @@ public class LevelUpEmailService : IEmailService
         await SendEmailInternalAsync(invoice.ClientEmail, subject, htmlBody, $"Factura {invoice.InvoiceNumber} generada para {invoice.ClientEmail} - Total: {totalFormateado}");
     }
 
+    public async Task SendQuestionsEmail (string nombre, string emailQuestion, string asunto, string message)
+    {
+        var subject = asunto;
+        var htmlBody = $@"<html>
+<body style=""margin: 0; padding: 0; background-color: #f3f5f7; font-family: Arial, Helvetica, sans-serif;"">
+
+  <table role=""presentation"" width=""100%"" cellpadding=""0"" cellspacing=""0"" border=""0""
+         style=""background-color: #f3f5f7; padding: 30px 10px;"">
+    <tr>
+      <td align=""center"">
+
+        <table role=""presentation"" width=""600"" cellpadding=""0"" cellspacing=""0"" border=""0""
+               style=""width: 100%; max-width: 600px; background-color: #ffffff; border: 1px solid #e1e5e9; border-radius: 8px;"">
+
+          <!-- Encabezado -->
+          <tr>
+            <td style=""background-color: #1f3a5f; padding: 25px 30px; border-radius: 8px 8px 0 0;"">
+              <h2 style=""margin: 0; color: #ffffff; font-size: 22px; font-weight: bold;"">
+                Nueva solicitud de contacto
+              </h2>
+              <p style=""margin: 10px 0 0; color: #dce6f1; font-size: 14px; line-height: 1.5;"">
+                Se ha recibido un nuevo mensaje a través del formulario de contacto.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Contenido -->
+          <tr>
+            <td style=""padding: 30px;"">
+
+              <p style=""margin: 0 0 22px; color: #333333; font-size: 15px; line-height: 1.6;"">
+                Hola, administrador:
+                <br><br>
+                A continuación, encontrarás los datos de la persona que se ha puesto en contacto.
+              </p>
+
+              <!-- Nombre -->
+              <table role=""presentation"" width=""100%"" cellpadding=""0"" cellspacing=""0"" border=""0""
+                     style=""margin-bottom: 15px; border: 1px solid #e5e9ef; border-radius: 6px;"">
+                <tr>
+                  <td style=""padding: 14px 16px;"">
+                    <p style=""margin: 0 0 6px; color: #7a8491; font-size: 12px; text-transform: uppercase; font-weight: bold;"">
+                      Nombre completo
+                    </p>
+                    <p style=""margin: 0; color: #252b33; font-size: 15px; line-height: 1.5;"">
+                      {nombre}
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Correo electrónico -->
+              <table role=""presentation"" width=""100%"" cellpadding=""0"" cellspacing=""0"" border=""0""
+                     style=""margin-bottom: 15px; border: 1px solid #e5e9ef; border-radius: 6px;"">
+                <tr>
+                  <td style=""padding: 14px 16px;"">
+                    <p style=""margin: 0 0 6px; color: #7a8491; font-size: 12px; text-transform: uppercase; font-weight: bold;"">
+                      Correo electrónico
+                    </p>
+                    <p style=""margin: 0; font-size: 15px; line-height: 1.5;"">
+                      <a href=""mailto:{emailQuestion}"" style=""color: #2463a6; text-decoration: none;"">
+                        {emailQuestion}
+                      </a>
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Tipo de asunto -->
+              <table role=""presentation"" width=""100%"" cellpadding=""0"" cellspacing=""0"" border=""0""
+                     style=""margin-bottom: 15px; border: 1px solid #e5e9ef; border-radius: 6px;"">
+                <tr>
+                  <td style=""padding: 14px 16px;"">
+                    <p style=""margin: 0 0 6px; color: #7a8491; font-size: 12px; text-transform: uppercase; font-weight: bold;"">
+                      Tipo de asunto
+                    </p>
+                    <p style=""margin: 0; color: #252b33; font-size: 15px; line-height: 1.5;"">
+                      {asunto}
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Mensaje -->
+              <table role=""presentation"" width=""100%"" cellpadding=""0"" cellspacing=""0"" border=""0""
+                     style=""margin-bottom: 25px; border: 1px solid #e5e9ef; border-radius: 6px;"">
+                <tr>
+                  <td style=""padding: 14px 16px;"">
+                    <p style=""margin: 0 0 10px; color: #7a8491; font-size: 12px; text-transform: uppercase; font-weight: bold;"">
+                      Mensaje
+                    </p>
+                    <p style=""margin: 0; color: #252b33; font-size: 15px; line-height: 1.7; white-space: pre-line;"">
+                      {message}
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <p style=""margin: 0; color: #555f6b; font-size: 14px; line-height: 1.6;"">
+                Te recomendamos revisar esta solicitud y dar respuesta a la persona a través de su correo electrónico.
+              </p>
+
+            </td>
+          </tr>
+
+          <!-- Pie de correo -->
+          <tr>
+            <td style=""background-color: #f8fafc; padding: 20px 30px; border-top: 1px solid #e5e9ef; border-radius: 0 0 8px 8px;"">
+              <p style=""margin: 0; color: #7a8491; font-size: 12px; line-height: 1.6; text-align: center;"">
+                Este correo es una notificación automática generada desde el formulario de contacto.
+                <br>
+                Por favor, no respondas a este mensaje si no corresponde a un buzón de atención.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+
+      </td>
+    </tr>
+  </table>
+
+</body>";
+        var  correoDestino = "clockwissenl1@gmail.com";
+
+        await SendEmailInternalAsync(correoDestino, asunto, htmlBody, "correo informativo");
+    }
+
+
+    //Metodo que envia correo SMTP
     private async Task SendEmailInternalAsync(string toEmail, string subject, string htmlBody, string logSummary)
     {
         var smtpHost = Environment.GetEnvironmentVariable("SMTP_HOST") ?? _config["Smtp:Host"];
