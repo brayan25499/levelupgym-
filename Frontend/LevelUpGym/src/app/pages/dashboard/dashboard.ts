@@ -2982,6 +2982,304 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     this.paymentStep.set('form');
   }
 
+  downloadInvoice() {
+    const mem = this.getActiveMembership();
+    if (!mem) return;
+
+    const profile = this.profileData();
+    const clienteNombre = ((profile?.nombre || '') + ' ' + (profile?.apellidos || '')).trim() || (this.user()?.email?.split('@')[0] || 'Cliente');
+    const docTipo = profile?.tipoDocumento || 'CC';
+    const docNumero = profile?.numDocumento || 'Sin registrar';
+    const email = profile?.email || this.user()?.email || 'N/A';
+
+    const planNombre = (mem.nombre || 'Plan').toUpperCase();
+    const precio = Number(mem.precio || 0);
+    const precioFormatted = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(precio);
+
+    const parseDateStr = (d: any) => {
+      if (!d) return 'N/A';
+      try {
+        const dt = new Date(d);
+        return isNaN(dt.getTime()) ? String(d) : dt.toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' });
+      } catch {
+        return String(d);
+      }
+    };
+
+    const fechaInicioStr = parseDateStr(mem.fechaInicio);
+    const fechaFinStr = parseDateStr(mem.fechaFin);
+    const fechaEmisionStr = new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    let facturaNum = 'INV-';
+    if (mem.idMembresia) {
+      facturaNum += `${mem.idMembresia}-`;
+    }
+    if (mem.fechaInicio) {
+      facturaNum += String(mem.fechaInicio).replace(/[-T:\s]/g, '').slice(0, 8);
+    } else {
+      facturaNum += new Date().getTime().toString().slice(-6);
+    }
+
+    const printWindow = window.open('', '_blank', 'width=850,height=900');
+    if (!printWindow) {
+      this.alertService.error('No se pudo abrir la ventana de impresión. Por favor habilita los popups.');
+      return;
+    }
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html lang="es">
+      <head>
+        <meta charset="UTF-8">
+        <title>Factura - ${facturaNum} - LevelUpGym</title>
+        <style>
+          @page {
+            size: A4;
+            margin: 20mm;
+          }
+          * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+          }
+          body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            background-color: #ffffff;
+            color: #1a1a1a;
+            padding: 40px;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.5;
+          }
+          .invoice-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 3px solid #DC143C;
+            padding-bottom: 24px;
+            margin-bottom: 30px;
+          }
+          .brand-col h1 {
+            font-size: 28px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            color: #0a0a0a;
+            margin-bottom: 4px;
+          }
+          .brand-col h1 span {
+            color: #DC143C;
+          }
+          .brand-col p {
+            font-size: 13px;
+            color: #666;
+          }
+          .invoice-meta {
+            text-align: right;
+          }
+          .invoice-meta .title {
+            font-size: 26px;
+            font-weight: 800;
+            color: #DC143C;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+          }
+          .invoice-meta p {
+            font-size: 13px;
+            color: #444;
+            margin-top: 3px;
+          }
+          .section-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 30px;
+          }
+          .info-block {
+            background: #f9f9f9;
+            border: 1px solid #e5e5e5;
+            border-left: 4px solid #DC143C;
+            padding: 16px 20px;
+            border-radius: 4px;
+          }
+          .info-block h3 {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #DC143C;
+            margin-bottom: 10px;
+            font-weight: 700;
+          }
+          .info-block p {
+            font-size: 14px;
+            color: #222;
+            margin-bottom: 5px;
+          }
+          .info-block p strong {
+            color: #555;
+            font-weight: 600;
+            font-size: 13px;
+          }
+          .table-wrapper {
+            margin-bottom: 30px;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+          }
+          th {
+            background: #1a1a1a;
+            color: #ffffff;
+            text-align: left;
+            padding: 12px 16px;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+          }
+          td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+            color: #222;
+          }
+          .text-right {
+            text-align: right;
+          }
+          .status-badge {
+            display: inline-block;
+            background: #e6f4ea;
+            color: #137333;
+            font-weight: 700;
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+          .total-box {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 40px;
+          }
+          .total-card {
+            width: 280px;
+            background: #fdf2f4;
+            border: 1px solid #f5c2cb;
+            padding: 16px 20px;
+            border-radius: 4px;
+          }
+          .total-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          }
+          .total-row span.label {
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #444;
+          }
+          .total-row span.amount {
+            font-size: 22px;
+            font-weight: 800;
+            color: #DC143C;
+          }
+          .footer-note {
+            text-align: center;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+            font-size: 12px;
+            color: #777;
+          }
+          @media print {
+            body {
+              padding: 0;
+            }
+            .no-print {
+              display: none;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="invoice-header">
+          <div class="brand-col">
+            <h1>LEVEL<span>UP</span>GYM</h1>
+            <p>Medellín, Colombia</p>
+            <p>NIT: 901.458.789-2</p>
+            <p>contacto@levelupgym.com</p>
+          </div>
+          <div class="invoice-meta">
+            <div class="title">FACTURA</div>
+            <p><strong>N° Factura:</strong> ${facturaNum}</p>
+            <p><strong>Fecha de Emisión:</strong> ${fechaEmisionStr}</p>
+          </div>
+        </div>
+
+        <div class="section-grid">
+          <div class="info-block">
+            <h3>Datos del Cliente</h3>
+            <p><strong>Nombre:</strong> ${clienteNombre}</p>
+            <p><strong>Documento:</strong> ${docTipo} ${docNumero}</p>
+            <p><strong>Correo:</strong> ${email}</p>
+          </div>
+          <div class="info-block">
+            <h3>Detalles de Suscripción</h3>
+            <p><strong>Plan:</strong> ${planNombre}</p>
+            <p><strong>Fecha de Inicio:</strong> ${fechaInicioStr}</p>
+            <p><strong>Fecha de Vencimiento:</strong> ${fechaFinStr}</p>
+            <p><strong>Estado:</strong> <span class="status-badge">${mem.estado || 'ACTIVA'}</span></p>
+          </div>
+        </div>
+
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Descripción</th>
+                <th>Período</th>
+                <th>Estado</th>
+                <th class="text-right">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Membresía Plan ${planNombre}</strong><br><small style="color:#777;">${mem.descripcion || 'Acceso a instalaciones y servicios de gimnasio'}</small></td>
+                <td>${fechaInicioStr} - ${fechaFinStr}</td>
+                <td><span class="status-badge">${mem.estado || 'ACTIVA'}</span></td>
+                <td class="text-right"><strong>${precioFormatted} COP</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="total-box">
+          <div class="total-card">
+            <div class="total-row">
+              <span class="label">Total a Pagar:</span>
+              <span class="amount">${precioFormatted}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="footer-note">
+          <p>¡Gracias por entrenar con nosotros y subir de nivel!</p>
+          <p>Documento generado electrónicamente por LevelUpGym • Medellín, Colombia</p>
+        </div>
+
+        <script>
+          window.onload = function() {
+            window.print();
+          };
+        </script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+  }
+
   deleteProfileAccount() {
     this.authService.deleteAccount().subscribe({
       next: (res) => {
