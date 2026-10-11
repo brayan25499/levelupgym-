@@ -115,7 +115,7 @@
             <div class="phone-input-group">
                 <select class="form-input phone-code-select" formControlName="countryCode">
                     <option *ngFor="let country of countryCodes" [value]="country.dialCode">
-                        {{country.flag}} {{country.dialCode}}
+                        {{country.code}} {{country.dialCode}}
                     </option>
                 </select>
                 <input type="text" class="form-input phone-number-input" formControlName="telefono" placeholder="3001234567" maxlength="10" [class.invalid]="registerForm.get('telefono')?.invalid && registerForm.get('telefono')?.touched">
