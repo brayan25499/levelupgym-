@@ -5,6 +5,7 @@ export interface AlertState {
   title: string;
   message: string;
   onConfirm?: () => void;
+  onOk?: () => void;
 }
 
 @Injectable({
@@ -13,16 +14,16 @@ export interface AlertState {
 export class AlertService {
   currentAlert = signal<AlertState | null>(null);
 
-  success(message: string, title: string = '¡Éxito!') {
-    this.currentAlert.set({ type: 'success', title, message });
+  success(message: string, title: string = '¡Éxito!', onOk?: () => void) {
+    this.currentAlert.set({ type: 'success', title, message, onOk });
   }
 
-  error(message: string, title: string = '¡Error!') {
-    this.currentAlert.set({ type: 'error', title, message });
+  error(message: string, title: string = '¡Error!', onOk?: () => void) {
+    this.currentAlert.set({ type: 'error', title, message, onOk });
   }
 
-  info(message: string, title: string = 'Información') {
-    this.currentAlert.set({ type: 'info', title, message });
+  info(message: string, title: string = 'Información', onOk?: () => void) {
+    this.currentAlert.set({ type: 'info', title, message, onOk });
   }
 
   confirm(message: string, onConfirm: () => void, title: string = '¿Estás seguro?') {

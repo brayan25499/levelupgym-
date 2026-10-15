@@ -66,6 +66,11 @@ public class Auth : BaseEntity
     [StringLength(20)]
     public string? Estado { get; set; }
 
+    // Identificador único de Google (payload.Subject / "sub" del ID Token).
+    // Nulo para cuentas que solo usan email/contraseña.
+    [StringLength(50)]
+    public string? GoogleId { get; set; }
+
     // Navigation
     public virtual Profile Profile { get; set; } = null!;
     public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
@@ -85,6 +90,8 @@ public class Client : BaseEntity
     public virtual Profile Profile { get; set; } = null!;
     public virtual ICollection<Subscription> Subscriptions { get; set; } = new List<Subscription>();
     public virtual ICollection<Progress> ProgressReports { get; set; } = new List<Progress>();
+    public virtual ICollection<Goal> Goals { get; set; } = new List<Goal>();
+    public virtual ICollection<Venta> Ventas { get; set; } = new List<Venta>();
 }
 
 public class Employee : BaseEntity
@@ -94,8 +101,6 @@ public class Employee : BaseEntity
     
     public int IdProfile { get; set; }
     
-    public int? IdEps { get; set; }
-    
     public DateOnly? FechaContratacion { get; set; }
     
     public decimal? SalarioBase { get; set; }
@@ -103,8 +108,14 @@ public class Employee : BaseEntity
     [StringLength(20)]
     public string? Estado { get; set; }
 
+    [StringLength(150)]
+    public string? Especialidad { get; set; }
+
+    [StringLength(500)]
+    public string? Descripcion { get; set; }
+
     // Navigation
     public virtual Profile Profile { get; set; } = null!;
-    public virtual Eps? Eps { get; set; }
     public virtual ICollection<EmployeePayment> Payments { get; set; } = new List<EmployeePayment>();
+    public virtual ICollection<EmpleadoRolGimnasio> EmpleadoRoles { get; set; } = new List<EmpleadoRolGimnasio>();
 }

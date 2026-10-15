@@ -1,8 +1,9 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit, HostListener } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { ContactService, ContactMessage } from '../../services/contact';
 import { AlertService } from '../../services/alert.service';
+import { EntrenadorService, Entrenador } from '../../services/entrenador.service';
 
 @Component({
   selector: 'app-about',
@@ -10,9 +11,71 @@ import { AlertService } from '../../services/alert.service';
   templateUrl: './about.html',
   styleUrl: './about.css',
 })
-export class AboutComponent {
+export class AboutComponent implements OnInit {
   private contactService = inject(ContactService);
   private alertService = inject(AlertService);
+  private entrenadorService = inject(EntrenadorService);
+
+  entrenadores: Entrenador[] = [];
+  cargandoEntrenadores = true;
+
+  // Carousel State
+  currentIndex = 0;
+  visibleCount = 4;
+
+  @HostListener('window:resize')
+  onResize() {
+    this.updateVisibleCount();
+  }
+
+  get maxIndex(): number {
+    return Math.max(0, this.entrenadores.length - this.visibleCount);
+  }
+
+  updateVisibleCount() {
+    if (typeof window !== 'undefined') {
+      const width = window.innerWidth;
+      if (width <= 768) {
+        this.visibleCount = 1;
+      } else if (width <= 1024) {
+        this.visibleCount = 2;
+      } else {
+        this.visibleCount = 4;
+      }
+      if (this.currentIndex > this.maxIndex) {
+        this.currentIndex = this.maxIndex;
+      }
+    }
+  }
+
+  next() {
+    if (this.currentIndex < this.maxIndex) {
+      this.currentIndex++;
+    }
+  }
+
+  prev() {
+    if (this.currentIndex > 0) {
+      this.currentIndex--;
+    }
+  }
+
+  goToSlide(index: number) {
+    this.currentIndex = index;
+  }
+
+  getDotsArray(): number[] {
+    const dotsCount = this.maxIndex + 1;
+    return Array(dotsCount).fill(0);
+  }
+
+  // Gradients for trainer avatars
+  private avatarGradients = [
+    'linear-gradient(135deg, #dc143c, #8b0000)',
+    'linear-gradient(135deg, #ff4500, #dc143c)',
+    'linear-gradient(135deg, #8b0000, #4a0000)',
+    'linear-gradient(135deg, #dc143c, #ff6347)',
+  ];
 
   contactForm: ContactMessage = {
     nombre: '',
@@ -31,6 +94,24 @@ export class AboutComponent {
     asunto: '',
     mensaje: ''
   };
+
+  ngOnInit(): void {
+    this.updateVisibleCount();
+    this.entrenadorService.getEntrenadores().subscribe({
+      next: (data) => {
+        this.entrenadores = data;
+        this.cargandoEntrenadores = false;
+        this.updateVisibleCount();
+      },
+      error: () => {
+        this.cargandoEntrenadores = false;
+      }
+    });
+  }
+
+  getAvatarGradient(index: number): string {
+    return this.avatarGradients[index % this.avatarGradients.length];
+  }
 
   // --- Nombre validation ---
   validateNombre(): boolean {

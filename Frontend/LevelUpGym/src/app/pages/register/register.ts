@@ -1,6 +1,6 @@
 import { Component, OnInit, ViewChild, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth';
 import { CommonModule } from '@angular/common';
 import {
@@ -8,7 +8,8 @@ import {
   emailValidator,
   passwordValidator,
   phoneValidator,
-  numericWithDecimalValidator,
+  weightValidator,
+  heightValidator,
   passwordMatchValidator,
   noSpacesValidator
 } from '../../validators/custom-validators';
@@ -31,6 +32,7 @@ export class RegisterComponent implements OnInit {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
 
   @ViewChild(TermsModalComponent) termsModal!: TermsModalComponent;
 
@@ -59,12 +61,12 @@ export class RegisterComponent implements OnInit {
     password: ['', [Validators.required, passwordValidator()]],
     confirmPassword: ['', [Validators.required]],
     tipoDocumento: ['CC', Validators.required],
-    numDocumento: ['', [Validators.required, Validators.maxLength(10), Validators.pattern(/^[0-9]+$/), noSpacesValidator()]],
+    numDocumento: ['', [Validators.required, Validators.minLength(5), Validators.maxLength(10), Validators.pattern(/^[0-9]+$/), noSpacesValidator()]],
     sexo: ['', Validators.required],
     countryCode: ['+57', Validators.required],
     telefono: ['', [Validators.required, phoneValidator()]],
-    peso: [null, [Validators.required, numericWithDecimalValidator()]],
-    estatura: [null, [Validators.required, numericWithDecimalValidator()]],
+    peso: [null, [Validators.required, weightValidator()]],
+    estatura: [null, [Validators.required, heightValidator()]],
     terminos: [false, Validators.requiredTrue]
   }, {
     validators: passwordMatchValidator('password', 'confirmPassword')
@@ -85,6 +87,32 @@ export class RegisterComponent implements OnInit {
       peso: null,
       estatura: null,
       terminos: false
+    });
+
+    this.route.queryParams.subscribe(params => {
+      const email = params['email'];
+      const nombreCompleto = params['nombre'];
+
+      if (email) {
+        let nombre = '';
+        let apellidos = '';
+
+        if (nombreCompleto) {
+          const parts = nombreCompleto.trim().split(' ');
+          if (parts.length === 1) {
+            nombre = parts[0];
+          } else if (parts.length > 1) {
+            nombre = parts[0];
+            apellidos = parts.slice(1).join(' ');
+          }
+        }
+
+        this.registerForm.patchValue({
+          email: email.toLowerCase().trim(),
+          ...(nombre ? { nombre } : {}),
+          ...(apellidos ? { apellidos } : {})
+        });
+      }
     });
   }
 

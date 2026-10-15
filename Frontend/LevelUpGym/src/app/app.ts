@@ -17,11 +17,20 @@ export class App {
   public alertService = inject(AlertService);
 
   showLayout() {
-    return !this.router.url.startsWith('/admin');
+    return !this.router.url.startsWith('/admin') && !this.router.url.startsWith('/trainer');
+  }
+
+  showFooter() {
+    const url = this.router.url;
+    return !url.startsWith('/admin') && !url.startsWith('/trainer') && !url.startsWith('/dashboard') && !url.startsWith('/profile');
   }
 
   handleOk() {
+    const alert = this.alertService.currentAlert();
     this.alertService.close();
+    if (alert && alert.onOk) {
+      alert.onOk();
+    }
   }
 
   handleYes() {

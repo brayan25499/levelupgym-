@@ -1,0 +1,222 @@
+<div class="trainer-dashboard">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <span class="brand-level">LEVEL</span><span class="brand-up">UP</span><span class="brand-gym">GYM</span>
+      <p class="role-badge">PANEL ENTRENADOR</p>
+    </div>
+    <nav class="sidebar-nav">
+      <button (click)="setTab('clases')" [class.active]="activeTab === 'clases'"><span class="menu-icon icon-calendar"></span> Clases</button>
+      <button (click)="setTab('objetivos')" [class.active]="activeTab === 'objetivos'"><span class="menu-icon icon-goals"></span> Objetivos</button>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="btn-logout" (click)="logout()"><span class="menu-icon icon-logout"></span> Salir</button>
+    </div>
+  </aside>
+
+  <main class="dashboard-content" [ngSwitch]="activeTab">
+    <header class="content-header">
+      <div>
+        <span class="eyebrow">Panel de Entrenador</span>
+        <h1>Bienvenido, <span class="accent">Coach</span></h1>
+      </div>
+      <div class="user-info">
+        <div class="user-meta">
+          <span>entrenador&#64;levelup.com</span>
+          <span class="user-role">Entrenador</span>
+        </div>
+        <div class="avatar">E</div>
+      </div>
+    </header>
+
+    <!-- CLASES TAB -->
+    <div *ngSwitchCase="'clases'" class="tab-content fade-in">
+      <section class="recent-activity">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+          <h2>Gestión de Clases Programadas</h2>
+          <button class="btn-primary-glow" (click)="openNewClassModal()">+ Nueva Clase</button>
+        </div>
+        <div class="activity-table-wrapper">
+          <table class="activity-table">
+            <thead>
+              <tr>
+                <th>Clase</th>
+                <th>Fecha / Hora</th>
+                <th>Entrenador</th>
+                <th class="num">Inscritos</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let c of classes()">
+                <td><strong>{{ c.nombre }}</strong></td>
+                <td>{{ c.fecha }} a las {{ c.hora }}</td>
+                <td>{{ c.entrenador.nombreCompleto }}</td>
+                <td class="num"><strong>{{ c.inscritos }}</strong> / {{ c.capacidadMaxima }}</td>
+                <td>
+                  <span class="status-badge" [class.success]="c.estado === 'Programada'" [class.completed]="c.estado === 'Completada'" [class.cancelled]="c.estado === 'Cancelada'">
+                    {{ c.estado }}
+                  </span>
+                </td>
+                <td>
+                  <button class="btn-cancelar" (click)="deleteClass(c)">Cancelar</button>
+                </td>
+              </tr>
+              <tr class="empty-row" *ngIf="classes().length === 0">
+                <td colspan="6">No hay clases programadas actualmente.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- OBJETIVOS TAB -->
+    <div *ngSwitchCase="'objetivos'" class="tab-content fade-in">
+      <section class="recent-activity">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+          <h2>Catálogo de Objetivos del Gimnasio</h2>
+          <button class="btn-primary-glow" (click)="openNewGoalTypeModal()">+ Nuevo Objetivo</button>
+        </div>
+        <div class="activity-table-wrapper">
+          <table class="activity-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Descripción</th>
+                <th>Unidad</th>
+                <th>Tipo de dato</th>
+                <th>Dirección</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let gt of goalTypes()">
+                <td><strong>{{ gt.nombre }}</strong></td>
+                <td style="max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ gt.descripcion || '—' }}</td>
+                <td>{{ gt.unidad }}</td>
+                <td><span class="tipo-dato-badge">{{ gt.tipoDato }}</span></td>
+                <td>
+                  <span class="direccion-badge" [class.menor]="gt.direccion === 'MENOR'" [class.mayor]="gt.direccion === 'MAYOR'">
+                    {{ gt.direccion === 'MENOR' ? '↓ Reducir' : '↑ Aumentar' }}
+                  </span>
+                </td>
+                <td>
+                  <span class="status-badge" [class.success]="gt.activo" [class.pending]="!gt.activo">
+                    {{ gt.activo ? 'ACTIVO' : 'INACTIVO' }}
+                  </span>
+                </td>
+              </tr>
+              <tr class="empty-row" *ngIf="goalTypes().length === 0">
+                <td colspan="6">No hay tipos de objetivo registrados.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<!-- Modal Nueva Clase -->
+<div class="modal-overlay fade-in" *ngIf="showNewClassModal()">
+  <div class="modal-card">
+    <button class="close-btn" (click)="closeNewClassModal()">&times;</button>
+    <h2 style="margin-bottom: 1.5rem; color: #fff;">Crear Nueva Clase</h2>
+    <form [formGroup]="classForm" (ngSubmit)="createClass()" style="display: flex; flex-direction: column; gap: 1rem;">
+
+      <div class="form-field">
+        <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">NOMBRE DE LA CLASE (EJ. SPINNING)</label>
+        <input type="text" formControlName="nombre" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;" required>
+      </div>
+
+      <div class="form-field">
+        <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">ENTRENADOR</label>
+        <select formControlName="idEntrenador" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;" required>
+          <option value="" disabled>Seleccione un entrenador...</option>
+          <option *ngFor="let t of trainers()" [value]="t.idEmpleado">{{ t.nombre }} {{ t.apellidos }}</option>
+        </select>
+      </div>
+
+      <div style="display: flex; gap: 1rem;">
+        <div class="form-field" style="flex: 1;">
+          <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">FECHA</label>
+          <input type="date" formControlName="fecha" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;" required>
+        </div>
+        <div class="form-field" style="flex: 1;">
+          <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">HORA INICIO</label>
+          <input type="time" formControlName="horaInicio" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;" required>
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">CAPACIDAD MÁXIMA</label>
+        <input type="number" formControlName="capacidadMaxima" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;" min="1" required>
+      </div>
+
+      <button type="submit" [disabled]="classForm.invalid" style="margin-top: 1rem; padding: 0.75rem; background: #DC143C; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; transition: 0.3s;" [style.opacity]="classForm.invalid ? '0.5' : '1'">GUARDAR CLASE</button>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Nuevo Objetivo -->
+<div class="modal-overlay fade-in" *ngIf="showGoalTypeModal()">
+  <div class="modal-card" style="width: 480px; max-width: 90%;">
+    <button class="close-btn" (click)="closeGoalTypeModal()">&times;</button>
+    <h2 style="margin-bottom: 1.5rem; color: #fff;">Nuevo Tipo de Objetivo</h2>
+    <form [formGroup]="goalTypeForm" (ngSubmit)="saveGoalType()" style="display: flex; flex-direction: column; gap: 1rem;">
+
+      <div class="form-field">
+        <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">NOMBRE</label>
+        <input type="text" formControlName="nombre" placeholder="Ej: Peso, Cintura, Brazo" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;" required>
+        <div *ngIf="goalTypeForm.get('nombre')?.touched && goalTypeForm.get('nombre')?.errors?.['required']" style="color: #ff4d4d; font-size: 0.75rem; margin-top: 0.25rem;">
+          El nombre es obligatorio.
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">DESCRIPCIÓN</label>
+        <textarea formControlName="descripcion" placeholder="Ej: Alcanzar un peso corporal determinado." style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white; resize: vertical;" rows="2"></textarea>
+      </div>
+
+      <div style="display: flex; gap: 1rem;">
+        <div class="form-field" style="flex: 1;">
+          <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">UNIDAD</label>
+          <input type="text" formControlName="unidad" placeholder="Ej: kg, cm, -" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;" required>
+          <div *ngIf="goalTypeForm.get('unidad')?.touched && goalTypeForm.get('unidad')?.errors?.['required']" style="color: #ff4d4d; font-size: 0.75rem; margin-top: 0.25rem;">
+            La unidad es obligatoria.
+          </div>
+        </div>
+        <div class="form-field" style="flex: 1;">
+          <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">TIPO DE DATO</label>
+          <select formControlName="tipoDato" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;">
+            <option value="DECIMAL">DECIMAL</option>
+            <option value="INTEGER">INTEGER</option>
+            <option value="STRING">STRING</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 1rem;">
+        <div class="form-field" style="flex: 1;">
+          <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">DIRECCIÓN DEL OBJETIVO</label>
+          <select formControlName="direccion" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;">
+            <option value="MENOR">↓ MENOR (Reducir)</option>
+            <option value="MAYOR">↑ MAYOR (Aumentar)</option>
+          </select>
+        </div>
+        <div class="form-field" style="flex: 1;">
+          <label style="display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem;">ESTADO</label>
+          <select formControlName="activo" style="width: 100%; padding: 0.75rem; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: white;">
+            <option [ngValue]="true">Activo</option>
+            <option [ngValue]="false">Inactivo</option>
+          </select>
+        </div>
+      </div>
+
+      <button type="submit" [disabled]="goalTypeForm.invalid" style="margin-top: 1rem; padding: 0.75rem; background: #DC143C; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; transition: 0.3s;" [style.opacity]="goalTypeForm.invalid ? '0.5' : '1'">
+        CREAR TIPO DE OBJETIVO
+      </button>
+    </form>
+  </div>
+</div>

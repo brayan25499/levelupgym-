@@ -138,17 +138,41 @@
 .phone-input-group {
   display: flex;
   gap: 0.5rem;
+  align-items: stretch;
 }
 
 .phone-code-select {
-  width: 100px;
+  width: 120px;
   flex-shrink: 0;
+  font-family: inherit;
   font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  padding: 0.9rem 1.8rem 0.9rem 0.9rem;
+  background-color: var(--dark-3);
+  color: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 0;
+  cursor: pointer;
+  appearance: auto;
+}
+
+.phone-code-select option {
+  background-color: #1a1a1a;
+  color: #ffffff;
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 500;
 }
 
 .phone-number-input {
   flex: 1;
   min-width: 0;
+  font-family: inherit;
+  font-size: 0.95rem;
+  padding: 0.9rem 1.2rem;
+  border-radius: 0;
 }
 
 /* Error messages for specific fields */

@@ -1,6 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface AuthResponse {
   email: string;
@@ -12,8 +13,8 @@ export interface AuthResponse {
 })
 export class AuthService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:5143/api/auth';
-  
+  private apiUrl = `${environment.apiUrl}/api/auth`;
+
   currentUser = signal<AuthResponse | null>(this.getUserFromStorage());
 
   private getUserFromStorage(): AuthResponse | null {
@@ -23,6 +24,15 @@ export class AuthService {
 
   login(credentials: any): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/login`, credentials).pipe(
+      tap(response => {
+        localStorage.setItem('user', JSON.stringify(response));
+        this.currentUser.set(response);
+      })
+    );
+  }
+
+  googleLogin(idToken: string): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.apiUrl}/google-login`, { idToken }).pipe(
       tap(response => {
         localStorage.setItem('user', JSON.stringify(response));
         this.currentUser.set(response);
@@ -64,19 +74,24 @@ export class AuthService {
     return this.http.post<any>(`${this.apiUrl}/reset-password`, { email, code, newPassword });
   }
 
+  changePassword(data: { currentPassword: string; newPassword: string }): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/change-password`, data);
+  }
+
   getToken(): string | null {
     return this.currentUser()?.token || null;
   }
 
   getProfile(): Observable<any> {
-    return this.http.get<any>('http://localhost:5143/api/clients/profile');
+    return this.http.get<any>(`${environment.apiUrl}/api/clients/profile`);
   }
 
   updateProfile(data: any): Observable<any> {
-    return this.http.put<any>('http://localhost:5143/api/clients/profile', data);
+    return this.http.put<any>(`${environment.apiUrl}/api/clients/profile`, data);
   }
 
   deleteAccount(): Observable<any> {
-    return this.http.delete<any>('http://localhost:5143/api/clients/profile');
+    return this.http.delete<any>(`${environment.apiUrl}/api/clients/profile`);
   }
+  
 }

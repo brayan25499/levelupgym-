@@ -128,14 +128,7 @@ export class PlansComponent implements OnInit {
       this.router.navigate(['/login'], { queryParams: { returnUrl: '/plans' } });
       return;
     }
-
-    this.membershipService.buyMembership(id).subscribe({
-      next: (res) => {
-        this.alertService.success(res.message || '¡Membresía adquirida con éxito!');
-        this.router.navigate(['/dashboard']);
-      },
-      error: (err) => this.alertService.error('Error al procesar compra: ' + (err.error?.message || err.message))
-    });
+    this.router.navigate(['/dashboard'], { queryParams: { section: 'membresia' } });
   }
 
   onImgError(event: Event) {

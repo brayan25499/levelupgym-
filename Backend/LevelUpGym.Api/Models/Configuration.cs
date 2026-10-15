@@ -1,19 +1,8 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace LevelUpGym.Api.Models;
 
-public class Eps : BaseEntity
-{
-    [Key]
-    public int IdEps { get; set; }
-    
-    [Required]
-    [StringLength(150)]
-    public string Nombre { get; set; } = null!;
-
-    // Navigation
-    public virtual ICollection<Employee> Employees { get; set; } = new List<Employee>();
-}
 
 public class SubscriptionStatus : BaseEntity
 {
@@ -26,15 +15,6 @@ public class SubscriptionStatus : BaseEntity
 
     // Navigation
     public virtual ICollection<Subscription> Subscriptions { get; set; } = new List<Subscription>();
-}
-
-public class PaymentMethod : BaseEntity
-{
-    [Key]
-    public int IdPago { get; set; }
-    
-    [StringLength(50)]
-    public string? Nombre { get; set; }
 }
 
 public class EmployeePayment : BaseEntity
@@ -59,20 +39,29 @@ public class Progress : BaseEntity
 {
     [Key]
     public int IdProgreso { get; set; }
-    
+
     public int IdCliente { get; set; }
     
     public decimal? Peso { get; set; }
     
-    [StringLength(4)]
+    [StringLength(20)]
     public string? Altura { get; set; }
     
-    [StringLength(3)]
+    [StringLength(20)]
     public string? Imc { get; set; }
+    
+    public decimal? Cintura { get; set; }
+    
+    public decimal? Pecho { get; set; }
+    
+    public decimal? Brazo { get; set; }
+    
+    public decimal? Pierna { get; set; }
     
     public DateOnly? FechaMedicion { get; set; }
 
-    // Navigation
+    // Navigation — ligada únicamente a IdCliente
+    [ForeignKey("IdCliente")]
     public virtual Client Client { get; set; } = null!;
 }
 
