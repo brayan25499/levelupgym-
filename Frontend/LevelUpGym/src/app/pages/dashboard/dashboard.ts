@@ -9,7 +9,7 @@ import { AlertService } from '../../services/alert.service';
 import { ProgressService, ProgressReport } from '../../services/progress.service';
 import { GoalService, GoalTypeItem, UserGoalDto } from '../../services/goal.service';
 import { MembershipService, Membership, UpgradeCalculation } from '../../services/membership';
-import { PaymentService, PaymentStatusResponse } from '../../services/payment.service';
+import { PaymentService, PaymentStatusResponse, LastPaymentResponse } from '../../services/payment.service';
 import { SIMULATED_BANK_CREDENTIALS, getBankConfig, BankConfig, SIMULATED_CARDS_CONFIG, SimulatedCardConfig, detectCardBrand } from '../../config/simulated-banks.config';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -1627,7 +1627,7 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     sessionReminders: true,
     promotions: false
   };
-    // Próxima sesión reservada (la más cercana en el futuro), calculada desde myClasses
+  // Próxima sesión reservada (la más cercana en el futuro), calculada desde myClasses
   nextSessionView = computed(() => {
     const now = Date.now();
     const next = this.myClasses()
@@ -1646,7 +1646,7 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     };
   });
 
-    private parseClassDate(fecha: string, hora: string): Date | null {
+  private parseClassDate(fecha: string, hora: string): Date | null {
     if (!fecha) return null;
 
     const MESES: Record<string, number> = {
@@ -2328,7 +2328,7 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
       this.loadClasses();
       return;
     }
-    
+
     this.classService.enroll(idClass).subscribe({
       next: (res) => {
         this.alertService.success(res.message);
@@ -2501,7 +2501,7 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     this.simulatedAuthCode.set('');
     this.simulatedLoginError.set('');
     this.simulatedAuthCodeError.set('');
-    
+
     // Autocompletar usuario o teléfono demo de la sugerencia
     const config = getBankConfig(newBank);
     this.simulatedUser.set(config.credentials.usernameOrPhone);
@@ -2838,8 +2838,8 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     this.paymentService.createPaymentSession(sessionReq).subscribe({
       next: (session) => {
         this.paymentReference.set(session.referenceId);
-        const entityName = this.selectedPaymentMethod() === 'PSE' 
-          ? (sessionReq.bankName || 'la entidad bancaria') 
+        const entityName = this.selectedPaymentMethod() === 'PSE'
+          ? (sessionReq.bankName || 'la entidad bancaria')
           : `${this.detectedCardBrandInfo.brand} (•••• ${this.cardLast4})`;
         this.pollingMessage.set(`Sesión creada. Contactando a ${entityName}...`);
 
@@ -2982,9 +2982,29 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     this.paymentStep.set('form');
   }
 
+  /** Descarga la ÚLTIMA factura: consulta al servidor el último pago aprobado (no usa datos en caché). */
   downloadInvoice() {
     const mem = this.getActiveMembership();
     if (!mem) return;
+
+    this.paymentService.getLastPayment().subscribe({
+      next: (pago) => {
+        if (!pago || !pago.referenceId) {
+          this.alertService.error('No se encontró un pago aprobado para generar la factura.');
+          return;
+        }
+        this.openInvoice(mem, pago);
+      },
+      error: (err) => {
+        const msg = err?.status === 404
+          ? 'No se encontró un pago aprobado para generar la factura.'
+          : 'No se pudo obtener tu último pago. Intenta de nuevo.';
+        this.alertService.error(msg);
+      }
+    });
+  }
+
+  private openInvoice(mem: any, pago: LastPaymentResponse) {
 
     const profile = this.profileData();
     const clienteNombre = ((profile?.nombre || '') + ' ' + (profile?.apellidos || '')).trim() || (this.user()?.email?.split('@')[0] || 'Cliente');
@@ -2993,7 +3013,8 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     const email = profile?.email || this.user()?.email || 'N/A';
 
     const planNombre = (mem.nombre || 'Plan').toUpperCase();
-    const precio = Number(mem.precio || 0);
+    // Valor realmente pagado (último pago aprobado), no el precio del plan en pantalla
+    const precio = Number(pago.amount || 0);
     const precioFormatted = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(precio);
 
     const parseDateStr = (d: any) => {
@@ -3008,17 +3029,38 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
 
     const fechaInicioStr = parseDateStr(mem.fechaInicio);
     const fechaFinStr = parseDateStr(mem.fechaFin);
-    const fechaEmisionStr = new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' });
+    // El servidor guarda FechaPago en UTC y la envía sin zona horaria: se marca como UTC
+    // para que el navegador la convierta a la hora local de Colombia.
+    const pagoFechaUtc = pago.paymentDate && !/(Z|[+-]\d{2}:\d{2})$/i.test(pago.paymentDate)
+      ? pago.paymentDate + 'Z'
+      : pago.paymentDate;
+    const fechaEmisionStr = parseDateStr(pagoFechaUtc || new Date());
+    const metodoPago = pago.paymentMethod || pago.provider || 'N/A';
 
-    let facturaNum = 'INV-';
-    if (mem.idMembresia) {
-      facturaNum += `${mem.idMembresia}-`;
-    }
-    if (mem.fechaInicio) {
-      facturaNum += String(mem.fechaInicio).replace(/[-T:\s]/g, '').slice(0, 8);
-    } else {
-      facturaNum += new Date().getTime().toString().slice(-6);
-    }
+    // Cambio de plan (upgrade): se muestra el desglose del cobro
+    const esCambio = pago.tipoVenta === 'CAMBIO_MEMBRESIA';
+    const fmt = (n: number) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
+    const planAnteriorNombre = (pago.previousPlanName || 'plan anterior').toUpperCase();
+    const precioPlanNuevo = Number(pago.planPrice || 0);
+    const abonoPlanAnterior = Number(pago.credit || 0);
+    const cambioDetalleHtml = esCambio
+      ? `<br><small style="color:#777;">Cambio de plan: ${planAnteriorNombre} → ${planNombre}</small>`
+      : '';
+    const desgloseHtml = esCambio && precioPlanNuevo > 0
+      ? `
+            <div class="total-row" style="font-size:13px; color:#555;">
+              <span class="label">Precio del plan ${planNombre}:</span>
+              <span class="amount" style="font-size:13px; color:#555;">${fmt(precioPlanNuevo)}</span>
+            </div>
+            <div class="total-row" style="font-size:13px; color:#555;">
+              <span class="label">Abono plan anterior (${planAnteriorNombre}):</span>
+              <span class="amount" style="font-size:13px; color:#555;">- ${fmt(abonoPlanAnterior)}</span>
+            </div>`
+      : '';
+
+    // Número de factura = ReferenciaExterna real del pago (tabla pagos)
+    const facturaNum = pago.referenceId;
+    const ventaNum = pago.idVenta;
 
     const printWindow = window.open('', '_blank', 'width=850,height=900');
     if (!printWindow) {
@@ -3211,6 +3253,8 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
           <div class="invoice-meta">
             <div class="title">FACTURA</div>
             <p><strong>N° Factura:</strong> ${facturaNum}</p>
+            <p><strong>Venta N°:</strong> ${ventaNum}</p>
+            <p><strong>Método de pago:</strong> ${metodoPago}</p>
             <p><strong>Fecha de Emisión:</strong> ${fechaEmisionStr}</p>
           </div>
         </div>
@@ -3243,7 +3287,7 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
             </thead>
             <tbody>
               <tr>
-                <td><strong>Membresía Plan ${planNombre}</strong><br><small style="color:#777;">${mem.descripcion || 'Acceso a instalaciones y servicios de gimnasio'}</small></td>
+                <td><strong>Membresía Plan ${planNombre}</strong><br><small style="color:#777;">${mem.descripcion || 'Acceso a instalaciones y servicios de gimnasio'}</small>${cambioDetalleHtml}</td>
                 <td>${fechaInicioStr} - ${fechaFinStr}</td>
                 <td><span class="status-badge">${mem.estado || 'ACTIVA'}</span></td>
                 <td class="text-right"><strong>${precioFormatted} COP</strong></td>
@@ -3253,9 +3297,9 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
         </div>
 
         <div class="total-box">
-          <div class="total-card">
+          <div class="total-card">${desgloseHtml}
             <div class="total-row">
-              <span class="label">Total a Pagar:</span>
+              <span class="label">${esCambio ? 'Total pagado (diferencia):' : 'Total a Pagar:'}</span>
               <span class="amount">${precioFormatted}</span>
             </div>
           </div>

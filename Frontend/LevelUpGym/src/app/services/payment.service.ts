@@ -38,6 +38,21 @@ export interface PaymentStatusResponse {
   message: string;
 }
 
+export interface LastPaymentResponse {
+  idVenta: number;
+  referenceId: string;
+  amount: number;
+  status: string;
+  paymentMethod: string;
+  provider?: string;
+  planName?: string;
+  paymentDate: string | null;
+  tipoVenta?: string | null;        // NUEVA_MEMBRESIA | CAMBIO_MEMBRESIA
+  planPrice?: number | null;        // precio completo del plan nuevo
+  credit?: number | null;           // abono del plan anterior
+  previousPlanName?: string | null; // plan anterior (solo en cambios de plan)
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -59,6 +74,14 @@ export class PaymentService {
    */
   getPaymentStatus(referenceId: string): Observable<PaymentStatusResponse> {
     return this.http.get<PaymentStatusResponse>(`${this.apiUrl}/status/${referenceId}`);
+  }
+
+  /**
+   * Último pago APROBADO del cliente autenticado (datos reales de la tabla pagos).
+   * Se usa para la factura: número (ReferenciaExterna), IdVenta y Monto realmente pagado.
+   */
+  getLastPayment(): Observable<LastPaymentResponse> {
+    return this.http.get<LastPaymentResponse>(`${this.apiUrl}/last`);
   }
 
   /**

@@ -311,6 +311,64 @@ public class PaymentsController : ControllerBase
     }
 
     /// <summary>
+    /// Último pago APROBADO del cliente autenticado (para generar la factura).
+    /// Solo lectura: nunca devuelve pagos de otros clientes.
+    /// </summary>
+    [Authorize]
+    [HttpGet("last")]
+    public async Task<IActionResult> GetLastApprovedPayment()
+    {
+        var client = await GetCurrentClientAsync();
+        if (client == null) return Unauthorized(new { message = "Cliente no encontrado." });
+
+        var pago = await _context.Pagos
+            .Include(p => p.Venta)
+                .ThenInclude(v => v.Detalles)
+                    .ThenInclude(d => d.Membership)
+            .Where(p => p.Estado == "APROBADO" && p.Venta != null && p.Venta.IdCliente == client.IdCliente)
+            .OrderByDescending(p => p.FechaPago)
+            .ThenByDescending(p => p.IdPago)
+            .FirstOrDefaultAsync();
+
+        if (pago == null)
+        {
+            return NotFound(new { message = "No se encontró un pago aprobado." });
+        }
+
+        var detalle = pago.Venta?.Detalles?.FirstOrDefault();
+
+        // Si fue un cambio de plan, buscar el nombre del plan anterior
+        string? planAnterior = null;
+        if (pago.Venta?.TipoVenta == "CAMBIO_MEMBRESIA")
+        {
+            var subNueva = await _context.Subscriptions.FirstOrDefaultAsync(s => s.IdVenta == pago.IdVenta);
+            if (subNueva?.IdSuscripcionAnterior != null)
+            {
+                planAnterior = await _context.Subscriptions
+                    .Where(s => s.IdSuscripcion == subNueva.IdSuscripcionAnterior)
+                    .Select(s => s.Membership != null ? s.Membership.Nombre : null)
+                    .FirstOrDefaultAsync();
+            }
+        }
+
+        return Ok(new
+        {
+            tipoVenta = pago.Venta?.TipoVenta,
+            planPrice = pago.Venta?.Subtotal,
+            credit = pago.Venta?.Descuento,
+            previousPlanName = planAnterior,
+            idVenta = pago.IdVenta,
+            referenceId = pago.ReferenciaExterna,
+            amount = pago.Monto,
+            status = pago.Estado,
+            paymentMethod = pago.MetodoPago,
+            provider = pago.Proveedor,
+            planName = detalle?.Membership?.Nombre,
+            paymentDate = pago.FechaPago
+        });
+    }
+
+    /// <summary>
     /// Webhook de Notificaciones Instantáneas de Pago (IPN).
     /// Recibe la confirmación asíncrona de la pasarela.
     /// </summary>
