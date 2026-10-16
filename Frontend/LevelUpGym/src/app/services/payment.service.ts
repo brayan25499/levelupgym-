@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, timer, switchMap, takeWhile, map, share } from 'rxjs';
+import { Observable, timer, switchMap, takeWhile, map, share, exhaustMap } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 // ── DTOs para PaymentsController ──
@@ -88,13 +88,13 @@ export class PaymentService {
    * Polling automático del estado del pago cada `intervalMs` milisegundos.
    * Se detiene cuando el estado ya no es "PROCESANDO" o al llegar a `maxAttempts`.
    */
-  pollPaymentStatus(referenceId: string, intervalMs: number = 3000, maxAttempts: number = 40): Observable<PaymentStatusResponse> {
+  pollPaymentStatus(referenceId: string, intervalMs: number = 100000, maxAttempts: number = 40): Observable<PaymentStatusResponse> {
     let attempts = 0;
     return timer(0, intervalMs).pipe(
       takeWhile(() => attempts < maxAttempts),
-      switchMap(() => {
-        attempts++;
-        return this.getPaymentStatus(referenceId);
+      exhaustMap(() => {
+      attempts++;
+      return this.getPaymentStatus(referenceId);
       }),
       takeWhile(
         (response) => response.status === 'PROCESANDO',
