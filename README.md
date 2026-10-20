@@ -101,6 +101,9 @@ Estas son las pantallas principales de LevelUpGym. Las imágenes están en la ca
 | ![Pantalla de registro](docs/registro.png) | Donde el usuario crea una cuenta nueva. |
 | ![Planes de membresía](docs/planes.png) | Donde el usuario revisa los planes disponibles. |
 | ![Página Nosotros](docs/nosotros.png) | Información del gimnasio y del equipo. |
+| ![Panel del cliente](docs/capturas/panel-cliente.png) | Dashboard del cliente con membresía, IMC, próxima sesión y descarga de factura. |
+| ![Panel de administración](docs/capturas/panel-admin.png) | Resumen con ingresos, clientes, entrenadores y gestión de clases. |
+| ![Panel del entrenador](docs/capturas/panel-entrenador.png) | Gestión de clases programadas del entrenador. |
 
 ## 👥 Equipo
 | Nombre | Rol | GitHub |
